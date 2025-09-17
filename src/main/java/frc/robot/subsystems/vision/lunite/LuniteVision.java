@@ -8,6 +8,11 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
+
+import javax.sound.midi.Track;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -19,15 +24,21 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.util.struct.Struct;
 import edu.wpi.first.util.struct.StructSerializable;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.RobotState;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.lunite.LuniteCamera.LuniteCameraResult;
 import frc.robot.subsystems.vision.lunite.LuniteCameraIO.LuniteCameraTarget;
+import frc.util.LazyOptional;
 import frc.util.VirtualSubsystem;
+import frc.util.loggerUtil.LoggerUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
 import frc.util.robotStructure.CameraMount;
@@ -91,10 +102,103 @@ public class LuniteVision extends VirtualSubsystem {
                 var unusedMemories = new ArrayList<>(luniteMemories);
                 var unusedTargets = new ArrayList<>(frameTargets);
                 while (!connections.isEmpty()) {
-                    
+                    var confirmedConnection = connections.get(0);
+                    confirmedConnection.memory.updatePosWithFiltering(confirmedConnection.cameraTarget);
+                    confirmedConnection.memory.updateConfidence();
+                    unusedMemories.remove(confirmedConnection.memory);
+                    unusedTargets.remove(confirmedConnection.cameraTarget);
+                    connections.removeIf((connection) -> 
+                        connection.memory == confirmedConnection.memory
+                        || connection.cameraTarget == confirmedConnection.cameraTarget
+                    );
                 }
+                unusedMemories.forEach((memory) -> {
+                    if (RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) > RobotConstants.robotLength.in(Meters) * 0.5) {
+                        memory.decayConfidence(1);
+                    }
+                });
+                unusedTargets.forEach(luniteMemories::add);
+                luniteMemories.removeIf((memory) -> memory.confidence <= 0);
+                luniteMemories.removeIf((memory) -> Double.isNaN(memory.fieldPos.getX()) || Double.isNaN(memory.fieldPos.getY()));
+                luniteMemories.removeIf((memory) -> RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) <= 0.07);
+
+                if (
+                    optIntakeTarget.isPresent()
+                    && (
+                        optIntakeTarget.get().confidence < detargetConfidenceThreshold.get()
+                        || !luniteMemories.contains(optIntakeTarget.get())
+                    )
+                ) {
+                    optIntakeTarget = Optional.empty();
+                }
+                if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
+                    optIntakeTarget = luniteMemories
+                        .stream()
+                        .filter((target) -> target.getPriority() >= acquireConfidenceThreshold.get())
+                        .sorted((a, b) -> Double.compare(b.getPriority(), a.getPriority()))
+                        .findFirst()
+                    ;
+                }
+
+                Logger.recordOutput(LuniteVision.loggingKey + "Lunite Memories", luniteMemories.stream().map(TrackedLunite::toASPose).toArray(Pose3d[]::new));
+                Logger.recordOutput(LuniteVision.loggingKey + "Lunite Confidence", luniteMemories.stream().mapToDouble((lunite) -> lunite.confidence).toArray());
+                Logger.recordOutput(LuniteVision.loggingKey + "Lunite Priority", luniteMemories.stream().mapToDouble(TrackedLunite::getPriority).toArray());
+                Logger.recordOutput(LuniteVision.loggingKey + "Target", LoggerUtil.toArray(optIntakeTarget.map(TrackedLunite::toASPose), Pose3d[]::new));
+                Logger.recordOutput(LuniteVision.loggingKey + "Locked Target", LoggerUtil.toArray(optIntakeTarget.filter((a) -> intakeTargetLocked).map(TrackedLunite::toASPose).map(Pose3d::getTranslation), Translation3d[]::new));
             }
         }
+    }
+
+    public DoubleSupplier applyDotProduct(Supplier<ChassisSpeeds> joystickFieldRelative) {
+        return () -> optIntakeTarget.map((target) -> {
+            var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
+            var targetRelRobot = target.fieldPos.minus(robotTrans);
+            var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
+            var joystickSpeed = joystickFieldRelative.get();
+            var joy = new Translation2d(joystickSpeed.vxMetersPerSecond, joystickSpeed.vyMetersPerSecond);
+            var throttle = targetRelRobotNormalized.toVector().dot(joy.toVector());
+            return throttle;
+        }).orElse(0.0);
+    }
+
+    public LazyOptional<ChassisSpeeds> getAutoIntakeTransSpeed(DoubleSupplier throttleSupplier) {
+        return () -> optIntakeTarget.map((target) -> {
+            var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
+            var targetRelRobot = target.fieldPos.minus(robotTrans);
+            var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
+            var finalTrans = targetRelRobotNormalized.times(throttleSupplier.getAsDouble());
+            return new ChassisSpeeds(finalTrans.getX(), finalTrans.getY(), 0);
+        });
+    }
+
+    public LazyOptional<Translation2d> autoIntakeTargetLocation() {
+        return () -> optIntakeTarget.map((target) -> target.fieldPos);
+    }
+
+    public boolean hasTarget() {
+        return optIntakeTarget.isPresent();
+    }
+
+    public boolean targetLocked() {
+        return intakeTargetLocked;
+    }
+
+    public void clearMemory() {
+        luniteMemories.clear();
+        optIntakeTarget = Optional.empty();
+    }
+
+    public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noLunite, Drive drive) {
+        return 
+            Commands.runOnce(() -> intakeTargetLocked = true)
+            .alongWith(
+                drive.translationSubsystem.fieldRelative(getAutoIntakeTransSpeed(throttle).orElseGet(ChassisSpeeds::new)),
+                drive.rotationalSubsystem.pointTo(autoIntakeTargetLocation(), () -> RobotConstants.intakeForward)
+            )
+            .onlyWhile(() -> noLunite.getAsBoolean() && optIntakeTarget.isPresent())
+            .finallyDo(() -> intakeTargetLocked = false)
+            .withName("Auto Intake")
+        ;
     }
 
     private static record TargetMemoryConnection(TrackedLunite memory, TrackedLunite cameraTarget) {
@@ -147,9 +251,9 @@ public class LuniteVision extends VirtualSubsystem {
             confidence += confidence * MathUtil.clamp(1 - confUpdatingFilteringFactor.get(), 0, 1); 
         }
 
-        public void updatePosWithFiltering(TrackedLunite newNote) {
-            this.fieldPos = fieldPos.interpolate(newNote.fieldPos, posUpdatingFilteringFactor.get());
-            this.confidence = newNote.confidence;
+        public void updatePosWithFiltering(TrackedLunite newLunite) {
+            this.fieldPos = fieldPos.interpolate(newLunite.fieldPos, posUpdatingFilteringFactor.get());
+            this.confidence = newLunite.confidence;
         }
 
         public void decayConfidence(double rate) {
