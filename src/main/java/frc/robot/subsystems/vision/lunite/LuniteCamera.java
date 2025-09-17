@@ -13,7 +13,7 @@ import frc.robot.subsystems.vision.lunite.LuniteVisionConstants.LuniteCameraCons
 public class LuniteCamera {
     private final LuniteCameraConstants camMeta;
     private final LuniteCameraIO io;
-    private final LuniteCameraIOInputsAutoLogged inputs = new LuniteCameraIOInputsAutoLogged();
+    private final LuniteCameraIOInputs inputs = new LuniteCameraIOInputs();
 
     private final Alert notConnectedAlert;
 
