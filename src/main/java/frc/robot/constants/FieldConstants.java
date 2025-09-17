@@ -42,4 +42,7 @@ public final class FieldConstants {
         }
         apriltagLayout = a;
     }
+
+    public static final Distance luniteLength = Inches.of(7);
+    public static final Distance luniteWidth = Inches.of(4);
 }

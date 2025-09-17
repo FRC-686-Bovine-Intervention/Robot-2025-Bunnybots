@@ -12,7 +12,7 @@ public class LuniteVisionConstants {
         }
     }
 
-    public static final LuniteCameraConstants LuniteCamera = new LuniteCameraConstants(
+    public static final LuniteCameraConstants luniteCamera = new LuniteCameraConstants(
         "Lunite Cam",
         null //todo
     );
