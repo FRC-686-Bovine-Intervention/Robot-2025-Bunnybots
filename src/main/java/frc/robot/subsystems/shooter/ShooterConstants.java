@@ -21,7 +21,7 @@ public final class ShooterConstants {
         .sprocket(1)
     ;
         
-    public static final LinearRelation flywheel = LinearRelation.wheelDiameter(Inches.of(6));
+    public static final LinearRelation flywheel = LinearRelation.wheelDiameter(Inches.of(4));
 
     public static final DoubleSupplier shooterSpeedEnvCoef = Environment.switchVar(
         () -> 1,

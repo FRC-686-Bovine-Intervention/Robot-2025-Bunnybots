@@ -1,14 +1,9 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -16,13 +11,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.MutableMeasure;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularVelocity;
-import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -30,7 +19,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.button.InternalButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.AimingParameters;
-import frc.robot.Robot;
 import frc.util.Cooldown;
 import frc.util.FFConstants;
 import frc.util.LoggedInternalButton;
@@ -38,7 +26,6 @@ import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.tunables.LoggedTunable;
-import frc.util.loggerUtil.tunables.LoggedTunableNumber;
 import frc.util.misc.MathExtraUtil;
 
 public class Shooter extends SubsystemBase {
@@ -61,14 +48,14 @@ public class Shooter extends SubsystemBase {
     public final InternalButton autoShootEnabled = new LoggedInternalButton("Shooter/AutoShoot Enabled");
     public final Trigger readyToAutoShoot = readyToShoot.and(autoShootEnabled);
 
-    private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("PID",
+    private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("Shooter/PID",
         new PIDConstants(
             3.0,
             0.0,
             0.05
         )
     );
-    private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from("FF",
+    private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from("Shooter/FF",
         new FFConstants(
             0.0,
             0.0,
