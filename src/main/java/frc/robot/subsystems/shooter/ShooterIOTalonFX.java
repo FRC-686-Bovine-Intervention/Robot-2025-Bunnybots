@@ -6,7 +6,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.controls.StrictFollower;
@@ -16,18 +15,13 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.units.measure.AngularVelocity;
+import frc.robot.constants.HardwareDevices;
+import frc.robot.constants.RobotConstants;
+import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.faults.DeviceFaults;
 import frc.util.faults.DeviceFaults.FaultType;
-import frc.robot.constants.HardwareDevices;
-import frc.robot.constants.RobotConstants;
-import frc.util.FFConstants;
-import frc.util.NeutralMode;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor.EncodedMotorStatusSignalCache;
-import frc.util.loggerUtil.tunables.LoggedTunable;
 
 public class ShooterIOTalonFX implements ShooterIO {
     protected final TalonFX leftMotor = HardwareDevices.shooterLeftMotorID.talonFX();
@@ -114,7 +108,7 @@ public class ShooterIOTalonFX implements ShooterIO {
     }
 
     @Override
-    public void setVolts(double volts) {
+    public void setVoltage(double volts) {
         this.leftMotor.setControl(this.voltageRequest
             .withOutput(volts)
         );
@@ -122,7 +116,7 @@ public class ShooterIOTalonFX implements ShooterIO {
     }
 
     @Override
-    public void setAngularVelocity(double velocity, double feedforwardVolts) {
+    public void setVelocity(double velocity, double feedforwardVolts) {
         this.leftMotor.setControl(this.velocityRequest
             .withVelocity(velocity)
             .withFeedForward(feedforwardVolts)

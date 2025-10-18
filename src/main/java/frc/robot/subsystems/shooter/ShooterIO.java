@@ -4,12 +4,13 @@ import java.util.Optional;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Velocity;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor;
 import frc.util.loggerUtil.inputs.LoggedFaults;
-import frc.util.loggerUtil.inputs.LoggedMotor;
 
 public interface ShooterIO {
     @AutoLog
@@ -24,9 +25,9 @@ public interface ShooterIO {
     
     public default void updateInputs(ShooterIOInputs inputs) {}
 
-    public default void setVolts(double volts) {}
+    public default void setVoltage(double volts) {}
 
-    public default void setAngularVelocity(double velocity, double feedforwardVolts) {}
+    public default void setVelocity(double velocity, double feedforwardVolts) {}
 
     public default void stop(Optional<NeutralMode> neutralMode) {}
 

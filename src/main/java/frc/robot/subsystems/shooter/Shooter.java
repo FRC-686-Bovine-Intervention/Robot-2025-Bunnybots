@@ -1,10 +1,14 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RotationsPerSecond;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -12,23 +16,50 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.MutableMeasure;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.LinearVelocity;
+import edu.wpi.first.units.measure.Velocity;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.InternalButton;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.AimingParameters;
 import frc.robot.Robot;
+import frc.util.Cooldown;
 import frc.util.FFConstants;
+import frc.util.LoggedInternalButton;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
+import frc.util.misc.MathExtraUtil;
 
 public class Shooter extends SubsystemBase {
     private final ShooterIO io;
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
+
+    private static final LoggedTunable<LinearVelocity> preemptiveTargetSpeed = LoggedTunable.from("Shooter/Pre-emptive/Target Speed", MetersPerSecond::of, 17);
+    private static final LoggedTunable<LinearVelocity> passTargetSpeed = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 17);
+    private static final LoggedTunable<LinearVelocity> passTargetMinimum = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 4);
+    private static final LoggedTunable<LinearVelocity> passTargetMaximum = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 21);
+    private static final LoggedTunable<LinearVelocity> lowGoalTargetSpeed = LoggedTunable.from("Shooter/Low Goal/Target Speed", MetersPerSecond::of, 2);
+    private static final LoggedTunable<LinearVelocity> lowGoalMinimumSpeed = LoggedTunable.from("Shooter/Low Goal/Minimum Speed", MetersPerSecond::of, 1.5);
+    private static final LoggedTunable<LinearVelocity> lowGoalMaximumSpeed = LoggedTunable.from("Shooter/Low Goal/Maximum Speed", MetersPerSecond::of, 3);
+    private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Custom/Target Speed", MetersPerSecond::of, 15);
+    private static final LoggedTunable<LinearVelocity> customMinimumSpeed = LoggedTunable.from("Shooter/Custom/Minimum Speed", MetersPerSecond::of, 50);
+    private static final LoggedTunable<LinearVelocity> customMaximumSpeed = LoggedTunable.from("Shooter/Custom/Maximum Speed", MetersPerSecond::of, 50);
+    private static final LoggedTunable<LinearVelocity> customIncrement = LoggedTunable.from("Shooter/Custom/Increment", MetersPerSecond::of, 0.5);
+    
+    public final InternalButton readyToShoot = new LoggedInternalButton("Shooter/Ready to Shoot");
+    public final InternalButton autoShootEnabled = new LoggedInternalButton("Shooter/AutoShoot Enabled");
+    public final Trigger readyToAutoShoot = readyToShoot.and(autoShootEnabled);
 
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("PID",
         new PIDConstants(
@@ -60,11 +91,6 @@ public class Shooter extends SubsystemBase {
     private TrapezoidProfile motionProfile = new TrapezoidProfile(profileConstraints.get());
     private State setpointState = new State();
     
-    private static final LoggedTunableNumber mpsToRps = new LoggedTunableNumber("Shooter/MetersPerSecToRotsPerSec", 1);
-    private static final LoggedTunable<AngularVelocity> maxVelocity = LoggedTunable.from("Shooter/MaxVelocity", RotationsPerSecond::of, 100);
-    private static final LoggedTunable<AngularVelocity> idleVelocity = LoggedTunable.from("Shooter/IdleVelocity", RotationsPerSecond::of, 0);
-    private static final LoggedTunable<Angle> shooterAngle = LoggedTunable.from("Shooter/ShooterAngle", Degrees::of, 45);
-
     private final Alert leftMotorDisconnectedAlert = new Alert("Shooter/Alerts", "Left Motor Disconnected", AlertType.kError);
     private final Alert rightMotorDisconnectedAlert = new Alert("Shooter/Alerts", "Right Motor Disconnected", AlertType.kError);
     private final Alert leftMotorDisconnectedGlobalAlert = new Alert("Shooter Left Motor Disconnected!", AlertType.kError);
@@ -81,6 +107,7 @@ public class Shooter extends SubsystemBase {
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Update Inputs");
         Logger.processInputs("Inputs/Shooter", this.inputs);
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Process Inputs");
+        Logger.recordOutput("Shooter/Average MPS", getAverageSurfaceSpeed());
 
         if (pidConsts.hasChanged(this.hashCode())) {
             io.configPID(pidConsts.get());
@@ -101,49 +128,176 @@ public class Shooter extends SubsystemBase {
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter");
     }
 
+    public double getAverageSurfaceSpeed() {
+        return ShooterConstants.flywheel.angularVelocityToLinearVelocity(MathExtraUtil.average(inputs.leftMotor.encoder.getVelocityRadsPerSec(), inputs.rightMotor.encoder.getVelocityRadsPerSec()));
+    }
+
+    private void applySurfaceSpeed(double surfaceSpeed) {
+        var goalSpeed = surfaceSpeed * ShooterConstants.shooterSpeedEnvCoef.getAsDouble();
+        var motorSpeed = ShooterConstants.flywheel.linearVelocityToAngularVelocity(goalSpeed) / ShooterConstants.motorToMechRatio.reductionUnsigned();
+        Logger.recordOutput("Shooter/Goal Speed", motorSpeed);
+        io.setVelocity(motorSpeed, ff.calculate(surfaceSpeed));
+    }
+
+    private void setReadyToShoot(double minimum, double maximum) {
+        readyToShoot.setPressed(MathExtraUtil.isWithin(getAverageSurfaceSpeed(), minimum, maximum));
+    }
+    private Command genCommand(
+        String name,
+        DoubleSupplier targetSpeed,
+        DoubleSupplier minimumSpeed,
+        DoubleSupplier maximumSpeed,
+        boolean enableAutoShoot
+    ) {
+        var subsystem = this;
+        return new Command() {
+            {
+                setName(name);
+                addRequirements(subsystem);
+            }
+
+            @Override
+            public void initialize() {
+                autoShootEnabled.setPressed(enableAutoShoot);
+            }
+
+            @Override
+            public void execute() {
+                applySurfaceSpeed(targetSpeed.getAsDouble());
+                setReadyToShoot(minimumSpeed.getAsDouble(), maximumSpeed.getAsDouble());
+            }
+
+            @Override
+            public void end(boolean interrupted) {
+                readyToShoot.setPressed(false);
+                autoShootEnabled.setPressed(false);
+            }
+        };
+    }
+
+    private Command genCommand(
+        String name,
+        LoggedTunable<LinearVelocity> targetSpeed,
+        LoggedTunable<LinearVelocity> minimumSpeed,
+        LoggedTunable<LinearVelocity> maximumSpeed,
+        boolean enableAutoShoot
+    ) {
+        var subsystem = this;
+        return new Command() {
+            {
+                setName(name);
+                addRequirements(subsystem);
+            }
+
+            @Override
+            public void initialize() {
+                autoShootEnabled.setPressed(enableAutoShoot);
+            }
+
+            @Override
+            public void execute() {
+                applySurfaceSpeed(targetSpeed.get().in(MetersPerSecond));
+                setReadyToShoot(minimumSpeed.get().in(MetersPerSecond), maximumSpeed.get().in(MetersPerSecond));
+            }
+
+            @Override
+            public void end(boolean interrupted) {
+                readyToShoot.setPressed(false);
+                autoShootEnabled.setPressed(false);
+            }
+        };
+    }
+
+    private static final double VelocityMax = MetersPerSecond.of(Double.POSITIVE_INFINITY).in(MetersPerSecond);
     public Command idle() {
-        final var shooter = this;
+        var subsystem = this;
         return new Command() {
             {
-                this.addRequirements(shooter);
-                this.setName("Idle");
+                setName("Idle");
+                addRequirements(subsystem);
             }
 
             @Override
             public void execute() {
-                shooter.io.stop(NeutralMode.COAST);
+                io.stop(NeutralMode.COAST);
             }
         };
     }
 
-    public Command shoot(DoubleSupplier distanceToTarget, DoubleSupplier heightDifference){
-        final var shooter = this;
-        return new Command() {
-            {
-                this.addRequirements(shooter);
-                this.setName("Shoot");
-            }
-
-            @Override
-            public void execute() {
-                var targetVelocity = findAngularVelocity(distanceToTarget.getAsDouble(), heightDifference.getAsDouble());
-                var setpoint = motionProfile.calculate(Robot.defaultPeriodSecs, setpointState, new State(targetVelocity, 0.0));
-                var ffOutVolts = ff.calculateWithVelocities(setpointState.velocity, setpoint.velocity);
-                setpointState = setpoint;
-
-                shooter.io.setAngularVelocity(targetVelocity, ffOutVolts);
-            }
-        };
-    }
-
-    public static double findAngularVelocity(double d, double h) {
-        double theta = shooterAngle.get().in(Radians);
-        double g = 9.81;
-        double cosTheta = Math.cos(theta);
-        double targetVelocity = Math.sqrt(
-            (g * d * d) /
-            (2 * cosTheta * cosTheta * (d * Math.tan(theta) - h))
+    public Command aimWithAutoShoot() {
+        return genCommand(
+            "Aim-AutoShoot", 
+            AimingParameters::targetShooterSpeed,
+            AimingParameters::minimumShooterSpeed, 
+            () -> VelocityMax,
+            true
         );
-        return mpsToRps.getAsDouble() * targetVelocity;
+    }
+    
+    public Command aimWithoutAutoShoot() {
+        return genCommand(
+            "Aim",
+            AimingParameters::targetShooterSpeed,
+            AimingParameters::minimumShooterSpeed,
+            () -> VelocityMax,
+            false
+        );
+    }
+    public Command preemptive() {
+        return genCommand(
+            "Pre-emptive",
+            () -> preemptiveTargetSpeed.get().in(MetersPerSecond),
+            () -> 0,
+            () -> VelocityMax,
+            false
+        );
+    }
+    public Command pass() {
+        return genCommand(
+            "Pass",
+            passTargetSpeed,
+            passTargetMinimum,
+            passTargetMaximum,
+            false
+        );
+    }
+    public Command custom() {
+        return genCommand(
+            "Custom",
+            customTargetSpeed,
+            customMinimumSpeed,
+            customMaximumSpeed,
+            false
+        );
+    }
+    public Command customIncrement(BooleanSupplier increase, BooleanSupplier decrease) {
+        DoubleSupplier speed = new DoubleSupplier() {
+            private double speed = customTargetSpeed.get().in(MetersPerSecond);
+            private final Cooldown cooldown = new Cooldown();
+            @Override
+            public double getAsDouble() {
+                Logger.recordOutput("Custom Shoot/Shooter Speed", speed);
+                if(!cooldown.hasExpired()) {
+                    return speed;
+                }
+                if(increase.getAsBoolean()) {
+                    cooldown.reset(0.25);
+                    speed += customIncrement.get().in(MetersPerSecond);
+                }
+                if(decrease.getAsBoolean()) {
+                    cooldown.reset(0.25);
+                    speed -= customIncrement.get().in(MetersPerSecond);
+                }
+
+                return speed;
+            }
+        };
+        return genCommand(
+            "Custom Increment",
+            speed,
+            speed,
+            speed,
+            false
+        );
     }
 }
