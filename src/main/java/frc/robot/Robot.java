@@ -28,185 +28,185 @@ import frc.util.VirtualSubsystem;
 import frc.util.robotStructure.Mechanism3d;
 
 public class Robot extends LoggedRobot {
-    private final RobotContainer robotContainer;
+	private final RobotContainer robotContainer;
 
-    public Robot() {
-        // Leds.getInstance();
-        System.out.println("[Init Robot] Recording AdvantageKit Metadata");
-        Logger.recordMetadata("Robot", RobotType.getRobot().name());
-        Logger.recordMetadata("Mode", RobotType.getMode().name());
-        Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
-        Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
-        Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
-        Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
-        Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
-        Logger.recordMetadata("GitDirty", 
-            switch(BuildConstants.DIRTY) {
-                case 0 -> "All changes committed";
-                case 1 -> "Uncomitted changes";
-                default -> "Unknown";
-            }
-        );
+	public Robot() {
+		// Leds.getInstance();
+		System.out.println("[Init Robot] Recording AdvantageKit Metadata");
+		Logger.recordMetadata("Robot", RobotType.getRobot().name());
+		Logger.recordMetadata("Mode", RobotType.getMode().name());
+		Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+		Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+		Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+		Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+		Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+		Logger.recordMetadata("GitDirty",
+			switch(BuildConstants.DIRTY) {
+				case 0 -> "All changes committed";
+				case 1 -> "Uncomitted changes";
+				default -> "Unknown";
+			}
+		);
 
-        // Set up data receivers & replay source
-        System.out.println("[Init Robot] Configuring AdvantageKit for " + RobotType.getMode().name() + " " + RobotType.getRobot().name());
-        switch (RobotType.getMode()) {
-            // Running on a real robot, log to a USB stick
-            case REAL:
-                Logger.addDataReceiver(new WPILOGWriter("/media/sda1/"));
-                Logger.addDataReceiver(new NT4Publisher());
-            break;
+		// Set up data receivers & replay source
+		System.out.println("[Init Robot] Configuring AdvantageKit for " + RobotType.getMode().name() + " " + RobotType.getRobot().name());
+		switch (RobotType.getMode()) {
+			// Running on a real robot, log to a USB stick
+			case REAL:
+				Logger.addDataReceiver(new WPILOGWriter("/media/sda1/"));
+				Logger.addDataReceiver(new NT4Publisher());
+			break;
 
-            // Running a physics simulator, log to local folder
-            case SIM:
-                Logger.addDataReceiver(new WPILOGWriter("logs/sim"));
-                Logger.addDataReceiver(new NT4Publisher());
-            break;
+			// Running a physics simulator, log to local folder
+			case SIM:
+				Logger.addDataReceiver(new WPILOGWriter("logs/sim"));
+				Logger.addDataReceiver(new NT4Publisher());
+			break;
 
-            // Replaying a log, set up replay source
-            case REPLAY:
-                setUseTiming(false); // Run as fast as possible
-                String logPath = LogFileUtil.findReplayLog();
-                Logger.setReplaySource(new WPILOGReader(logPath));
-                Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
-            break;
-        }
+			// Replaying a log, set up replay source
+			case REPLAY:
+				setUseTiming(false); // Run as fast as possible
+				String logPath = LogFileUtil.findReplayLog();
+				Logger.setReplaySource(new WPILOGReader(logPath));
+				Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim")));
+			break;
+		}
 
-        System.out.println("[Init Robot] Starting AdvantageKit");
-        Logger.start();
+		System.out.println("[Init Robot] Starting AdvantageKit");
+		Logger.start();
 
-        System.out.println("[Init Robot] Starting Command Logger");
-        Map<String, Integer> commandCounts = new HashMap<>();
-        BiConsumer<Command, Boolean> logCommandFunction =
-        (Command command, Boolean active) -> {
-            String name = command.getName();
-            int count = commandCounts.getOrDefault(name, 0) + (active ? 1 : -1);
-            commandCounts.put(name, count);
-            // Logger.recordOutput(
-            //         "Commands/Unique/" + name + "_" + Integer.toHexString(command.hashCode()), active.booleanValue());
-            // if(command.getRequirements().size() == 0) {
-            //   Logger.recordOutput("Commands/No Requirements/" + name, count > 0);
-            // }
-            for(Subsystem subsystem : command.getRequirements()) {
-                Logger.recordOutput("Commands/" + subsystem.getName(), (count > 0 ? name : "none"));
-                // Logger.recordOutput("Commands/" + subsystem.getName() + "/" + name, count > 0);
-            }
-        };
+		System.out.println("[Init Robot] Starting Command Logger");
+		Map<String, Integer> commandCounts = new HashMap<>();
+		BiConsumer<Command, Boolean> logCommandFunction =
+		(Command command, Boolean active) -> {
+			String name = command.getName();
+			int count = commandCounts.getOrDefault(name, 0) + (active ? 1 : -1);
+			commandCounts.put(name, count);
+			// Logger.recordOutput(
+			//         "Commands/Unique/" + name + "_" + Integer.toHexString(command.hashCode()), active.booleanValue());
+			// if(command.getRequirements().size() == 0) {
+			//   Logger.recordOutput("Commands/No Requirements/" + name, count > 0);
+			// }
+			for(Subsystem subsystem : command.getRequirements()) {
+				Logger.recordOutput("Commands/" + subsystem.getName(), (count > 0 ? name : "none"));
+				// Logger.recordOutput("Commands/" + subsystem.getName() + "/" + name, count > 0);
+			}
+		};
 
-        CommandScheduler.getInstance()
-            .onCommandInitialize(
-                (Command command) -> {
-                    logCommandFunction.accept(command, true);
-                }
-            )
-        ;
-        CommandScheduler.getInstance()
-            .onCommandFinish(
-                (Command command) -> {
-                    logCommandFunction.accept(command, false);
-                }
-            )
-        ;
-        CommandScheduler.getInstance()
-            .onCommandInterrupt(
-                (Command command) -> {
-                    logCommandFunction.accept(command, false);
-                }
-            )
-        ;
+		CommandScheduler.getInstance()
+			.onCommandInitialize(
+				(Command command) -> {
+					logCommandFunction.accept(command, true);
+				}
+			)
+		;
+		CommandScheduler.getInstance()
+			.onCommandFinish(
+				(Command command) -> {
+					logCommandFunction.accept(command, false);
+				}
+			)
+		;
+		CommandScheduler.getInstance()
+			.onCommandInterrupt(
+				(Command command) -> {
+					logCommandFunction.accept(command, false);
+				}
+			)
+		;
 
-        System.out.println("[Init Robot] Instantiating RobotContainer");
-        this.robotContainer = new RobotContainer();
-        System.out.println("[Init Robot] Starting Elastic Layout Webserver");
-        WebServer.start(5800, Filesystem.getDeployDirectory().getPath() + "/elastic");
+		System.out.println("[Init Robot] Instantiating RobotContainer");
+		this.robotContainer = new RobotContainer();
+		System.out.println("[Init Robot] Starting Elastic Layout Webserver");
+		WebServer.start(5800, Filesystem.getDeployDirectory().getPath() + "/elastic");
 
-        SmartDashboard.putData("Command Scheduler", CommandScheduler.getInstance());
-        Perspective.getCurrent();
+		SmartDashboard.putData("Command Scheduler", CommandScheduler.getInstance());
+		Perspective.getCurrent();
 
-        final var activeButtonLoop = new EventLoop();
-        activeButtonLoop.bind(() -> {
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem");
+		final var activeButtonLoop = new EventLoop();
+		activeButtonLoop.bind(() -> {
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem");
 
-            GameState.getInstance().periodic();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/GameState Periodic");
+			GameState.getInstance().periodic();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/GameState Periodic");
 
-            VirtualSubsystem.periodicAll();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/VirtualSubsystem Periodic");
+			VirtualSubsystem.periodicAll();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/VirtualSubsystem Periodic");
 
-            // this.robotContainer.apriltagVision.periodic();
-            
-            // this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
-            RobotState.getInstance().log();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
+			// this.robotContainer.apriltagVision.periodic();
 
-            Mechanism3d.logAscopeComponents();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
+			// this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
+			RobotState.getInstance().log();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
 
-            Mechanism3d.logAscopeAxes();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
-            
-            // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Coral", this.robotContainer.intake.hasCoral());
-            // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Algae", this.robotContainer.intake.hasAlgae());
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Log Intake Gamepieces");
+			Mechanism3d.logAscopeComponents();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
 
-            this.robotContainer.automationsLoop.poll();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Automations");
+			Mechanism3d.logAscopeAxes();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
 
-            CommandScheduler.getInstance().getDefaultButtonLoop().poll();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Triggers");
-        });
-        CommandScheduler.getInstance().setActiveButtonLoop(activeButtonLoop);
-    }
+			// this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Coral", this.robotContainer.intake.hasCoral());
+			// this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Algae", this.robotContainer.intake.hasAlgae());
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Log Intake Gamepieces");
 
-    @Override
-    public void robotPeriodic() {
-        LoggedTracer.reset();
+			this.robotContainer.automationsLoop.poll();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Automations");
 
-        CommandScheduler.getInstance().run();
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Commands");
-        LoggedTracer.logEpoch("CommandScheduler Periodic");
+			CommandScheduler.getInstance().getDefaultButtonLoop().poll();
+			LoggedTracer.logEpoch("CommandScheduler Periodic/Triggers");
+		});
+		CommandScheduler.getInstance().setActiveButtonLoop(activeButtonLoop);
+	}
 
-        VirtualSubsystem.postCommandPeriodicAll();
-        LoggedTracer.logEpoch("VirtualSubsystem PostCommandPeriodic");
-    }
+	@Override
+	public void robotPeriodic() {
+		LoggedTracer.reset();
 
-    @Override
-    public void disabledInit() {}
+		CommandScheduler.getInstance().run();
+		LoggedTracer.logEpoch("CommandScheduler Periodic/Commands");
+		LoggedTracer.logEpoch("CommandScheduler Periodic");
 
-    @Override
-    public void disabledPeriodic() {}
+		VirtualSubsystem.postCommandPeriodicAll();
+		LoggedTracer.logEpoch("VirtualSubsystem PostCommandPeriodic");
+	}
 
-    @Override
-    public void disabledExit() {}
+	@Override
+	public void disabledInit() {}
 
-    @Override
-    public void autonomousInit() {
-        // this.robotContainer.autoManager.startAuto();
-    }
+	@Override
+	public void disabledPeriodic() {}
 
-    @Override
-    public void autonomousPeriodic() {}
+	@Override
+	public void disabledExit() {}
 
-    @Override
-    public void autonomousExit() {
-        // this.robotContainer.autoManager.endAuto();
-    }
+	@Override
+	public void autonomousInit() {
+		// this.robotContainer.autoManager.startAuto();
+	}
 
-    @Override
-    public void teleopInit() {}
+	@Override
+	public void autonomousPeriodic() {}
 
-    @Override
-    public void teleopPeriodic() {}
+	@Override
+	public void autonomousExit() {
+		// this.robotContainer.autoManager.endAuto();
+	}
 
-    @Override
-    public void teleopExit() {}
+	@Override
+	public void teleopInit() {}
 
-    @Override
-    public void testInit() {}
+	@Override
+	public void teleopPeriodic() {}
 
-    @Override
-    public void testPeriodic() {}
+	@Override
+	public void teleopExit() {}
 
-    @Override
-    public void testExit() {}
+	@Override
+	public void testInit() {}
+
+	@Override
+	public void testPeriodic() {}
+
+	@Override
+	public void testExit() {}
 }

@@ -12,34 +12,34 @@ import edu.wpi.first.units.measure.Distance;
 import frc.util.flipping.AllianceFlipped;
 
 public final class FieldConstants {
-    public static final Distance fieldLength = Inches.of(57*12 + 6 + 7.0/8.0);
-    public static final Distance fieldWidth =  Inches.of(26*12 + 5);
+	public static final Distance fieldLength = Inches.of(57*12 + 6 + 7.0/8.0);
+	public static final Distance fieldWidth =  Inches.of(26*12 + 5);
 
-    public static final AllianceFlipped<Predicate<Translation2d>> onAllianceSide = new AllianceFlipped<>(
-        new Predicate<>() {
-            private final double halfline = fieldLength.div(2).in(Meters);
-            @Override
-            public boolean test(Translation2d t) {
-                return t.getX() <= this.halfline;
-            }
-        },
-        new Predicate<>() {
-            private final double halfline = fieldLength.div(2).in(Meters);
-            @Override
-            public boolean test(Translation2d t) {
-                return t.getX() >= this.halfline;
-            }
-        }
-    );
+	public static final AllianceFlipped<Predicate<Translation2d>> onAllianceSide = new AllianceFlipped<>(
+		new Predicate<>() {
+			private final double halfline = fieldLength.div(2).in(Meters);
+			@Override
+			public boolean test(Translation2d t) {
+				return t.getX() <= this.halfline;
+			}
+		},
+		new Predicate<>() {
+			private final double halfline = fieldLength.div(2).in(Meters);
+			@Override
+			public boolean test(Translation2d t) {
+				return t.getX() >= this.halfline;
+			}
+		}
+	);
 
-    public static final AprilTagFieldLayout apriltagLayout;
-    static {
-        AprilTagFieldLayout a = null;
-        try {
-            a = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-        apriltagLayout = a;
-    }
+	public static final AprilTagFieldLayout apriltagLayout;
+	static {
+		AprilTagFieldLayout a = null;
+		try {
+			a = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		apriltagLayout = a;
+	}
 }

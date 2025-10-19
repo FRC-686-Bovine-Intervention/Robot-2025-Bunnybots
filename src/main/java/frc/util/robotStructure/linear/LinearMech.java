@@ -12,16 +12,16 @@ import edu.wpi.first.units.Measure;
 import frc.util.robotStructure.Mechanism3d;
 
 public class LinearMech extends Mechanism3d<DistanceUnit> {
-    public LinearMech(Transform3d base, Vector<N3> axis) {
-        super(base, axis);
-    }
+	public LinearMech(Transform3d base, Vector<N3> axis) {
+		super(base, axis);
+	}
 
-    @Override
-    public void set(Measure<DistanceUnit> distance) {
-        this.setMeters(distance.in(Meters));
-    }
-    
-    public void setMeters(double distanceMeters) {
-        this.transform = new Transform3d(new Translation3d(this.axis.times(distanceMeters)), Rotation3d.kZero);
-    }
+	@Override
+	public void set(Measure<DistanceUnit> distance) {
+		this.setMeters(distance.in(Meters));
+	}
+
+	public void setMeters(double distanceMeters) {
+		this.transform = new Transform3d(new Translation3d(this.axis.times(distanceMeters)), Rotation3d.kZero);
+	}
 }

@@ -17,17 +17,17 @@ import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public interface GyroIO {
-  @AutoLog
-  public static class GyroIOInputs {
-    public boolean connected = false;
+@AutoLog
+public static class GyroIOInputs {
+	public boolean connected = false;
 
-    public Rotation3d[] odometryGyroRotation = new Rotation3d[0];
+	public Rotation3d[] odometryGyroRotation = new Rotation3d[0];
 
-    public AngularVelocity yawVelocity = RadiansPerSecond.zero();
-    public AngularVelocity pitchVelocity = RadiansPerSecond.zero();
-    public AngularVelocity rollVelocity = RadiansPerSecond.zero();
-  }
+	public AngularVelocity yawVelocity = RadiansPerSecond.zero();
+	public AngularVelocity pitchVelocity = RadiansPerSecond.zero();
+	public AngularVelocity rollVelocity = RadiansPerSecond.zero();
+}
 
-  public default void updateInputs(GyroIOInputs inputs) {}
-  public default void resetYaw(Measure<AngleUnit> yaw) {}
+public default void updateInputs(GyroIOInputs inputs) {}
+public default void resetYaw(Measure<AngleUnit> yaw) {}
 }

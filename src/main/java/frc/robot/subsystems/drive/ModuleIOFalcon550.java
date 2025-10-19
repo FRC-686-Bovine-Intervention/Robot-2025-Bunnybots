@@ -42,176 +42,176 @@ import frc.util.faults.DeviceFaults.FaultType;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor.EncodedMotorStatusSignalCache;
 
 public class ModuleIOFalcon550 implements ModuleIO {
-    protected final TalonFX driveMotor;
-    protected final SparkMax azimuthMotor;
-    protected final AbsoluteEncoder azimuthAbsoluteEncoder;
+	protected final TalonFX driveMotor;
+	protected final SparkMax azimuthMotor;
+	protected final AbsoluteEncoder azimuthAbsoluteEncoder;
 
-    private final EncodedMotorStatusSignalCache driveMotorStatusSignalCache;
+	private final EncodedMotorStatusSignalCache driveMotorStatusSignalCache;
 
-    private final DoubleBuffer drivePositionBuffer;
-    private final DoubleBuffer azimuthPositionBuffer;
+	private final DoubleBuffer drivePositionBuffer;
+	private final DoubleBuffer azimuthPositionBuffer;
 
-    private final VoltageOut driveVolts = new VoltageOut(0);
-    private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
+	private final VoltageOut driveVolts = new VoltageOut(0);
+	private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
 
-    protected final PIDController azimuthPID = new PIDController(0, 0, 0);
+	protected final PIDController azimuthPID = new PIDController(0, 0, 0);
 
-    public ModuleIOFalcon550(ModuleConstants config) {
-        this.driveMotor = config.driveMotorID.talonFX();
-        this.azimuthMotor = config.azimuthMotorID.sparkMax(MotorType.kBrushless);
-        this.azimuthAbsoluteEncoder = this.azimuthMotor.getAbsoluteEncoder();
+	public ModuleIOFalcon550(ModuleConstants config) {
+		this.driveMotor = config.driveMotorID.talonFX();
+		this.azimuthMotor = config.azimuthMotorID.sparkMax(MotorType.kBrushless);
+		this.azimuthAbsoluteEncoder = this.azimuthMotor.getAbsoluteEncoder();
 
-        var driveConfig = new TalonFXConfiguration();
-        driveConfig.MotorOutput
-            .withInverted(config.driveInverted)
-            .withNeutralMode(NeutralModeValue.Coast)
-        ;
-        driveConfig.ClosedLoopRamps
-            .withVoltageClosedLoopRampPeriod(Seconds.of(0.075))
-        ;
-        // driveConfig.OpenLoopRamps
-        //     .withVoltageOpenLoopRampPeriod(Seconds.of(0.1875))
-        // ;
-        driveConfig.CurrentLimits
-            // .withSupplyCurrentLimit(Amps.of(70))
-            // .withSupplyCurrentLowerLimit(Amps.of(70))
-            // .withSupplyCurrentLowerTime(Seconds.of(0))
-            .withSupplyCurrentLimitEnable(true)
-            // .withStatorCurrentLimit(Amps.of(80))
-            // .withStatorCurrentLimitEnable(true)
-        ;
-        
-        this.driveMotor.getConfigurator().apply(driveConfig);
+		var driveConfig = new TalonFXConfiguration();
+		driveConfig.MotorOutput
+			.withInverted(config.driveInverted)
+			.withNeutralMode(NeutralModeValue.Coast)
+		;
+		driveConfig.ClosedLoopRamps
+			.withVoltageClosedLoopRampPeriod(Seconds.of(0.075))
+		;
+		// driveConfig.OpenLoopRamps
+		//     .withVoltageOpenLoopRampPeriod(Seconds.of(0.1875))
+		// ;
+		driveConfig.CurrentLimits
+			// .withSupplyCurrentLimit(Amps.of(70))
+			// .withSupplyCurrentLowerLimit(Amps.of(70))
+			// .withSupplyCurrentLowerTime(Seconds.of(0))
+			.withSupplyCurrentLimitEnable(true)
+			// .withStatorCurrentLimit(Amps.of(80))
+			// .withStatorCurrentLimitEnable(true)
+		;
 
-        var azimuthConfig = new SparkMaxConfig();
-        azimuthConfig
-            .idleMode(IdleMode.kCoast)
-            .inverted(false)
-            .smartCurrentLimit(40)
-        ;
-        azimuthConfig.absoluteEncoder
-            .zeroOffset(config.encoderZeroOffset.in(Rotations))
-            .inverted(true)
-        ;
-        azimuthConfig.signals.absoluteEncoderPositionPeriodMs((int) DriveConstants.odometryLoopFrequency.asPeriod().in(Milliseconds));
+		this.driveMotor.getConfigurator().apply(driveConfig);
 
-        this.azimuthMotor.configure(azimuthConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        this.azimuthPID.enableContinuousInput(
-            0,
-            1
-        );
+		var azimuthConfig = new SparkMaxConfig();
+		azimuthConfig
+			.idleMode(IdleMode.kCoast)
+			.inverted(false)
+			.smartCurrentLimit(40)
+		;
+		azimuthConfig.absoluteEncoder
+			.zeroOffset(config.encoderZeroOffset.in(Rotations))
+			.inverted(true)
+		;
+		azimuthConfig.signals.absoluteEncoderPositionPeriodMs((int) DriveConstants.odometryLoopFrequency.asPeriod().in(Milliseconds));
 
-        this.driveMotorStatusSignalCache = EncodedMotorStatusSignalCache.from(this.driveMotor);
+		this.azimuthMotor.configure(azimuthConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+		this.azimuthPID.enableContinuousInput(
+			0,
+			1
+		);
 
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.driveMotorStatusSignalCache.encoder().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.driveMotorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.driveMotor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.driveMotor));
-        BaseStatusSignal.setUpdateFrequencyForAll(DriveConstants.odometryLoopFrequency, this.driveMotorStatusSignalCache.encoder().position());
-        this.driveMotor.optimizeBusUtilization();
+		this.driveMotorStatusSignalCache = EncodedMotorStatusSignalCache.from(this.driveMotor);
 
-        this.drivePositionBuffer = OdometryThread.getInstance().registerPhoenixDoubleSignal(this.driveMotorStatusSignalCache.encoder().position(), Units::rotationsToRadians);
-        this.azimuthPositionBuffer = OdometryThread.getInstance().registerGenericDoubleSignal(this.azimuthAbsoluteEncoder::getPosition, Units::rotationsToRadians);
-    }
+		BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.driveMotorStatusSignalCache.encoder().getStatusSignals());
+		BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.driveMotorStatusSignalCache.motor().getStatusSignals());
+		BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.driveMotor));
+		BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.driveMotor));
+		BaseStatusSignal.setUpdateFrequencyForAll(DriveConstants.odometryLoopFrequency, this.driveMotorStatusSignalCache.encoder().position());
+		this.driveMotor.optimizeBusUtilization();
 
-    @Override
-    public void updateInputs(ModuleIOInputs inputs) {
-        BaseStatusSignal.refreshAll(
-            this.driveMotorStatusSignalCache.encoder().position(),
-            this.driveMotorStatusSignalCache.encoder().velocity(),
-            this.driveMotorStatusSignalCache.motor().appliedVoltage(),
-            this.driveMotorStatusSignalCache.motor().statorCurrent(),
-            this.driveMotorStatusSignalCache.motor().deviceTemperature()
-        );
-        inputs.driveMotorConnected = BaseStatusSignal.isAllGood(
-            this.driveMotorStatusSignalCache.encoder().position(),
-            this.driveMotorStatusSignalCache.encoder().velocity(),
-            this.driveMotorStatusSignalCache.motor().appliedVoltage(),
-            this.driveMotorStatusSignalCache.motor().statorCurrent(),
-            this.driveMotorStatusSignalCache.motor().deviceTemperature()
-        );
-        inputs.azimuthMotorConnected = true;
-        inputs.azimuthEncoderConnected = true;
-        inputs.driveMotor.updateFrom(this.driveMotorStatusSignalCache);
-        inputs.azimuthMotor.updateFrom(this.azimuthMotor);
-        inputs.azimuthEncoder.updateFrom(this.azimuthAbsoluteEncoder);
+		this.drivePositionBuffer = OdometryThread.getInstance().registerPhoenixDoubleSignal(this.driveMotorStatusSignalCache.encoder().position(), Units::rotationsToRadians);
+		this.azimuthPositionBuffer = OdometryThread.getInstance().registerGenericDoubleSignal(this.azimuthAbsoluteEncoder::getPosition, Units::rotationsToRadians);
+	}
 
-        inputs.odometryDriveRads = this.drivePositionBuffer.popAll();
-        inputs.odometryAzimuthRads = this.azimuthPositionBuffer.popAll();
-        // inputs.driveMotorFaults.updateFrom(this.driveMotor);
-        // inputs.azimuthMotorFaults.updateFrom(this.azimuthMotor);
-    }
+	@Override
+	public void updateInputs(ModuleIOInputs inputs) {
+		BaseStatusSignal.refreshAll(
+			this.driveMotorStatusSignalCache.encoder().position(),
+			this.driveMotorStatusSignalCache.encoder().velocity(),
+			this.driveMotorStatusSignalCache.motor().appliedVoltage(),
+			this.driveMotorStatusSignalCache.motor().statorCurrent(),
+			this.driveMotorStatusSignalCache.motor().deviceTemperature()
+		);
+		inputs.driveMotorConnected = BaseStatusSignal.isAllGood(
+			this.driveMotorStatusSignalCache.encoder().position(),
+			this.driveMotorStatusSignalCache.encoder().velocity(),
+			this.driveMotorStatusSignalCache.motor().appliedVoltage(),
+			this.driveMotorStatusSignalCache.motor().statorCurrent(),
+			this.driveMotorStatusSignalCache.motor().deviceTemperature()
+		);
+		inputs.azimuthMotorConnected = true;
+		inputs.azimuthEncoderConnected = true;
+		inputs.driveMotor.updateFrom(this.driveMotorStatusSignalCache);
+		inputs.azimuthMotor.updateFrom(this.azimuthMotor);
+		inputs.azimuthEncoder.updateFrom(this.azimuthAbsoluteEncoder);
 
-    @Override
-    public void setDriveVoltage(Measure<VoltageUnit> volts) {
-        this.driveMotor.setControl(this.driveVolts.withOutput(volts.in(Volts)));
-    }
-    @Override
-    public void setDriveVelocity(Measure<AngularVelocityUnit> velocity, Measure<AngularAccelerationUnit> acceleration, Measure<VoltageUnit> feedforward, boolean overrideWithBrakeMode) {
-        this.driveMotor.setControl(this.driveVelocity
-            .withVelocity(velocity.in(RotationsPerSecond))
-            .withAcceleration(acceleration.in(RotationsPerSecondPerSecond))
-            .withFeedForward(feedforward.in(Volts))
-            .withOverrideBrakeDurNeutral(overrideWithBrakeMode)
-        );
-    }
+		inputs.odometryDriveRads = this.drivePositionBuffer.popAll();
+		inputs.odometryAzimuthRads = this.azimuthPositionBuffer.popAll();
+		// inputs.driveMotorFaults.updateFrom(this.driveMotor);
+		// inputs.azimuthMotorFaults.updateFrom(this.azimuthMotor);
+	}
 
-    protected void setAzimuthVolts(double volts) {
-        this.azimuthMotor.setVoltage(volts);
-    }
-    @Override
-    public void setAzimuthVoltage(Measure<VoltageUnit> volts) {
-        this.setAzimuthVolts(volts.in(Volts));
-    }
-    @Override
-    public void setAzimuthAngle(Measure<AngleUnit> angle) {
-        this.setAzimuthVolts(
-            this.azimuthPID.calculate(
-                this.azimuthAbsoluteEncoder.getPosition(),
-                angle.in(Rotations)
-            )
-        );
-    }
-    
-    @Override
-    public void stopDrive(Optional<NeutralMode> neutralMode) {
-        this.driveMotor.setControl(neutralMode.map(NeutralMode::getPhoenix6ControlRequest).orElseGet(NeutralOut::new));
-    }
-    @Override
-    public void stopAzimuth(Optional<NeutralMode> neutralMode) {
-        //TODO Reimplement module turn brake mode
-        // turnMotor.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
-        this.azimuthMotor.stopMotor();
-    }
+	@Override
+	public void setDriveVoltage(Measure<VoltageUnit> volts) {
+		this.driveMotor.setControl(this.driveVolts.withOutput(volts.in(Volts)));
+	}
+	@Override
+	public void setDriveVelocity(Measure<AngularVelocityUnit> velocity, Measure<AngularAccelerationUnit> acceleration, Measure<VoltageUnit> feedforward, boolean overrideWithBrakeMode) {
+		this.driveMotor.setControl(this.driveVelocity
+			.withVelocity(velocity.in(RotationsPerSecond))
+			.withAcceleration(acceleration.in(RotationsPerSecondPerSecond))
+			.withFeedForward(feedforward.in(Volts))
+			.withOverrideBrakeDurNeutral(overrideWithBrakeMode)
+		);
+	}
 
-    @Override
-    public void configDrivePID(PIDConstants pidConstants) {
-        var config = new Slot0Configs();
-        this.driveMotor.getConfigurator().refresh(config);
-        pidConstants.update(config);
-        this.driveMotor.getConfigurator().apply(config);
-    }
-    @Override
-    public void configAzimuthPID(PIDConstants pidConstants) {
-        pidConstants.update(this.azimuthPID);
-    }
+	protected void setAzimuthVolts(double volts) {
+		this.azimuthMotor.setVoltage(volts);
+	}
+	@Override
+	public void setAzimuthVoltage(Measure<VoltageUnit> volts) {
+		this.setAzimuthVolts(volts.in(Volts));
+	}
+	@Override
+	public void setAzimuthAngle(Measure<AngleUnit> angle) {
+		this.setAzimuthVolts(
+			this.azimuthPID.calculate(
+				this.azimuthAbsoluteEncoder.getPosition(),
+				angle.in(Rotations)
+			)
+		);
+	}
 
-    @Override
-    public void clearDriveStickyFaults(long bitmask) {
-        if (bitmask == DeviceFaults.noneMask) {return;}
-        if (bitmask == DeviceFaults.allMask) {
-            this.driveMotor.clearStickyFaults();
-        } else {
-            for (var faultType : FaultType.possibleTalonFXFaults) {
-                if (faultType.isPartOf(bitmask)) {
-                    faultType.clearStickyFaultOn(this.driveMotor);
-                }
-            }
-        }
-    }
-    @Override
-    public void clearAzimuthStickyFaults(long bitmask) {
-        if (bitmask == DeviceFaults.noneMask) {return;}
-        this.azimuthMotor.clearFaults();
-    }
+	@Override
+	public void stopDrive(Optional<NeutralMode> neutralMode) {
+		this.driveMotor.setControl(neutralMode.map(NeutralMode::getPhoenix6ControlRequest).orElseGet(NeutralOut::new));
+	}
+	@Override
+	public void stopAzimuth(Optional<NeutralMode> neutralMode) {
+		//TODO Reimplement module turn brake mode
+		// turnMotor.setIdleMode(enable ? IdleMode.kBrake : IdleMode.kCoast);
+		this.azimuthMotor.stopMotor();
+	}
+
+	@Override
+	public void configDrivePID(PIDConstants pidConstants) {
+		var config = new Slot0Configs();
+		this.driveMotor.getConfigurator().refresh(config);
+		pidConstants.update(config);
+		this.driveMotor.getConfigurator().apply(config);
+	}
+	@Override
+	public void configAzimuthPID(PIDConstants pidConstants) {
+		pidConstants.update(this.azimuthPID);
+	}
+
+	@Override
+	public void clearDriveStickyFaults(long bitmask) {
+		if (bitmask == DeviceFaults.noneMask) {return;}
+		if (bitmask == DeviceFaults.allMask) {
+			this.driveMotor.clearStickyFaults();
+		} else {
+			for (var faultType : FaultType.possibleTalonFXFaults) {
+				if (faultType.isPartOf(bitmask)) {
+					faultType.clearStickyFaultOn(this.driveMotor);
+				}
+			}
+		}
+	}
+	@Override
+	public void clearAzimuthStickyFaults(long bitmask) {
+		if (bitmask == DeviceFaults.noneMask) {return;}
+		this.azimuthMotor.clearFaults();
+	}
 }

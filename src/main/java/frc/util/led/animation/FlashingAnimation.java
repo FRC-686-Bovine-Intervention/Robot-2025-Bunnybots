@@ -8,18 +8,18 @@ import edu.wpi.first.wpilibj.util.Color;
 import frc.util.led.strips.LEDStrip;
 
 public class FlashingAnimation extends LEDAnimation {
-    private final LEDStrip strip;
-    private final DoubleFunction<Color> gradient;
-    private final DoubleUnaryOperator tilingFunction;
+	private final LEDStrip strip;
+	private final DoubleFunction<Color> gradient;
+	private final DoubleUnaryOperator tilingFunction;
 
-    public FlashingAnimation(LEDStrip strip, DoubleUnaryOperator tilingFunction, DoubleFunction<Color> gradient) {
-        this.strip = strip;
-        this.gradient = gradient;
-        this.tilingFunction = tilingFunction;
-    }
+	public FlashingAnimation(LEDStrip strip, DoubleUnaryOperator tilingFunction, DoubleFunction<Color> gradient) {
+		this.strip = strip;
+		this.gradient = gradient;
+		this.tilingFunction = tilingFunction;
+	}
 
-    @Override
-    public void apply() {
-        strip.apply(gradient.apply(tilingFunction.applyAsDouble(Timer.getTimestamp())));
-    }
+	@Override
+	public void apply() {
+		strip.apply(gradient.apply(tilingFunction.applyAsDouble(Timer.getTimestamp())));
+	}
 }

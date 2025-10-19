@@ -31,122 +31,122 @@ import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
 import frc.util.controllers.XboxController;
 
 public class RobotContainer {
-    // Subsystems
-    public final Drive drive;
-    
-    // Vision
+	// Subsystems
+	public final Drive drive;
 
-    // Event Loops
-    public final EventLoop automationsLoop = new EventLoop();
+	// Vision
 
-    // Controllers
-    private final XboxController driveController = new XboxController(0);
-    @SuppressWarnings("unused")
-    private final CommandJoystick simJoystick = new CommandJoystick(5);
+	// Event Loops
+	public final EventLoop automationsLoop = new EventLoop();
 
-    @SuppressWarnings("resource")
-    public RobotContainer() {
-        System.out.println("[Init RobotContainer] Creating " + RobotType.getMode().name() + " " + RobotType.getRobot().name());
+	// Controllers
+	private final XboxController driveController = new XboxController(0);
+	@SuppressWarnings("unused")
+	private final CommandJoystick simJoystick = new CommandJoystick(5);
 
-        switch (RobotType.getMode()) {
-            case REAL -> {
-                this.drive = new Drive(
-                    new OdometryTimestampIOOdometryThread(),
-                    new GyroIOPigeon2(),
-                    Arrays.stream(DriveConstants.moduleConstants)
-                        .map(ModuleIOFalcon550::new)
-                        .toArray(ModuleIO[]::new)
-                );
-            }
-            case SIM -> {
-                this.drive = new Drive(
-                    new OdometryTimestampIOSim(),
-                    new GyroIO() {},
-                    Arrays.stream(DriveConstants.moduleConstants)
-                        .map(ModuleIOSim::new)
-                        .toArray(ModuleIO[]::new)
-                );
-            }
-            default -> {
-                this.drive = new Drive(
-                    new OdometryTimestampIO() {},
-                    new GyroIO() {},
-                    new ModuleIO(){},
-                    new ModuleIO(){},
-                    new ModuleIO(){},
-                    new ModuleIO(){}
-                );
-            }
-        }
+	@SuppressWarnings("resource")
+	public RobotContainer() {
+		System.out.println("[Init RobotContainer] Creating " + RobotType.getMode().name() + " " + RobotType.getRobot().name());
 
-        System.out.println("[Init RobotContainer] Configuring Commands");
+		switch (RobotType.getMode()) {
+			case REAL -> {
+				this.drive = new Drive(
+					new OdometryTimestampIOOdometryThread(),
+					new GyroIOPigeon2(),
+					Arrays.stream(DriveConstants.moduleConstants)
+						.map(ModuleIOFalcon550::new)
+						.toArray(ModuleIO[]::new)
+				);
+			}
+			case SIM -> {
+				this.drive = new Drive(
+					new OdometryTimestampIOSim(),
+					new GyroIO() {},
+					Arrays.stream(DriveConstants.moduleConstants)
+						.map(ModuleIOSim::new)
+						.toArray(ModuleIO[]::new)
+				);
+			}
+			default -> {
+				this.drive = new Drive(
+					new OdometryTimestampIO() {},
+					new GyroIO() {},
+					new ModuleIO(){},
+					new ModuleIO(){},
+					new ModuleIO(){},
+					new ModuleIO(){}
+				);
+			}
+		}
 
-        System.out.println("[Init RobotContainer] Configuring Notifications");
+		System.out.println("[Init RobotContainer] Configuring Commands");
 
-        System.out.println("[Init RobotContainer] Configuring Autonomous Modes");
+		System.out.println("[Init RobotContainer] Configuring Notifications");
 
-        System.out.println("[Init RobotContainer] Configuring System Check");
-        SmartDashboard.putData("System Check/Drive/Spin", 
-            new Command() {
-                private final Drive.Rotational rotationalSubsystem = drive.rotationalSubsystem;
-                private final Timer timer = new Timer();
-                {
-                    addRequirements(this.rotationalSubsystem);
-                    setName("TEST Spin");
-                }
-                public void initialize() {
-                    this.timer.restart();
-                }
-                public void execute() {
-                    this.rotationalSubsystem.driveVelocity(Math.sin(this.timer.get()) * 3);
-                }
-                public void end(boolean interrupted) {
-                    this.timer.stop();
-                    this.rotationalSubsystem.stop();
-                }
-            }
-        );
-        SmartDashboard.putData("System Check/Drive/Circle", 
-            new Command() {
-                private final Drive.Translational translationSubsystem = drive.translationSubsystem;
-                private final Timer timer = new Timer();
-                {
-                    addRequirements(this.translationSubsystem);
-                    setName("TEST Circle");
-                }
-                public void initialize() {
-                    this.timer.restart();
-                }
-                public void execute() {
-                    this.translationSubsystem.driveVelocity(
-                        new ChassisSpeeds(
-                            Math.cos(this.timer.get()) * 0.01,
-                            Math.sin(this.timer.get()) * 0.01,
-                            0
-                        )
-                    );
-                }
-                public void end(boolean interrupted) {
-                    this.timer.stop();
-                    this.translationSubsystem.stop();
-                }
-            }
-        );
-        
-        SmartDashboard.putData("Wheel Calibration", Commands.defer(
-            () -> 
-                new WheelRadiusCalibration(
-                    drive,
-                    WheelRadiusCalibration.VOLTAGE_RAMP_RATE.get(),
-                    WheelRadiusCalibration.MAX_VOLTAGE.get()
-                )
-                .withName("Wheel Calibration"),
-                Set.of(drive.translationSubsystem, drive.rotationalSubsystem)
-            )
-        );
+		System.out.println("[Init RobotContainer] Configuring Autonomous Modes");
 
-        if (RobotConstants.tuningMode) {
-            new Alert("Tuning mode active", AlertType.kInfo).set(true);
-        }
-    }
+		System.out.println("[Init RobotContainer] Configuring System Check");
+		SmartDashboard.putData("System Check/Drive/Spin",
+			new Command() {
+				private final Drive.Rotational rotationalSubsystem = drive.rotationalSubsystem;
+				private final Timer timer = new Timer();
+				{
+					addRequirements(this.rotationalSubsystem);
+					setName("TEST Spin");
+				}
+				public void initialize() {
+					this.timer.restart();
+				}
+				public void execute() {
+					this.rotationalSubsystem.driveVelocity(Math.sin(this.timer.get()) * 3);
+				}
+				public void end(boolean interrupted) {
+					this.timer.stop();
+					this.rotationalSubsystem.stop();
+				}
+			}
+		);
+		SmartDashboard.putData("System Check/Drive/Circle",
+			new Command() {
+				private final Drive.Translational translationSubsystem = drive.translationSubsystem;
+				private final Timer timer = new Timer();
+				{
+					addRequirements(this.translationSubsystem);
+					setName("TEST Circle");
+				}
+				public void initialize() {
+					this.timer.restart();
+				}
+				public void execute() {
+					this.translationSubsystem.driveVelocity(
+						new ChassisSpeeds(
+							Math.cos(this.timer.get()) * 0.01,
+							Math.sin(this.timer.get()) * 0.01,
+							0
+						)
+					);
+				}
+				public void end(boolean interrupted) {
+					this.timer.stop();
+					this.translationSubsystem.stop();
+				}
+			}
+		);
+
+		SmartDashboard.putData("Wheel Calibration", Commands.defer(
+			() ->
+				new WheelRadiusCalibration(
+					drive,
+					WheelRadiusCalibration.VOLTAGE_RAMP_RATE.get(),
+					WheelRadiusCalibration.MAX_VOLTAGE.get()
+				)
+				.withName("Wheel Calibration"),
+				Set.of(drive.translationSubsystem, drive.rotationalSubsystem)
+			)
+		);
+
+		if (RobotConstants.tuningMode) {
+			new Alert("Tuning mode active", AlertType.kInfo).set(true);
+		}
+	}
 }

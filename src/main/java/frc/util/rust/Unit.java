@@ -1,12 +1,12 @@
 package frc.util.rust;
 
 public class Unit {
-    private Unit() {}
+	private Unit() {}
 
-    public static final Unit unit = new Unit();
+	public static final Unit unit = new Unit();
 
-    @Override
-    public String toString() {
-        return "()";
-    }
+	@Override
+	public String toString() {
+		return "()";
+	}
 }

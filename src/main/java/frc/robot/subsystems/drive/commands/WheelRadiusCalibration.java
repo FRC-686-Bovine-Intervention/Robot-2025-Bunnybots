@@ -27,61 +27,61 @@ import frc.util.geometry.GeomUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 
 public class WheelRadiusCalibration extends Command {
-    private final Drive drive;
-    private final MutAngle prevYaw = Radians.mutable(0);
-    private final MutAngle totalYaw = Radians.mutable(0);
-    private final Timer totalTimer = new Timer();
-    private final Measure<VoltageUnit> maxVoltage;
-    private final Measure<VelocityUnit<VoltageUnit>> voltageRampRate;
-    private double[] initialPositionRads = new double[0];
+	private final Drive drive;
+	private final MutAngle prevYaw = Radians.mutable(0);
+	private final MutAngle totalYaw = Radians.mutable(0);
+	private final Timer totalTimer = new Timer();
+	private final Measure<VoltageUnit> maxVoltage;
+	private final Measure<VelocityUnit<VoltageUnit>> voltageRampRate;
+	private double[] initialPositionRads = new double[0];
 
-    public static final LoggedTunable<Velocity<VoltageUnit>> VOLTAGE_RAMP_RATE = LoggedTunable.from("Drive/Wheel Calibration/Voltage Ramp Rate", Volts.per(Second)::of, 2);
-    public static final LoggedTunable<Voltage> MAX_VOLTAGE = LoggedTunable.from("Drive/Wheel Calibration/Max Voltage", Volts::of, 6);
+	public static final LoggedTunable<Velocity<VoltageUnit>> VOLTAGE_RAMP_RATE = LoggedTunable.from("Drive/Wheel Calibration/Voltage Ramp Rate", Volts.per(Second)::of, 2);
+	public static final LoggedTunable<Voltage> MAX_VOLTAGE = LoggedTunable.from("Drive/Wheel Calibration/Max Voltage", Volts::of, 6);
 
-    public WheelRadiusCalibration(Drive drive, Measure<VelocityUnit<VoltageUnit>> voltageRampRate, Measure<VoltageUnit> maxVoltage) {
-        this.drive = drive;
-        addRequirements(this.drive.translationSubsystem, this.drive.rotationalSubsystem);
-        setName("Wheel Calibration");
-        this.voltageRampRate = voltageRampRate;
-        this.maxVoltage = maxVoltage;
-    }
+	public WheelRadiusCalibration(Drive drive, Measure<VelocityUnit<VoltageUnit>> voltageRampRate, Measure<VoltageUnit> maxVoltage) {
+		this.drive = drive;
+		addRequirements(this.drive.translationSubsystem, this.drive.rotationalSubsystem);
+		setName("Wheel Calibration");
+		this.voltageRampRate = voltageRampRate;
+		this.maxVoltage = maxVoltage;
+	}
 
-    @Override
-    public void initialize() {
-        this.totalTimer.restart();
-        this.prevYaw.mut_replace(RobotState.getInstance().getEstimatedGlobalPose().getRotation().getMeasure());
-        this.totalYaw.mut_replace(Radians.zero());
-        this.initialPositionRads = Arrays.stream(this.drive.modules).mapToDouble(Module::getWheelAngularPositionRads).toArray();
-    }
+	@Override
+	public void initialize() {
+		this.totalTimer.restart();
+		this.prevYaw.mut_replace(RobotState.getInstance().getEstimatedGlobalPose().getRotation().getMeasure());
+		this.totalYaw.mut_replace(Radians.zero());
+		this.initialPositionRads = Arrays.stream(this.drive.modules).mapToDouble(Module::getWheelAngularPositionRads).toArray();
+	}
 
-    @Override
-    public void execute() {
-        var yaw = RobotState.getInstance().getEstimatedGlobalPose().getRotation().getMeasure();
-        var yawDiff = yaw.minus(this.prevYaw).in(Radians);
-        var wrappedDiff = MathUtil.angleModulus(yawDiff);
-        this.totalYaw.mut_acc(wrappedDiff);
+	@Override
+	public void execute() {
+		var yaw = RobotState.getInstance().getEstimatedGlobalPose().getRotation().getMeasure();
+		var yawDiff = yaw.minus(this.prevYaw).in(Radians);
+		var wrappedDiff = MathUtil.angleModulus(yawDiff);
+		this.totalYaw.mut_acc(wrappedDiff);
 
-        this.prevYaw.mut_replace(yaw);
+		this.prevYaw.mut_replace(yaw);
 
-        var averageWheelRadians = IntStream.range(0, drive.modules.length)
-            .mapToDouble((i) -> drive.modules[i].getWheelAngularPositionRads() - this.initialPositionRads[i])
-            .average().orElse(0)
-        ;
+		var averageWheelRadians = IntStream.range(0, drive.modules.length)
+			.mapToDouble((i) -> drive.modules[i].getWheelAngularPositionRads() - this.initialPositionRads[i])
+			.average().orElse(0)
+		;
 
-        var averageWheelRadius = DriveConstants.driveBaseRadius.times(totalYaw.in(Radians)).div(averageWheelRadians);
+		var averageWheelRadius = DriveConstants.driveBaseRadius.times(totalYaw.in(Radians)).div(averageWheelRadians);
 
-        Logger.recordOutput("Drive/Wheel Calibration/Total Yaw", totalYaw);
-        Logger.recordOutput("Drive/Wheel Calibration/Average Wheel Radians", averageWheelRadians);
-        Logger.recordOutput("Drive/Wheel Calibration/Expected Wheel Travel", DriveConstants.driveBaseRadius.times(totalYaw.in(Radians)));
-        Logger.recordOutput("Drive/Wheel Calibration/Average Wheel Radius", averageWheelRadius);
+		Logger.recordOutput("Drive/Wheel Calibration/Total Yaw", totalYaw);
+		Logger.recordOutput("Drive/Wheel Calibration/Average Wheel Radians", averageWheelRadians);
+		Logger.recordOutput("Drive/Wheel Calibration/Expected Wheel Travel", DriveConstants.driveBaseRadius.times(totalYaw.in(Radians)));
+		Logger.recordOutput("Drive/Wheel Calibration/Average Wheel Radius", averageWheelRadius);
 
-        var volts = Math.min(voltageRampRate.in(Volts.per(Second)) * totalTimer.get(), maxVoltage.in(Volts));
-        Arrays.stream(drive.modules).forEach((module) -> module.runVoltage(Volts.of(volts), GeomUtil.rotationFromVector(module.config.positiveRotVec)));
-    }
+		var volts = Math.min(voltageRampRate.in(Volts.per(Second)) * totalTimer.get(), maxVoltage.in(Volts));
+		Arrays.stream(drive.modules).forEach((module) -> module.runVoltage(Volts.of(volts), GeomUtil.rotationFromVector(module.config.positiveRotVec)));
+	}
 
-    @Override
-    public void end(boolean interrupted) {
-        totalTimer.stop();
-        drive.runRobotSpeeds(new ChassisSpeeds());
-    }
+	@Override
+	public void end(boolean interrupted) {
+		totalTimer.stop();
+		drive.runRobotSpeeds(new ChassisSpeeds());
+	}
 }
