@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
 import frc.util.flipping.AllianceFlipped;
 
@@ -43,6 +44,20 @@ public final class FieldConstants {
         apriltagLayout = a;
     }
 
-    public static final Distance luniteLength = Inches.of(7);
-    public static final Distance luniteWidth = Inches.of(4);
+    public static final Translation3d luniteDimensions = new Translation3d(
+        Inches.of(7),
+        Inches.of(4),
+        Inches.of(4)
+    );
+
+    public static final AllianceFlipped<Translation2d[]> luniteIntakeLocations = new AllianceFlipped<>(
+        new Translation2d[] {
+            new Translation2d(0, 0),
+            new Translation2d(0, 0)
+        },
+        new Translation2d[] {
+            new Translation2d(0, 0),
+            new Translation2d(0, 0)
+        }
+    );
 }
