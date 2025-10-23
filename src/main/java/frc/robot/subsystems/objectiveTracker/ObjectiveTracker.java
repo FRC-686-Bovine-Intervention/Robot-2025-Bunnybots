@@ -1,6 +1,7 @@
 package frc.robot.subsystems.objectiveTracker;
 
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,9 +43,33 @@ public class ObjectiveTracker extends VirtualSubsystem{
         System.out.println("[Init ObjectiveTracker] Instantiating ObjectiveTracker");
 
         // Score Lunite
+        var innerGoal = FieldConstants.LunarOutpost.lunarOutposts.map((zone) -> zone.innerGoal);
+        var outerGoal = FieldConstants.LunarOutpost.lunarOutposts.map((zone) -> zone.outerGoal);
         this.allScoreLuniteObjectives = Set.of(
-            new ScoreLuniteObjective(FieldConstants.outerShootingPose, FieldConstants.outerHighGoalAimPoint)
+            new ScoreLuniteObjective(outerGoal.map((goal) -> goal.highGoal.aimPoint)),
+            new ScoreLuniteObjective(outerGoal.map((goal) -> goal.lowGoal.aimPoint)),
+            new ScoreLuniteObjective(innerGoal.map((goal) -> goal.highGoal.aimPoint)),
+            new ScoreLuniteObjective(innerGoal.map((goal) -> goal.lowGoal.aimPoint))
+        );
+        this.availableScoreLuniteObjectives = new HashSet<>(this.allScoreLuniteObjectives.size());
+
+        // Intake
+        var sideZone = FieldConstants.StarspireZone.starspireZones.map((zone) -> zone.sideStarspire);
+        var rearZone = FieldConstants.StarspireZone.starspireZones.map((zone) -> zone.rearStarspire);
+        this.allIntakeLuniteObjectives = Set.of(
+            new IntakeLuniteObjective(sideZone.map((starspire) -> starspire.robotPose)),
+            new IntakeLuniteObjective(rearZone.map((starspire) -> starspire.robotPose))
         );
 
+        // Pass
+        this.allPassObjectives = Set.of(
+            
+        );
+    }
+
+    @Override
+    public void periodic() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'periodic'");
     }
 }

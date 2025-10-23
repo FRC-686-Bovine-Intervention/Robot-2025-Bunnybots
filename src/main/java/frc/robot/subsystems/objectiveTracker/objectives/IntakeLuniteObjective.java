@@ -1,7 +1,5 @@
 package frc.robot.subsystems.objectiveTracker.objectives;
 
-import java.util.Optional;
-
 import edu.wpi.first.math.geometry.Pose2d;
 import frc.util.flipping.AllianceFlipped;
 
@@ -12,9 +10,8 @@ public class IntakeLuniteObjective implements Objective {
         this.targetRobotPose = targetRobotPose;
     }
     
-    @Override
-    public Optional<AllianceFlipped<Pose2d>> getTargetPose() {
-        return Optional.of(this.targetRobotPose);
+    public AllianceFlipped<Pose2d> getTargetPose() {
+        return this.targetRobotPose;
     }
 
     @Override

@@ -1,10 +1,5 @@
 package frc.robot.subsystems.objectiveTracker.objectives;
 
-import java.util.Optional;
-
-import edu.wpi.first.math.geometry.Pose2d;
-import frc.util.flipping.AllianceFlipped;
-
 public interface Objective {
     public static enum ObjectiveType {
         IntakeLunite(false),
@@ -18,6 +13,5 @@ public interface Objective {
         }
     }
 
-    public Optional<AllianceFlipped<Pose2d>> getTargetPose();
     public ObjectiveType getObjectiveType();
 }

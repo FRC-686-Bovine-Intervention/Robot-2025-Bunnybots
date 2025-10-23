@@ -52,69 +52,84 @@ public final class FieldConstants {
         apriltagLayout = a;
     }
 
-    public static final class GoalZone {
+    public static final class LunarOutpost {
         public static final Translation2d dimensions = new Translation2d(
             Inches.of(112.250),
             Inches.of(216)
         );
-        public static final AllianceFlipped<Pose3d> sharedFieldCorner = new AllianceFlipped<Pose3d>(
+        public static final AllianceFlipped<Pose3d> center = new AllianceFlipped<Pose3d>(
             new Pose3d(new Translation3d(
-                Inches.of(0),
-                Inches.of(0),
-                Inches.of(0)
+                dimensions.getMeasureX().div(2),
+                dimensions.getMeasureY().div(2),
+                Inches.zero()
             ), Rotation3d.kZero),
             new Pose3d(new Translation3d(
-                fieldLength.minus(dimensions.getMeasureX()),
-                Inches.of(0),
-                Inches.of(0)
+                fieldLength.minus(dimensions.getMeasureX().div(2)),
+                dimensions.getMeasureY().div(2),
+                Inches.zero()
             ), new Rotation3d(0, 0, Math.PI))
         );
 
-        public final GoalObject innerGoal;
-        public final GoalObject outerGoal;
+        public final CosmicConverter innerGoal;
+        public final CosmicConverter outerGoal;
+
+        private LunarOutpost(Alliance alliance){
+            if (alliance == Alliance.Blue) {
+                this.outerGoal = new CosmicConverter(this, 0, alliance);
+                this.innerGoal = new CosmicConverter(this, 1, alliance);
+            } else {
+                this.outerGoal = new CosmicConverter(this, 1, alliance);
+                this.innerGoal = new CosmicConverter(this, 0, alliance);
+            }
+        }
         
 
-        public static final class GoalObject {
+        public static final class CosmicConverter {
             public static final Translation3d dimensions = new Translation3d(
                 Inches.of(34),
                 Inches.of(41),
                 Inches.of(84)
             );
-            public static final Distance goalObjectsCenterToCenter = Inches.of(175.625).plus(dimensions.getMeasureY().div(2));
+            public static final Distance cosmicConvertersCenterToCenter = Inches.of(175.625);
 
-            public final GoalZone parent;
+            public final LunarOutpost parent;
             public final int id;
+            public final CosmicConverterSide side;
             public final int apriltagID;
             public final Pose3d center;
             public final HighGoal highGoal;
             public final LowGoal lowGoal;
-            public final Pose2d shootingPose;
             
-            private GoalObject(GoalZone parent, int id, Alliance alliance) {
+            private CosmicConverter(LunarOutpost parent, int id, Alliance alliance) {
                 this.parent = parent;
                 this.id = id;
 
+                this.side = switch (this.id) {
+                    default -> alliance == Alliance.Blue ? CosmicConverterSide.OUTER : CosmicConverterSide.INNER;
+                    case 1 -> alliance == Alliance.Blue ? CosmicConverterSide.INNER : CosmicConverterSide.OUTER;
+                };
+
                 this.apriltagID = switch (this.id) {
-                    default -> alliance == Alliance.Red ? 8 : 7;
-                    case 1 -> alliance == Alliance.Red ? 6 : 5;
+                    default -> alliance == Alliance.Blue ? 7 : 6;
+                    case 1 -> alliance == Alliance.Blue ? 5 : 8;
                 };
 
                 this.center = switch (this.id) {
-                    default -> GoalZone.sharedFieldCorner.get(alliance).transformBy(
+                    default -> LunarOutpost.center.get(alliance).transformBy(
                         new Transform3d(
                             new Translation3d(
-                                dimensions.getMeasureX().div(2),
-                                dimensions.getMeasureY().div(2),
+                                LunarOutpost.dimensions.getMeasureX().div(2).unaryMinus().plus(dimensions.getMeasureX().div(2)),
+                                LunarOutpost.dimensions.getMeasureY().div(2).unaryMinus().plus(dimensions.getMeasureY().div(2)),
                                 dimensions.getMeasureZ().div(2)
                             ),
                             Rotation3d.kZero
                         )
                     );
-                    case 1 -> GoalZone.sharedFieldCorner.get(alliance).transformBy(
+                    case 1 -> LunarOutpost.center.get(alliance).transformBy(
                         new Transform3d(
                             new Translation3d(    
-                                dimensions.getMeasureX().div(2),
-                                dimensions.getMeasureY().div(2).plus(goalObjectsCenterToCenter),
+                                LunarOutpost.dimensions.getMeasureX().div(2).unaryMinus().plus(dimensions.getMeasureX().div(2)),
+                                LunarOutpost.dimensions.getMeasureY().div(2).unaryMinus().plus(dimensions.getMeasureY().div(2)).plus(cosmicConvertersCenterToCenter),
                                 dimensions.getMeasureZ().div(2)
                             ),
                             Rotation3d.kZero
@@ -122,17 +137,8 @@ public final class FieldConstants {
                     );
                 };
 
-                this.shootingPose = switch (this.id) {
-                    default -> GoalZone.sharedFieldCorner.get(alliance).toPose2d().transformBy(new Transform2d(
-                            new Translation2d(
-                                GoalZone.dimensions.getMeasureX().plus(RobotConstants.robotLength.div(2)),
-                                dimensions.getMeasureY().div(2)
-                            ),
-                            Rotation2d.k180deg
-                        )
-                    );
-                    case 1 -> Pose2d.kZero;
-                };
+                this.highGoal = new HighGoal(this);
+                this.lowGoal = new LowGoal(this);
             }
             public static final class HighGoal{
                 public static final Translation2d dimensions = new Translation2d(
@@ -144,17 +150,17 @@ public final class FieldConstants {
                 
                 public static final Transform3d aimOffset = new Transform3d(
                     new Translation3d(
-                        inset.minus(GoalObject.dimensions.getMeasureX().div(2)).unaryMinus(),
+                        inset.minus(CosmicConverter.dimensions.getMeasureX().div(2)).unaryMinus(),
                         Inches.zero(),
-                        toGround.minus(GoalObject.dimensions.getMeasureZ().div(2))
+                        toGround.minus(CosmicConverter.dimensions.getMeasureZ().div(2))
                     ),
                     Rotation3d.kZero
                 );
 
-                public final GoalObject parent;
+                public final CosmicConverter parent;
                 public final Translation3d aimPoint;
                 
-                private HighGoal(GoalObject parent) {
+                private HighGoal(CosmicConverter parent) {
                     this.parent = parent;
                     
                     this.aimPoint = parent.center.transformBy(aimOffset).getTranslation();
@@ -169,120 +175,147 @@ public final class FieldConstants {
 
                 public static final Transform3d aimOffset = new Transform3d(
                     new Translation3d(
-                        GoalObject.dimensions.getMeasureX().minus(dimensions.getMeasureX().div(2)),
+                        CosmicConverter.dimensions.getMeasureX().minus(dimensions.getMeasureX().div(2)),
                         Inches.zero(),
                         toGround
                     ),
                     Rotation3d.kZero
                 );
 
-                public final GoalObject parent;
+                public final CosmicConverter parent;
                 public final Translation3d aimPoint;
 
-                private LowGoal(GoalObject parent){
+                private LowGoal(CosmicConverter parent){
                     this.parent = parent;
 
                     this.aimPoint = parent.center.transformBy(aimOffset).getTranslation();
                 }
             }
+
+            public static enum CosmicConverterSide {
+                OUTER,
+                INNER
+            }
+        }
+
+        public static final AllianceFlipped<LunarOutpost> lunarOutposts;
+        
+        static {
+            lunarOutposts = AllianceFlipped.fromFunction((alliance) -> new LunarOutpost(alliance));
         }
     }
-    
-    public static final Distance highGoalHeight = Inches.of(20);
-    public static final Distance highGoalWidth = Inches.of(30);
-    public static final Distance highGoalInset = Inches.of(30);
-    public static final Distance lowGoalWidth = Inches.of(40);
-    public static final Distance lowGoalDepth = Inches.of(29.5);
 
-    public static final Distance highGoalToGround = Inches.of(60).plus(highGoalHeight.div(2));
-    public static final Distance lowGoalToGround = Inches.of(22);
+    public static final class StarspireZone {
+        public static final Translation2d dimensions = new Translation2d(
+            Inches.of(112.25),
+            Inches.of(84)
+        );
+        public static final AllianceFlipped<Pose2d> center = new AllianceFlipped<Pose2d>(
+            new Pose2d(
+                new Translation2d(
+                    fieldLength.minus(dimensions.getMeasureX().div(2)),
+                    fieldWidth.minus(dimensions.getMeasureY().div(2))
+                ),
+                Rotation2d.k180deg
+            ),
+            new Pose2d(
+                new Translation2d(
+                    dimensions.getMeasureX().div(2),
+                    fieldWidth.minus(dimensions.getMeasureY().div(2))
+                ),
+                Rotation2d.kZero
+            )
+        );
+        
+        public final Starspire rearStarspire;
+        public final Starspire sideStarspire;
 
-    public static final Distance bigGoalsCenterToCenter = Inches.of(144.875).plus(highGoalWidth);
+        private StarspireZone(Alliance alliance) {
+            this.rearStarspire = new Starspire(this, 0, alliance);
+            this.sideStarspire = new Starspire(this, 1, alliance);
+        }
 
-    public static final Pose3d outerBigGoalBlue = new Pose3d(
-        new Translation3d(
-            bigGoalDepth.div(2),
-            bigGoalWidth.div(2),
-            bigGoalHeight.div(2)
-        ),
-        new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(0))
-    );
+        public static final class Starspire {
+            public static final Translation2d dimensions = new Translation2d(
+                Inches.of(4), // Wall protrusion
+                Inches.of(24) // Width
+            );
 
-    public static final Pose3d innerBigGoalBlue = outerBigGoalBlue.transformBy(new Transform3d(
-        new Translation3d(
-            Inches.zero(),
-            bigGoalsCenterToCenter,
-            Inches.zero()
-        ),
-        new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(0))
-    ));
+            public final StarspireZone parent;
+            public final int id;
+            public final int apriltagID;
+            public final Pose2d frontCenter;
+            public final Pose2d robotPose;
+            public final StarspireSide side;
 
-    public static final Pose3d outerBigGoalRed = outerBigGoalBlue.transformBy(new Transform3d(
-        new Translation3d(
-            fieldLength.minus(bigGoalDepth.div(2)),
-            Inches.zero(),
-            Inches.zero()
-        ),
-        new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(180))
-    ));
+            private Starspire(StarspireZone parent, int id, Alliance alliance) {
+                this.parent = parent;
+                this.id = id;
 
-    public static final Pose3d innerBigGoalRed = innerBigGoalBlue.transformBy(new Transform3d(
-        new Translation3d(
-            fieldLength.minus(bigGoalDepth.div(2)),
-            Inches.zero(),
-            Inches.zero()
-        ),
-        new Rotation3d(Degrees.of(0), Degrees.of(0), Degrees.of(180))
-    ));
+                this.side = switch (this.id) {
+                    default -> alliance == Alliance.Blue ? StarspireSide.REAR : StarspireSide.SIDE;
+                    case 1 -> alliance == Alliance.Blue ? StarspireSide.SIDE : StarspireSide.REAR;
+                };
 
-    public static final Transform3d highGoalAimOffset = new Transform3d(
-        new Translation3d(
-            highGoalInset.minus(bigGoalDepth.div(2)).unaryMinus(),
-            Inches.zero(),
-            highGoalToGround.minus(bigGoalHeight.div(2))
-        ),
-        Rotation3d.kZero
-    );
+                this.apriltagID = switch (this.side) {
+                    default -> alliance == Alliance.Blue ? 4 : 3;
+                    case SIDE -> alliance == Alliance.Blue ? 2 : 1;
+                };
 
-    public static final Transform3d lowGoalAimOffset = new Transform3d(
-        new Translation3d(
-            bigGoalDepth.minus(lowGoalDepth.div(2)),
-            Inches.zero(),
-            lowGoalToGround
-        ),
-        Rotation3d.kZero
-    );
+                this.frontCenter = switch (this.side) {
+                    default -> alliance == Alliance.Blue ? 
+                        StarspireZone.center.get(alliance).transformBy(new Transform2d(
+                            new Translation2d(
+                                StarspireZone.dimensions.getMeasureX().div(2).unaryMinus().plus(dimensions.getMeasureX()),
+                                StarspireZone.dimensions.getMeasureY().div(2).unaryMinus().plus(Inches.of(18)).plus(dimensions.getMeasureY().div(2)).unaryMinus()
+                            ),
+                            Rotation2d.kZero
+                        )) :
+                        StarspireZone.center.get(alliance).transformBy(new Transform2d(
+                            new Translation2d(
+                                StarspireZone.dimensions.getMeasureX().div(2).unaryMinus().plus(dimensions.getMeasureX()),
+                                StarspireZone.dimensions.getMeasureY().div(2).unaryMinus().plus(Inches.of(18)).plus(dimensions.getMeasureY().div(2))
+                            ),
+                            Rotation2d.kZero
+                        ))
+                    ;
+                    case SIDE -> alliance == Alliance.Blue ? 
+                        StarspireZone.center.get(alliance).transformBy(new Transform2d(
+                            new Translation2d(
+                                StarspireZone.dimensions.getMeasureX().div(2).unaryMinus().plus(Inches.of(60)).plus(dimensions.getMeasureY().div(2)),
+                                StarspireZone.dimensions.getMeasureY().div(2).unaryMinus().plus(dimensions.getMeasureX())
+                            ),
+                            Rotation2d.kCCW_90deg
+                        )) :
+                        StarspireZone.center.get(alliance).transformBy(new Transform2d(
+                            new Translation2d(
+                                StarspireZone.dimensions.getMeasureX().div(2).unaryMinus().plus(Inches.of(60)).plus(dimensions.getMeasureY().div(2)),
+                                StarspireZone.dimensions.getMeasureY().div(2).unaryMinus().plus(dimensions.getMeasureX()).unaryMinus()
+                            ),
+                            Rotation2d.kCW_90deg
+                        ))
+                    ;
+                };
 
-    public static final AllianceFlipped<Translation3d> innerHighGoalAimPoint = new AllianceFlipped<Translation3d>(
-        innerBigGoalBlue.transformBy(highGoalAimOffset).getTranslation(),
-        innerBigGoalRed.transformBy(highGoalAimOffset).getTranslation()
-    );
-    
-    public static final AllianceFlipped<Translation3d> innerLowGoalAimPoint = new AllianceFlipped<Translation3d>(
-        innerBigGoalBlue.transformBy(lowGoalAimOffset).getTranslation(),
-        innerBigGoalRed.transformBy(lowGoalAimOffset).getTranslation()
-    );
+                this.robotPose = this.frontCenter.transformBy(new Transform2d(
+                    new Translation2d(
+                        RobotConstants.robotLength.div(2),
+                        Inches.zero()
+                    ),
+                    Rotation2d.kZero
+                ));
+            }
 
-    public static final AllianceFlipped<Translation3d> outerHighGoalAimPoint = new AllianceFlipped<Translation3d>(
-        outerBigGoalBlue.transformBy(highGoalAimOffset).getTranslation(),
-        outerBigGoalRed.transformBy(highGoalAimOffset).getTranslation()
-    );
-    
-    public static final AllianceFlipped<Translation3d> outerLowGoalAimPoint = new AllianceFlipped<Translation3d>(
-        outerBigGoalBlue.transformBy(lowGoalAimOffset).getTranslation(),
-        outerBigGoalRed.transformBy(lowGoalAimOffset).getTranslation()
-    );
+            public static enum StarspireSide {
+                REAR,
+                SIDE
+            }
+        }
 
-    public static final AllianceFlipped<Translation3d> passAimPoint = new AllianceFlipped<Translation3d>(
-        null,
-        null
-    );
-
-    public static final AllianceFlipped<Pose2d> innerShootingPose = new AllianceFlipped<Pose2d>(
-        null, null
-    );
-
-    public static final AllianceFlipped<Pose2d> outerShootingPose = new AllianceFlipped<Pose2d>(
-        null, null
-    );
+        public static final AllianceFlipped<StarspireZone> starspireZones;
+        
+        static {
+            starspireZones = AllianceFlipped.fromFunction((alliance) -> new StarspireZone(alliance));
+        }
+    }
 }
