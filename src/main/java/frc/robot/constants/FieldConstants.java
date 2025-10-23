@@ -8,12 +8,16 @@ import java.util.function.Predicate;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.util.flipping.AllianceFlipped;
 
 public final class FieldConstants {
@@ -47,6 +51,142 @@ public final class FieldConstants {
         }
         apriltagLayout = a;
     }
+
+    public static final class GoalZone {
+        public static final Translation2d dimensions = new Translation2d(
+            Inches.of(112.250),
+            Inches.of(216)
+        );
+        public static final AllianceFlipped<Pose3d> sharedFieldCorner = new AllianceFlipped<Pose3d>(
+            new Pose3d(new Translation3d(
+                Inches.of(0),
+                Inches.of(0),
+                Inches.of(0)
+            ), Rotation3d.kZero),
+            new Pose3d(new Translation3d(
+                fieldLength.minus(dimensions.getMeasureX()),
+                Inches.of(0),
+                Inches.of(0)
+            ), new Rotation3d(0, 0, Math.PI))
+        );
+
+        public final GoalObject innerGoal;
+        public final GoalObject outerGoal;
+        
+
+        public static final class GoalObject {
+            public static final Translation3d dimensions = new Translation3d(
+                Inches.of(34),
+                Inches.of(41),
+                Inches.of(84)
+            );
+            public static final Distance goalObjectsCenterToCenter = Inches.of(175.625).plus(dimensions.getMeasureY().div(2));
+
+            public final GoalZone parent;
+            public final int id;
+            public final int apriltagID;
+            public final Pose3d center;
+            public final HighGoal highGoal;
+            public final LowGoal lowGoal;
+            public final Pose2d shootingPose;
+            
+            private GoalObject(GoalZone parent, int id, Alliance alliance) {
+                this.parent = parent;
+                this.id = id;
+
+                this.apriltagID = switch (this.id) {
+                    default -> alliance == Alliance.Red ? 8 : 7;
+                    case 1 -> alliance == Alliance.Red ? 6 : 5;
+                };
+
+                this.center = switch (this.id) {
+                    default -> GoalZone.sharedFieldCorner.get(alliance).transformBy(
+                        new Transform3d(
+                            new Translation3d(
+                                dimensions.getMeasureX().div(2),
+                                dimensions.getMeasureY().div(2),
+                                dimensions.getMeasureZ().div(2)
+                            ),
+                            Rotation3d.kZero
+                        )
+                    );
+                    case 1 -> GoalZone.sharedFieldCorner.get(alliance).transformBy(
+                        new Transform3d(
+                            new Translation3d(    
+                                dimensions.getMeasureX().div(2),
+                                dimensions.getMeasureY().div(2).plus(goalObjectsCenterToCenter),
+                                dimensions.getMeasureZ().div(2)
+                            ),
+                            Rotation3d.kZero
+                        )
+                    );
+                };
+
+                this.shootingPose = switch (this.id) {
+                    default -> GoalZone.sharedFieldCorner.get(alliance).toPose2d().transformBy(new Transform2d(
+                            new Translation2d(
+                                GoalZone.dimensions.getMeasureX().plus(RobotConstants.robotLength.div(2)),
+                                dimensions.getMeasureY().div(2)
+                            ),
+                            Rotation2d.k180deg
+                        )
+                    );
+                    case 1 -> Pose2d.kZero;
+                };
+            }
+            public static final class HighGoal{
+                public static final Translation2d dimensions = new Translation2d(
+                    Inches.of(30),
+                    Inches.of(20)
+                );
+                public static final Distance inset = Inches.of(30);
+                public static final Distance toGround = Inches.of(60).plus(dimensions.getMeasureY().div(2));
+                
+                public static final Transform3d aimOffset = new Transform3d(
+                    new Translation3d(
+                        inset.minus(GoalObject.dimensions.getMeasureX().div(2)).unaryMinus(),
+                        Inches.zero(),
+                        toGround.minus(GoalObject.dimensions.getMeasureZ().div(2))
+                    ),
+                    Rotation3d.kZero
+                );
+
+                public final GoalObject parent;
+                public final Translation3d aimPoint;
+                
+                private HighGoal(GoalObject parent) {
+                    this.parent = parent;
+                    
+                    this.aimPoint = parent.center.transformBy(aimOffset).getTranslation();
+                }
+            }
+            public static final class LowGoal{
+                public static final Translation2d dimensions = new Translation2d(
+                    Inches.of(29.5),
+                    Inches.of(40)
+                );
+                public static final Distance toGround = Inches.of(22);
+
+                public static final Transform3d aimOffset = new Transform3d(
+                    new Translation3d(
+                        GoalObject.dimensions.getMeasureX().minus(dimensions.getMeasureX().div(2)),
+                        Inches.zero(),
+                        toGround
+                    ),
+                    Rotation3d.kZero
+                );
+
+                public final GoalObject parent;
+                public final Translation3d aimPoint;
+
+                private LowGoal(GoalObject parent){
+                    this.parent = parent;
+
+                    this.aimPoint = parent.center.transformBy(aimOffset).getTranslation();
+                }
+            }
+        }
+    }
     
     public static final Distance highGoalHeight = Inches.of(20);
     public static final Distance highGoalWidth = Inches.of(30);
@@ -58,9 +198,6 @@ public final class FieldConstants {
     public static final Distance lowGoalToGround = Inches.of(22);
 
     public static final Distance bigGoalsCenterToCenter = Inches.of(144.875).plus(highGoalWidth);
-    public static final Distance bigGoalWidth = Inches.of(41);
-    public static final Distance bigGoalHeight = Inches.of(84);
-    public static final Distance bigGoalDepth = Inches.of(34);
 
     public static final Pose3d outerBigGoalBlue = new Pose3d(
         new Translation3d(
@@ -139,5 +276,13 @@ public final class FieldConstants {
     public static final AllianceFlipped<Translation3d> passAimPoint = new AllianceFlipped<Translation3d>(
         null,
         null
+    );
+
+    public static final AllianceFlipped<Pose2d> innerShootingPose = new AllianceFlipped<Pose2d>(
+        null, null
+    );
+
+    public static final AllianceFlipped<Pose2d> outerShootingPose = new AllianceFlipped<Pose2d>(
+        null, null
     );
 }
