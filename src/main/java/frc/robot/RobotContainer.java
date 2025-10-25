@@ -28,11 +28,16 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.util.controllers.XboxController;
 
 public class RobotContainer {
     // Subsystems
     public final Drive drive;
+    public final Shooter shooter;
     
     // Vision
 
@@ -57,6 +62,7 @@ public class RobotContainer {
                         .map(ModuleIOFalcon550::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.shooter = new Shooter(new ShooterIOTalonFX());
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -66,6 +72,7 @@ public class RobotContainer {
                         .map(ModuleIOSim::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.shooter = new Shooter(new ShooterIOSim());
             }
             default -> {
                 this.drive = new Drive(
@@ -76,6 +83,7 @@ public class RobotContainer {
                     new ModuleIO(){},
                     new ModuleIO(){}
                 );
+                this.shooter = new Shooter(new ShooterIO() {});
             }
         }
 
