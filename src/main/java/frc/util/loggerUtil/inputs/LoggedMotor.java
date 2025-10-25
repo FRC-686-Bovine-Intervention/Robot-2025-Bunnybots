@@ -23,16 +23,14 @@ public class LoggedMotor implements StructSerializable {
     private double appliedVolts = 0.0;
     private double statorCurrentAmps = 0.0;
     private double supplyCurrentAmps = 0.0;
-    private double torqueCurrentAmps = 0.0;
     private double deviceTempCel = 0.0;
 
     public LoggedMotor() {}
 
-    private LoggedMotor(double appliedVolts, double statorCurrentAmps, double supplyCurrentAmps, double torqueCurrentAmps, double deviceTempCel) {
+    private LoggedMotor(double appliedVolts, double statorCurrentAmps, double supplyCurrentAmps, double deviceTempCel) {
         this.appliedVolts = appliedVolts;
         this.statorCurrentAmps = statorCurrentAmps;
         this.supplyCurrentAmps = supplyCurrentAmps;
-        this.torqueCurrentAmps = torqueCurrentAmps;
         this.deviceTempCel = deviceTempCel;
     }
 
@@ -55,12 +53,6 @@ public class LoggedMotor implements StructSerializable {
         return this.supplyCurrentAmps;
     }
     /**
-     * @return The applied voltage of the motor in {@link #edu.wpi.first.units.Units.Volts volts}
-     */
-    public double getTorqueCurrentAmps() {
-        return this.torqueCurrentAmps;
-    }
-    /**
      * @return The temperature of the motor in {@link #edu.wpi.first.units.Units.Celsius celsius}
      */
     public double getDeviceTempCel() {
@@ -79,10 +71,6 @@ public class LoggedMotor implements StructSerializable {
         this.supplyCurrentAmps = supplyCurrentAmps;
     }
 
-    public void setTorqueCurrentAmps(double torqueCurrentAmps) {
-        this.torqueCurrentAmps = torqueCurrentAmps;
-    }
-
     public void setDeviceTempCel(double deviceTempCel) {
         this.deviceTempCel = deviceTempCel;
     }
@@ -91,14 +79,13 @@ public class LoggedMotor implements StructSerializable {
         StatusSignal<Voltage> appliedVoltage,
         StatusSignal<Current> statorCurrent,
         StatusSignal<Current> supplyCurrent,
-        StatusSignal<Current> torqueCurrent,
         StatusSignal<Temperature> deviceTemperature
     ) {
         public static MotorStatusSignalCache from(TalonFX talonFX) {
-            return new MotorStatusSignalCache(talonFX.getMotorVoltage(), talonFX.getStatorCurrent(), talonFX.getSupplyCurrent(), talonFX.getTorqueCurrent(), talonFX.getDeviceTemp());
+            return new MotorStatusSignalCache(talonFX.getMotorVoltage(), talonFX.getStatorCurrent(), talonFX.getSupplyCurrent(), talonFX.getDeviceTemp());
         }
         public static MotorStatusSignalCache from(TalonFXS talonFXS) {
-            return new MotorStatusSignalCache(talonFXS.getMotorVoltage(), talonFXS.getStatorCurrent(), talonFXS.getSupplyCurrent(), talonFXS.getTorqueCurrent(), talonFXS.getDeviceTemp());
+            return new MotorStatusSignalCache(talonFXS.getMotorVoltage(), talonFXS.getStatorCurrent(), talonFXS.getSupplyCurrent(), talonFXS.getDeviceTemp());
         }
 
         public BaseStatusSignal[] getStatusSignals() {
@@ -106,7 +93,6 @@ public class LoggedMotor implements StructSerializable {
                 this.appliedVoltage(),
                 this.statorCurrent(),
                 this.supplyCurrent(),
-                this.torqueCurrent(),
                 this.deviceTemperature(),
             };
         }
@@ -116,7 +102,6 @@ public class LoggedMotor implements StructSerializable {
         this.setAppliedVolts(statusSignals.appliedVoltage().getValueAsDouble());
         this.setStatorCurrentAmps(statusSignals.statorCurrent().getValueAsDouble());
         this.setSupplyCurrentAmps(statusSignals.supplyCurrent().getValueAsDouble());
-        this.setTorqueCurrentAmps(statusSignals.torqueCurrent().getValueAsDouble());
         this.setDeviceTempCel(statusSignals.deviceTemperature().getValueAsDouble());
     }
     
@@ -124,7 +109,6 @@ public class LoggedMotor implements StructSerializable {
         this.setAppliedVolts(talonSRX.getMotorOutputVoltage());
         this.setStatorCurrentAmps(talonSRX.getStatorCurrent());
         this.setSupplyCurrentAmps(talonSRX.getSupplyCurrent());
-        this.setTorqueCurrentAmps(0.0);
         this.setDeviceTempCel(talonSRX.getTemperature());
     }
 
@@ -132,7 +116,6 @@ public class LoggedMotor implements StructSerializable {
         this.setAppliedVolts(spark.getAppliedOutput() * RobotController.getBatteryVoltage());
         this.setStatorCurrentAmps(spark.getOutputCurrent());
         this.setSupplyCurrentAmps(0.0);
-        this.setTorqueCurrentAmps(0.0);
         this.setDeviceTempCel(spark.getMotorTemperature());
     }
 
@@ -165,12 +148,12 @@ public class LoggedMotor implements StructSerializable {
 
         @Override
         public int getSize() {
-            return kSizeDouble * 5;
+            return kSizeDouble * 4;
         }
 
         @Override
         public String getSchema() {
-            return "double AppliedVolts;double StatorCurrentAmps;double SupplyCurrentAmps;double TorqueCurrentAmps;double DeviceTempCelsius";
+            return "double AppliedVolts;double StatorCurrentAmps;double SupplyCurrentAmps;double DeviceTempCelsius";
         }
 
         @Override
@@ -178,9 +161,8 @@ public class LoggedMotor implements StructSerializable {
             var appliedVolts = bb.getDouble();
             var statorCurrentAmps = bb.getDouble();
             var supplyCurrentAmps = bb.getDouble();
-            var torqueCurrentAmps = bb.getDouble();
             var deviceTempCel = bb.getDouble();
-            return new LoggedMotor(appliedVolts, statorCurrentAmps, supplyCurrentAmps, torqueCurrentAmps, deviceTempCel);
+            return new LoggedMotor(appliedVolts, statorCurrentAmps, supplyCurrentAmps, deviceTempCel);
         }
 
         @Override
@@ -188,7 +170,6 @@ public class LoggedMotor implements StructSerializable {
             out.setAppliedVolts(bb.getDouble());
             out.setStatorCurrentAmps(bb.getDouble());
             out.setSupplyCurrentAmps(bb.getDouble());
-            out.setTorqueCurrentAmps(bb.getDouble());
             out.setDeviceTempCel(bb.getDouble());
         }
 
@@ -197,7 +178,6 @@ public class LoggedMotor implements StructSerializable {
             bb.putDouble(value.getAppliedVolts());
             bb.putDouble(value.getStatorCurrentAmps());
             bb.putDouble(value.getSupplyCurrentAmps());
-            bb.putDouble(value.getTorqueCurrentAmps());
             bb.putDouble(value.getDeviceTempCel());
         }
     }
