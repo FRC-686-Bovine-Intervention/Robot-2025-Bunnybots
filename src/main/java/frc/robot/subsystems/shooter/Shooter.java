@@ -33,12 +33,6 @@ public class Shooter extends SubsystemBase {
     private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
 
     private static final LoggedTunable<LinearVelocity> preemptiveTargetSpeed = LoggedTunable.from("Shooter/Pre-emptive/Target Speed", MetersPerSecond::of, 17);
-    private static final LoggedTunable<LinearVelocity> passTargetSpeed = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 17);
-    private static final LoggedTunable<LinearVelocity> passTargetMinimum = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 4);
-    private static final LoggedTunable<LinearVelocity> passTargetMaximum = LoggedTunable.from("Shooter/Pass/Target Speed", MetersPerSecond::of, 21);
-    private static final LoggedTunable<LinearVelocity> lowGoalTargetSpeed = LoggedTunable.from("Shooter/Low Goal/Target Speed", MetersPerSecond::of, 2);
-    private static final LoggedTunable<LinearVelocity> lowGoalMinimumSpeed = LoggedTunable.from("Shooter/Low Goal/Minimum Speed", MetersPerSecond::of, 1.5);
-    private static final LoggedTunable<LinearVelocity> lowGoalMaximumSpeed = LoggedTunable.from("Shooter/Low Goal/Maximum Speed", MetersPerSecond::of, 3);
     private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Custom/Target Speed", MetersPerSecond::of, 15);
     private static final LoggedTunable<LinearVelocity> customMinimumSpeed = LoggedTunable.from("Shooter/Custom/Minimum Speed", MetersPerSecond::of, 50);
     private static final LoggedTunable<LinearVelocity> customMaximumSpeed = LoggedTunable.from("Shooter/Custom/Maximum Speed", MetersPerSecond::of, 50);
@@ -129,6 +123,7 @@ public class Shooter extends SubsystemBase {
     private void setReadyToShoot(double minimum, double maximum) {
         readyToShoot.setPressed(MathExtraUtil.isWithin(getAverageSurfaceSpeed(), minimum, maximum));
     }
+    
     private Command genCommand(
         String name,
         DoubleSupplier targetSpeed,
@@ -236,15 +231,6 @@ public class Shooter extends SubsystemBase {
             () -> preemptiveTargetSpeed.get().in(MetersPerSecond),
             () -> 0,
             () -> VelocityMax,
-            false
-        );
-    }
-    public Command pass() {
-        return genCommand(
-            "Pass",
-            passTargetSpeed,
-            passTargetMinimum,
-            passTargetMaximum,
             false
         );
     }
