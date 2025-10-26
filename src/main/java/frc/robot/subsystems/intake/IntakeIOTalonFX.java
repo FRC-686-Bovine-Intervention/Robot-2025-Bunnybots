@@ -1,0 +1,83 @@
+package frc.robot.subsystems.intake;
+
+import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+
+import frc.robot.constants.HardwareDevices;
+import frc.robot.constants.RobotConstants;
+import frc.util.faults.DeviceFaults;
+import frc.util.faults.DeviceFaults.FaultType;
+import frc.util.loggerUtil.inputs.LoggedMotor.MotorStatusSignalCache;
+
+public class IntakeIOTalonFX implements IntakeIO {
+    protected final TalonFX motor = HardwareDevices.intakeMotorID.talonFX();
+
+    private final VoltageOut voltageRequest = new VoltageOut(0);
+
+    private final MotorStatusSignalCache motorStatusSignalCache;
+
+    public IntakeIOTalonFX() {
+        var motorConfig = new TalonFXConfiguration();
+        motorConfig.MotorOutput
+            .withNeutralMode(NeutralModeValue.Coast)
+            .withInverted(InvertedValue.Clockwise_Positive)
+        ;
+        motorConfig.CurrentLimits
+            .withStatorCurrentLimit(Amps.of(80))
+            .withStatorCurrentLimitEnable(true)
+        ;
+
+        this.motor.getConfigurator().apply(motorConfig);
+
+        this.motorStatusSignalCache = MotorStatusSignalCache.from(this.motor);
+
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.motorStatusSignalCache.getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
+        this.motor.optimizeBusUtilization();
+    }
+
+    @Override
+    public void updateInputs(IntakeIOInputs inputs) {
+        BaseStatusSignal.refreshAll(
+            this.motorStatusSignalCache.appliedVoltage(),
+            this.motorStatusSignalCache.statorCurrent(),
+            this.motorStatusSignalCache.supplyCurrent(),
+            this.motorStatusSignalCache.torqueCurrent(),
+            this.motorStatusSignalCache.deviceTemperature()
+        );
+        inputs.motorConnected = BaseStatusSignal.isAllGood(
+            this.motorStatusSignalCache.appliedVoltage(),
+            this.motorStatusSignalCache.statorCurrent(),
+            this.motorStatusSignalCache.supplyCurrent(),
+            this.motorStatusSignalCache.torqueCurrent(),
+            this.motorStatusSignalCache.deviceTemperature()
+        );
+        inputs.motor.updateFrom(this.motorStatusSignalCache);
+    }
+
+    @Override
+    public void setVolts(double volts) {
+        this.motor.setControl(this.voltageRequest
+            .withOutput(volts)
+        );
+    }
+
+    @Override
+    public void clearMotorStickyFaults(long bitmask) {
+        if (bitmask == DeviceFaults.noneMask) {return;}
+        if (bitmask == DeviceFaults.allMask) {
+            this.motor.clearStickyFaults();
+        } else {
+            for (var faultType : FaultType.possibleTalonFXFaults) {
+                if (faultType.isPartOf(bitmask)) {
+                    faultType.clearStickyFaultOn(this.motor);
+                }
+            }
+        }
+    }
+}
