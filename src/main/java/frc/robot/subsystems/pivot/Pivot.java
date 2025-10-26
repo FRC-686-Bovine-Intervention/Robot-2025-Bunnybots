@@ -2,10 +2,12 @@ package frc.robot.subsystems.pivot;
 
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 
 import java.util.Optional;
+import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -14,6 +16,8 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.RobotConstants;
 import frc.util.FFConstants;
 import frc.util.LoggedTracer;
@@ -22,7 +26,7 @@ import frc.util.PIDConstants;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.robotStructure.angle.ArmMech;
 
-public class Pivot {
+public class Pivot extends SubsystemBase {
     private final PivotIO io;
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
@@ -162,5 +166,59 @@ public class Pivot {
 
     public void setAngleGoalRads(double angleRads) {
         this.setAngleGoalRads(angleRads, this.motionProfile);
+    }
+
+    public Command coast() {
+        var subsystem = this;
+        return new Command() {
+            {
+                setName("Coast");
+                addRequirements(subsystem);
+            }
+
+            @Override
+            public void initialize() {
+                subsystem.stop(Optional.of(NeutralMode.Coast));
+            }
+
+            @Override
+            public void end(boolean interrupted) {
+                subsystem.stop(Optional.of(NeutralMode.Brake));
+            }
+
+            @Override
+            public boolean runsWhenDisabled() {
+                return true;
+            }
+        };
+    }
+
+    private Command genCommand(String name, DoubleSupplier angleRads) {
+        var subsystem = this;
+        return new Command() {
+            {
+                setName(name);
+                addRequirements(subsystem);
+            }
+
+            @Override
+            public void execute() {
+                subsystem.setAngleGoalRads(angleRads.getAsDouble());
+            }
+        };
+    }
+
+    public Command idle() {
+        return genCommand(
+            "Idle", 
+            () -> PivotConstants.minAngle.in(Radians)
+        );
+    }
+
+    public Command aim() {
+        return genCommand(
+            "Aim",
+            () -> AimingParameters.pivotAltitude
+        );
     }
 }
