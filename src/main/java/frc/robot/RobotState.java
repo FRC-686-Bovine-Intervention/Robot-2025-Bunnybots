@@ -17,12 +17,14 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.interpolation.TimeInterpolatableBuffer;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -45,6 +47,8 @@ public class RobotState {
 
     private static final LoggedTunable<Time> txtyStaleTime = LoggedTunable.from("RobotState/TxTy Stale Time", Seconds::of, 0.2);
     private final Map<Integer, TxTyObservation> txtyObservations = new HashMap<>(FieldConstants.apriltagLayout.getTags().size());
+
+    private ShootTarget selectedShootTarget = ShootTarget.NONE;
 
     private RobotState() {
         this.qStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
@@ -204,6 +208,14 @@ public class RobotState {
         return Optional.of(observation.pose().plus(new Transform2d(odometrySample.get(), this.odometryPose)));
     }
 
+    public ShootTarget getSelectedShootTarget() {
+        return this.selectedShootTarget;
+    }
+
+    public void setSelectedShootTarget(ShootTarget target) {
+        this.selectedShootTarget = target;
+    }
+
     public static record OdometryObservation(
         double timestamp,
         Optional<Rotation3d> gyroRotation,
@@ -220,4 +232,48 @@ public class RobotState {
         int tagID,
         Pose2d pose
     ) {}
+
+    public static enum ShootTarget {
+        NONE,
+        RIGHT_LOW,
+        LEFT_LOW,
+        RIGHT_HIGH,
+        LEFT_HIGH,
+        PASS
+    }
+
+    public static Translation3d getAimPoint(ShootTarget target) {
+        if (DriverStation.getAlliance().isPresent()) {
+            boolean isBlue = DriverStation.getAlliance().get() == DriverStation.Alliance.Blue;
+            switch (target) {
+                default: return isBlue
+                    ? FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.highGoal.aimPoint
+                    : FieldConstants.LunarOutpost.lunarOutposts.getRed().innerGoal.highGoal.aimPoint;
+                case LEFT_HIGH: return isBlue
+                    ? FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.highGoal.aimPoint
+                    : FieldConstants.LunarOutpost.lunarOutposts.getRed().outerGoal.highGoal.aimPoint;
+                case RIGHT_LOW: return isBlue
+                    ? FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.lowGoal.aimPoint
+                    : FieldConstants.LunarOutpost.lunarOutposts.getRed().innerGoal.lowGoal.aimPoint;
+                case LEFT_LOW: return isBlue
+                    ? FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.lowGoal.aimPoint
+                    : FieldConstants.LunarOutpost.lunarOutposts.getRed().outerGoal.lowGoal.aimPoint;
+                case PASS:
+                    return FieldConstants.passTargetPoints.getOurs();
+            }
+        } else {
+            switch (target) {
+                default: 
+                    return FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.highGoal.aimPoint;
+                case LEFT_HIGH:
+                    return FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.highGoal.aimPoint;
+                case RIGHT_LOW:
+                    return FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.lowGoal.aimPoint;
+                case LEFT_LOW:
+                    return FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.lowGoal.aimPoint;
+                case PASS:
+                    return FieldConstants.passTargetPoints.getBlue();
+            }
+        }
+    }
 }

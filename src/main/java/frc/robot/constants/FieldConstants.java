@@ -332,4 +332,17 @@ public final class FieldConstants {
             starspireZones = AllianceFlipped.fromFunction((alliance) -> new StarspireZone(alliance));
         }
     }
+
+    public static final AllianceFlipped<Translation3d> passTargetPoints = new AllianceFlipped<>(
+        new Translation3d(
+            Inches.of(0),
+            Inches.of(0),
+            Inches.of(0)
+        ),
+        new Translation3d(
+            Inches.of(0),
+            Inches.of(0),
+            Inches.of(0)
+        )
+    );
 }
