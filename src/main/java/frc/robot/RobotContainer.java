@@ -245,10 +245,10 @@ public class RobotContainer {
                 AimingParameters.setFrom(drive);
                 if (!autoAimLock.isScheduled()) {
                     autoAimLock.schedule();
-                } else {
-                    if (autoAimLock.isScheduled()) {
-                        autoAimLock.cancel();
-                    }
+                }
+            } else {
+                if (autoAimLock.isScheduled()) {
+                    autoAimLock.cancel();
                 }
             }
             LoggedTracer.logEpoch("CommandScheduler Periodic/Automations/Aim Lock");
