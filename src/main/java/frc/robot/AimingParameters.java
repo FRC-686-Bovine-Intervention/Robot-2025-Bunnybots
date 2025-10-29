@@ -35,11 +35,13 @@ import frc.robot.RobotState.ShootTarget;
 import frc.robot.constants.FieldConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.shooter.ShooterConstants;
+import frc.robot.subsystems.pivot.Pivot;
 import frc.robot.subsystems.pivot.PivotConstants;
 import frc.util.flipping.AllianceFlipUtil;
 import frc.util.geometry.GeomUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.misc.MathExtraUtil;
+import frc.util.misc.MeasureUtil;
 
 public class AimingParameters {
     private static Translation3d aimPoint = new Translation3d();
@@ -99,8 +101,8 @@ public class AimingParameters {
     }
 
     public static final boolean withinAltitudeTolerance(double altitude) {
-        var pivotDist = effectiveDistance - Pivot.robotToPivotTranslation.getX();
-        var targetHeight = aimPoint.getZ() - Pivot.robotToPivotTranslation.getZ();
+        var pivotDist = effectiveDistance - PivotConstants.pivotBase.getX();
+        var targetHeight = aimPoint.getZ() - PivotConstants.pivotBase.getZ();
         var pivotToTargetDist = Math.hypot(pivotDist, targetHeight);
         var verticalTolerance = Math.abs(targetHeight / pivotToTargetDist) * AimingParameters.altitudeTolerance.get().in(Meters) * 0.5;
         var altitudeTolerance = Math.atan2(verticalTolerance, pivotToTargetDist - (targetHeight / pivotDist * verticalTolerance));
@@ -108,7 +110,7 @@ public class AimingParameters {
         Logger.recordOutput("AimingTolerance/pivotToTargetDist", pivotToTargetDist);
         Logger.recordOutput("AimingTolerance/verticalTolerance", verticalTolerance);
         Logger.recordOutput("AimingTolerance/altitudeTolerance", altitudeTolerance);
-        var result = MathExtraUtil.isNear(AimingParameters.pivotAltitude(), altitude, Radians.of(altitudeTolerance));
+        var result = MathUtil.isNear(AimingParameters.pivotAltitude(), altitude, altitudeTolerance);
         Logger.recordOutput("AimingTolerance/Altitude", result);
         return result;
     }

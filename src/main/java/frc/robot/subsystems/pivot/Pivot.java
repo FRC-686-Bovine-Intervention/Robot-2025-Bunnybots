@@ -12,12 +12,15 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.AimingParameters;
 import frc.robot.constants.RobotConstants;
 import frc.util.FFConstants;
 import frc.util.LoggedTracer;
@@ -31,7 +34,7 @@ public class Pivot extends SubsystemBase {
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
     private static final LoggedTunable<TrapezoidProfile.Constraints> profileConsts = LoggedTunable.fromDashboardUnits(
-        "Superstructure/Pivot/Slow Profile",
+        "Pivot/Profile",
         DegreesPerSecond,
         DegreesPerSecondPerSecond,
         RadiansPerSecond,
@@ -42,7 +45,7 @@ public class Pivot extends SubsystemBase {
         )
     );
     private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from(
-        "Superstructure/Pivot/FF",
+        "Pivot/FF",
         new FFConstants(
             0,
             0,
@@ -51,7 +54,7 @@ public class Pivot extends SubsystemBase {
         )
     );
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
-        "Superstructure/Pivot/PID",
+        "Pivot/PID",
         new PIDConstants(
             150,
             0,
@@ -119,6 +122,17 @@ public class Pivot extends SubsystemBase {
 
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot/Periodic");
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot");
+    }
+
+    public static Transform3d getRobotToPivot(double angle) {
+        return new Transform3d(
+            PivotConstants.pivotBase.getTranslation(),
+            new Rotation3d(
+                0,
+                PivotConstants.minAngle.in(Radians)-angle,
+                0
+            )
+        );
     }
 
     public double getAngleRads() {
@@ -218,7 +232,7 @@ public class Pivot extends SubsystemBase {
     public Command aim() {
         return genCommand(
             "Aim",
-            () -> AimingParameters.pivotAltitude
+            AimingParameters::pivotAltitude
         );
     }
 }

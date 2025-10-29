@@ -31,6 +31,14 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.pivot.Pivot;
+import frc.robot.subsystems.pivot.PivotIO;
+import frc.robot.subsystems.pivot.PivotIOSim;
+import frc.robot.subsystems.pivot.PivotIOTalonFX;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.ShooterIO;
+import frc.robot.subsystems.shooter.ShooterIOSim;
+import frc.robot.subsystems.shooter.ShooterIOTalonFX;
 import frc.util.LoggedTracer;
 import frc.util.controllers.XboxController;
 
@@ -40,7 +48,8 @@ public class RobotContainer {
     // Subsystems
     public final Drive drive;
     public final Shooter shooter;
-    
+    public final Pivot pivot;
+
     // Vision
 
     // Event Loops
@@ -65,6 +74,7 @@ public class RobotContainer {
                         .toArray(ModuleIO[]::new)
                 );
                 this.shooter = new Shooter(new ShooterIOTalonFX());
+                this.pivot = new Pivot(new PivotIOTalonFX());
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -75,6 +85,7 @@ public class RobotContainer {
                         .toArray(ModuleIO[]::new)
                 );
                 this.shooter = new Shooter(new ShooterIOSim());
+                this.pivot = new Pivot(new PivotIOSim());
             }
             default -> {
                 this.drive = new Drive(
@@ -86,6 +97,7 @@ public class RobotContainer {
                     new ModuleIO(){}
                 );
                 this.shooter = new Shooter(new ShooterIO() {});
+                this.pivot = new Pivot(new PivotIO() {});
             }
         }
 
@@ -241,7 +253,7 @@ public class RobotContainer {
             }
         }));
 
-        final Command autoAimLock = this.drive.rotationalSubsystem.pidControlledHeading(() -> AimingParameters.shotPose().getRotation()).alongWith(/*Pivot Aim*/).alongWith(/*Shooter Speed Up*/);
+        final Command autoAimLock = this.drive.rotationalSubsystem.pidControlledHeading(() -> AimingParameters.shotPose().getRotation()).alongWith(pivot.aim()).alongWith(shooter.aimWithoutAutoShoot());
         this.automationsLoop.bind(() -> {
             LoggedTracer.logEpoch("CommandScheduler Periodic/Automations/Aim Lock/Before");
             var selectedShootTarget = this.robotState.getSelectedShootTarget();
