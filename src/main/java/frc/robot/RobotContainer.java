@@ -39,6 +39,7 @@ public class RobotContainer {
 
     // Subsystems
     public final Drive drive;
+    public final Shooter shooter;
     
     // Vision
 
@@ -63,6 +64,7 @@ public class RobotContainer {
                         .map(ModuleIOFalcon550::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.shooter = new Shooter(new ShooterIOTalonFX());
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -72,6 +74,7 @@ public class RobotContainer {
                         .map(ModuleIOSim::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.shooter = new Shooter(new ShooterIOSim());
             }
             default -> {
                 this.drive = new Drive(
@@ -82,6 +85,7 @@ public class RobotContainer {
                     new ModuleIO(){},
                     new ModuleIO(){}
                 );
+                this.shooter = new Shooter(new ShooterIO() {});
             }
         }
 

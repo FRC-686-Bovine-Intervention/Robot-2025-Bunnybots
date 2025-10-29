@@ -63,6 +63,10 @@ public class HardwareDevices {
     public static final PWMPort climberServoPort = PWMPort.port(1);
     public static final DIOPort climberSensor = DIOPort.port(9);
 
+    // Shooter
+    public static final CANDevice shooterLeftMotorID = rio.id(11);
+    public static final CANDevice shooterRightMotorID = rio.id(12);
+
     // RIO
     public static final PWMPort ledPort = PWMPort.port(0);
     public static final DIOPort button1 = DIOPort.port(0);
