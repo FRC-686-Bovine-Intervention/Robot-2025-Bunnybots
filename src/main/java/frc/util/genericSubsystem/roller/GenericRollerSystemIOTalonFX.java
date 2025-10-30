@@ -1,33 +1,46 @@
-package frc.robot.subsystems.intake;
+package frc.util.genericSubsystem.roller;
+
+import static edu.wpi.first.units.Units.Amps;
+
+import java.util.Optional;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
+import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import frc.robot.constants.HardwareDevices;
+import edu.wpi.first.units.measure.Current;
 import frc.robot.constants.RobotConstants;
+import frc.util.NeutralMode;
 import frc.util.faults.DeviceFaults;
 import frc.util.faults.DeviceFaults.FaultType;
+import frc.util.hardwareID.can.CANDevice;
 import frc.util.loggerUtil.inputs.LoggedMotor.MotorStatusSignalCache;
 
-public class IntakeIOTalonFX implements IntakeIO {
-    protected final TalonFX motor = HardwareDevices.intakeMotorID.talonFX();
+public abstract class GenericRollerSystemIOTalonFX implements GenericRollerSystemIO{
+    protected final TalonFX motor;
 
     private final VoltageOut voltageRequest = new VoltageOut(0);
+    private final NeutralOut neutralOutRequest = new NeutralOut();
+    private final CoastOut coastOutRequest = new CoastOut();
+    private final StaticBrake staticBrakeRequest = new StaticBrake();
 
     private final MotorStatusSignalCache motorStatusSignalCache;
 
-    public IntakeIOTalonFX() {
+    public GenericRollerSystemIOTalonFX(CANDevice device, boolean clockwise, Optional<NeutralMode> defaultNeutralMode, Current currentLimit) {
+        this.motor = device.talonFX();
+        
         var motorConfig = new TalonFXConfiguration();
         motorConfig.MotorOutput
-            .withNeutralMode(NeutralModeValue.Coast)
-            .withInverted(InvertedValue.Clockwise_Positive)
+            .withNeutralMode(defaultNeutralMode.get().getPhoenix6NeutralMode())
+            .withInverted(clockwise ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive)
         ;
         motorConfig.CurrentLimits
-            .withStatorCurrentLimit(Amps.of(80))
+            .withStatorCurrentLimit(currentLimit)
             .withStatorCurrentLimitEnable(true)
         ;
 
@@ -40,9 +53,9 @@ public class IntakeIOTalonFX implements IntakeIO {
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
         this.motor.optimizeBusUtilization();
     }
-
+    
     @Override
-    public void updateInputs(IntakeIOInputs inputs) {
+    public void updateInputs(GenericRollerSystemIOInputs inputs) {
         BaseStatusSignal.refreshAll(
             this.motorStatusSignalCache.appliedVoltage(),
             this.motorStatusSignalCache.statorCurrent(),
@@ -65,6 +78,11 @@ public class IntakeIOTalonFX implements IntakeIO {
         this.motor.setControl(this.voltageRequest
             .withOutput(volts)
         );
+    }
+
+    @Override
+    public void stop(Optional<NeutralMode> neutralMode) {
+        this.motor.setControl(NeutralMode.selectControlRequest(neutralMode, neutralOutRequest, coastOutRequest, staticBrakeRequest));
     }
 
     @Override
