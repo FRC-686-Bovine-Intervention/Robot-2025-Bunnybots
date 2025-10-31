@@ -43,9 +43,12 @@ public class HardwareDevices {
 
     // Pivot
     public static final CANDevice pivotLeftMotorID = rio.id(5);
-    public static final CANDevice pivotRightMotorID = rio.id(6);
     public static final CANDevice pivotEncoderID = rio.id(5);
 
+    // Intake Pivot
+    public static final CANDevice intakePivotMotorID = rio.id(6);
+    public static final CANDevice intakePivotEncoderID = rio.id(6);
+    
     // Elevator
     public static final CANDevice elevatorMotorID = rio.id(7);
     public static final CANDevice elevatorEncoderID = rio.id(7);
