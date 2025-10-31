@@ -177,14 +177,14 @@ public class ObjectVision {
         optIntakeTarget = Optional.empty();
     }
 
-    public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noLunite, Drive drive) {
+    public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noObject, Drive drive) {
         return 
             Commands.runOnce(() -> intakeTargetLocked = true)
             .alongWith(
                 drive.translationSubsystem.fieldRelative(getAutoIntakeTransSpeed(throttle).orElseGet(ChassisSpeeds::new)),
                 drive.rotationalSubsystem.pointTo(autoIntakeTargetLocation(), () -> RobotConstants.intakeForward)
             )
-            .onlyWhile(() -> noLunite.getAsBoolean() && optIntakeTarget.isPresent())
+            .onlyWhile(() -> noObject.getAsBoolean() && optIntakeTarget.isPresent())
             .finallyDo(() -> intakeTargetLocked = false)
             .withName("Auto Intake")
         ;
