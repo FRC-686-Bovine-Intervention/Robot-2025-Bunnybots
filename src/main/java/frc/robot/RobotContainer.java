@@ -4,9 +4,13 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
 import java.util.Arrays;
 import java.util.Set;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -28,7 +32,9 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
+import frc.util.Perspective;
 
 public class RobotContainer {
     // Subsystems
@@ -80,6 +86,54 @@ public class RobotContainer {
         }
 
         System.out.println("[Init RobotContainer] Configuring Commands");
+        this.drive.translationSubsystem.setDefaultCommand(new Command() {
+            {
+                this.setName("Driver Controlled");
+                this.addRequirements(drive.translationSubsystem);
+            }
+            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05);
+            @Override
+            public void execute() {
+                var joyX = +driveJoystick.y().getAsDouble();
+                var joyY = -driveJoystick.x().getAsDouble();
+                
+                var perspectiveForward = Perspective.getCurrent().getForwardDirection();
+                var fieldX = joyX * perspectiveForward.getCos() - joyY * perspectiveForward.getSin();
+                var fieldY = joyX * perspectiveForward.getSin() + joyY * perspectiveForward.getCos();
+
+                var robotRot = RobotState.getInstance().getEstimatedGlobalPose().getRotation();
+                var robotX = fieldX * robotRot.getCos() - fieldY * -robotRot.getSin();
+                var robotY = fieldX * -robotRot.getSin() + fieldY * robotRot.getCos();
+
+                var driveX = robotX * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
+                var driveY = robotY * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
+
+                drive.translationSubsystem.driveVelocity(driveX, driveY);
+            }
+            @Override
+            public void end(boolean interrupted) {
+                drive.translationSubsystem.stop();
+            }
+        });
+        this.drive.rotationalSubsystem.setDefaultCommand(new Command() {
+            {
+                this.setName("Drive Controlled");
+                this.addRequirements(drive.rotationalSubsystem);
+            }
+            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05);
+            @Override
+            public void execute() {
+                var omega = this.axis.getAsDouble() * DriveConstants.maxTurnRate.in(RadiansPerSecond);
+
+                drive.rotationalSubsystem.driveVelocity(omega);
+            }
+            @Override
+            public void end(boolean interrupted) {
+                drive.rotationalSubsystem.stop();
+            }
+        });
+
+        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
 
         System.out.println("[Init RobotContainer] Configuring Notifications");
 

@@ -127,7 +127,9 @@ public final class DriveConstants {
         .gear(15).gear(32).axle()
         .gear(10).gear(60).axle()
     ;
-    public static final GearRatio azimuthEncoderToCarriageRatio = new GearRatio();
+    public static final GearRatio azimuthEncoderToCarriageRatio = new GearRatio()
+    
+    ;
     public static final GearRatio azimuthMotorToCarriageRatio = azimuthMotorToEncoderRatio.then(azimuthEncoderToCarriageRatio);
 
     public static final LinearVelocity maxModuleSpeed = wheel.angularVelocityToLinearVelocity(driveMotorToWheelRatio.applyUnsigned(RadiansPerSecond.of(DCMotor.getFalcon500(1).freeSpeedRadPerSec)));
