@@ -16,7 +16,7 @@ public abstract class Mechanism3d<U extends Unit> extends ChildBase {
     protected final Vector<N3> axis;
     protected Transform3d transform = Transform3d.kZero;
 
-    private static Mechanism3d<?>[] mechanisms;
+    private static Mechanism3d<?>[] mechanisms = new Mechanism3d[0];
     public static void registerMechs(Mechanism3d<?>... mechs) {
         mechanisms = mechs;
     }

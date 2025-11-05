@@ -15,6 +15,7 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -36,6 +37,7 @@ import frc.util.LoggedTracer;
 import frc.util.loggerUtil.LoggerUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
+import frc.util.misc.MathExtraUtil;
 import frc.util.robotStructure.CameraMount;
 import frc.util.rust.iter.Iterator;
 
@@ -53,7 +55,7 @@ public class ObjectVision {
     private static final LoggedTunableNumber acquireConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Acquire", -2);
     private static final LoggedTunableNumber detargetConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Detarget", -3);
     
-    private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
+    //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
 
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
@@ -68,8 +70,8 @@ public class ObjectVision {
         List<TrackedObject> allTrackedObjects = new ArrayList<>(this.pipelines.length * 3);
         for (var pipeline : this.pipelines) {
             var frames = pipeline.getFrames();
-            var loggingKey = "Vision/Objects/Results/" + pipeline.pipelineIndex;
-            var tracingKey = "CommandScheduler Periodic/Objects/Process Results/" + pipeline.pipelineIndex;
+            var loggingKey = "Vision/Objects/Results/" + pipeline.pipelineIndex + "/";
+            var tracingKey = "CommandScheduler Periodic/Objects/Process Results/" + pipeline.pipelineIndex + "/";
             for (var frame : frames) {
                 var frameTargets = Iterator.of(frame.targets)
                     .map((target) -> TrackedObject.from(pipeline.camera.mount, target))
@@ -77,7 +79,7 @@ public class ObjectVision {
                     .map(Optional::get)
                     .collect_arraylist()
                 ;
-                var connections = new ArrayList<TargetMemoryConnection>(objectMemories.size() * frameTargets.size());
+                /*var connections = new ArrayList<TargetMemoryConnection>(objectMemories.size() * frameTargets.size());
                 objectMemories.forEach(
                     (memory) -> frameTargets.forEach(
                         (target) -> {
@@ -110,28 +112,35 @@ public class ObjectVision {
                 objectMemories.removeIf((memory) -> memory.confidence <= 0);
                 objectMemories.removeIf((memory) -> Double.isNaN(memory.fieldPos.getX()) || Double.isNaN(memory.fieldPos.getY()));
                 objectMemories.removeIf((memory) -> RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) <= 0.07);
-
+                */
                 if (
                     optIntakeTarget.isPresent()
                     && (
                         optIntakeTarget.get().confidence < detargetConfidenceThreshold.get()
-                        || !objectMemories.contains(optIntakeTarget.get())
+                        || !frameTargets.contains(optIntakeTarget.get())
                     )
                 ) {
                     optIntakeTarget = Optional.empty();
                 }
                 if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
-                    optIntakeTarget = objectMemories
-                        .stream()
-                        .filter((target) -> target.getPriority() >= acquireConfidenceThreshold.get())
-                        .sorted((a, b) -> Double.compare(b.getPriority(), a.getPriority()))
-                        .findFirst()
-                    ;
-                }
+                    var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
+                
+                    optIntakeTarget = frameTargets.stream()
+                        .filter(target -> target.confidence > acquireConfidenceThreshold.get())
+                        .sorted((a, b) -> {
+                            var relA = new Pose2d(a.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
+                            var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
+                
+                            double distA = MathExtraUtil.hypot2(relA.getX(), 2 * relA.getY());
+                            double distB = MathExtraUtil.hypot2(relB.getX(), 2 * relB.getY());
+                            return Double.compare(distA, distB);
+                        })
+                        .findFirst();
+                }                
 
-                Logger.recordOutput(loggingKey + "Object Memories", objectMemories.stream().map(TrackedObject::toASPose).toArray(Pose3d[]::new));
-                Logger.recordOutput(loggingKey + "Object Confidence", objectMemories.stream().mapToDouble((object) -> object.confidence).toArray());
-                Logger.recordOutput(loggingKey + "Object Priority", objectMemories.stream().mapToDouble(TrackedObject::getPriority).toArray());
+                //Logger.recordOutput(loggingKey + "Object Memories", objectMemories.stream().map(TrackedObject::toASPose).toArray(Pose3d[]::new));
+                //Logger.recordOutput(loggingKey + "Object Confidence", objectMemories.stream().mapToDouble((object) -> object.confidence).toArray());
+                //Logger.recordOutput(loggingKey + "Object Priority", objectMemories.stream().mapToDouble(TrackedObject::getPriority).toArray());
                 Logger.recordOutput(loggingKey + "Target", LoggerUtil.toArray(optIntakeTarget.map(TrackedObject::toASPose), Pose3d[]::new));
                 Logger.recordOutput(loggingKey + "Locked Target", LoggerUtil.toArray(optIntakeTarget.filter((a) -> intakeTargetLocked).map(TrackedObject::toASPose).map(Pose3d::getTranslation), Translation3d[]::new));
             }
@@ -173,7 +182,7 @@ public class ObjectVision {
     }
 
     public void clearMemory() {
-        objectMemories.clear();
+        //objectMemories.clear();
         optIntakeTarget = Optional.empty();
     }
 
@@ -209,20 +218,28 @@ public class ObjectVision {
 
         public static Optional<TrackedObject> from(CameraMount mount, CameraTarget target) {
             var camTransform = mount.getRobotRelative();
-            var cameraToTargetVector = new Translation3d(
-                1,
-                0,
-                0
-            ).rotateBy(new Rotation3d(
-                0,
-                0,
-                -target.yawRads
-            )).rotateBy(new Rotation3d(
-                0,
-                -target.pitchRads,
-                0
-            ));
-            var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
+            double tx = target.yawRads + camTransform.getRotation().getZ();
+            double ty = target.pitchRads + camTransform.getRotation().getY();
+            if (ty >= 0) {
+                //Target above horizon, ignore
+                return Optional.empty();
+            }
+            double distToGround = camTransform.getTranslation().getZ() - FieldConstants.luniteDimensions.getZ() / 2;
+            double xToCamMeters = Math.tan(-ty) * distToGround;
+            double yToCamMeters = Math.tan(tx) * xToCamMeters;
+
+            var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(
+                new Transform2d(
+                    new Translation2d(
+                        camTransform.getTranslation().getX() + xToCamMeters,
+                        camTransform.getTranslation().getY() + yToCamMeters
+                    ),
+                    Rotation2d.kZero
+                )
+            );
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));
+
+            /*var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
             if (cameraToTargetVectorRobotRelative.getZ() >= 0) {
                 // Target above horizon, ignore
                 return Optional.empty();
@@ -231,7 +248,7 @@ public class ObjectVision {
             var robotToTarget = cameraToTargetVectorRobotRelative.times(toFloorScalingFactor).plus(camTransform.getTranslation());
             var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(robotToTarget.toTranslation2d(), Rotation2d.kZero));
 
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));*/
         }
 
         public void updateConfidence() {
@@ -315,6 +332,4 @@ public class ObjectVision {
             }
         }
     }
-
-    
 }
