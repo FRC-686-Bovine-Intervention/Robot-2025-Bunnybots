@@ -234,6 +234,11 @@ public class ObjectVision {
                 new Translation3d(1, 0, 0),
                 Rotation3d.kZero
             )).getTranslation();
+
+            if (rayDir.getZ() >= rayOrigin.getZ()) {
+                // Target above horizon, ignore
+                return Optional.empty();
+            }
             
             var originDotNormalPlusD = -rayOrigin.toVector().dot(planeNormal.toVector()) + planeD;
             var directionDotNormal = rayDir.toVector().dot(planeNormal.toVector());
