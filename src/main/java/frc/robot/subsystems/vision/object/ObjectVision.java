@@ -2,6 +2,8 @@ package frc.robot.subsystems.vision.object;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -20,9 +22,11 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.networktables.RawTopic;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.util.struct.Struct;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -57,6 +61,9 @@ public class ObjectVision {
     
     //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
 
+    private static final Translation3d planeNormal = new Translation3d(0, 0, 1);
+    private static final Translation3d planePoint = new Translation3d(0, 0, FieldConstants.luniteDimensions.getZ()/2);
+    private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
 
@@ -190,8 +197,7 @@ public class ObjectVision {
         return 
             Commands.runOnce(() -> intakeTargetLocked = true)
             .alongWith(
-                drive.translationSubsystem.fieldRelative(getAutoIntakeTransSpeed(throttle).orElseGet(ChassisSpeeds::new)),
-                drive.rotationalSubsystem.pointTo(autoIntakeTargetLocation(), () -> RobotConstants.intakeForward)
+                drive.rotationalSubsystem.pointTo(() -> Optional.of(optIntakeTarget.get().fieldPos), () -> Rotation2d.k180deg)
             )
             .onlyWhile(() -> noObject.getAsBoolean() && optIntakeTarget.isPresent())
             .finallyDo(() -> intakeTargetLocked = false)
@@ -217,27 +223,39 @@ public class ObjectVision {
         }
 
         public static Optional<TrackedObject> from(CameraMount mount, CameraTarget target) {
-            var camTransform = mount.getRobotRelative();
-            double tx = target.yawRads + camTransform.getRotation().getZ();
-            double ty = target.pitchRads + camTransform.getRotation().getY();
-            if (ty >= 0) {
-                //Target above horizon, ignore
-                return Optional.empty();
-            }
-            double distToGround = camTransform.getTranslation().getZ() - FieldConstants.luniteDimensions.getZ() / 2;
-            double xToCamMeters = Math.tan(-ty) * distToGround;
-            double yToCamMeters = Math.tan(tx) * xToCamMeters;
+            var camPose = mount.getFieldRelative();
 
-            var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(
-                new Transform2d(
-                    new Translation2d(
-                        camTransform.getTranslation().getX() + xToCamMeters,
-                        camTransform.getTranslation().getY() + yToCamMeters
-                    ),
-                    Rotation2d.kZero
-                )
+            var rayOrigin = camPose.getTranslation();
+            var rayDir = camPose.rotateBy(new Rotation3d(
+                Radians.zero(),
+                Radians.of(target.pitchRads),
+                Radians.of(-target.yawRads)
+            )).transformBy(new Transform3d(
+                new Translation3d(1, 0, 0),
+                Rotation3d.kZero
+            )).getTranslation();
+            
+            var originDotNormalPlusD = -rayOrigin.toVector().dot(planeNormal.toVector()) + planeD;
+            var directionDotNormal = rayDir.toVector().dot(planeNormal.toVector());
+            var t = originDotNormalPlusD / directionDotNormal;
+
+            var intersectionPoint = rayOrigin.toVector().plus(rayDir.toVector().times(t));
+
+            var fieldPos = new Translation2d(
+                intersectionPoint.get(0),
+                intersectionPoint.get(1)
             );
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPos, target.objectConfidence));
+            /*var camPose = mount.getFieldRelative();
+            double h = (camPose.getZ() - FieldConstants.luniteDimensions.getZ() / 2) / Math.tan(target.pitchRads);
+            double x = h * Math.cos(target.yawRads);
+            double y = h * Math.sin(target.yawRads);
+
+            var fieldPose = camPose.transformBy(new Transform3d(
+                new Translation3d(x, y, FieldConstants.luniteDimensions.getZ()),
+            Rotation3d.kZero));
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation().toTranslation2d(), target.objectConfidence));
+            */
 
             /*var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
             if (cameraToTargetVectorRobotRelative.getZ() >= 0) {

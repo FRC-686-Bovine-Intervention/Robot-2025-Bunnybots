@@ -30,9 +30,9 @@ public class CameraIOPhoton implements CameraIO {
                             var tagID = target.getFiducialId();
                             var objectClassID = target.getDetectedObjectClassID();
                             var objectConfidence = target.getDetectedObjectConfidence();
-                            var yawRads = target.getYaw();
-                            var pitchRads = target.getPitch();
-                            var skewRads = target.getSkew();
+                            var yawRads = Math.toRadians(target.getYaw());
+                            var pitchRads = Math.toRadians(target.getPitch());
+                            var skewRads = Math.toRadians(target.getSkew());
                             var bestCameraToTag = target.getBestCameraToTarget();
                             var altCameraToTag = target.getAlternateCameraToTarget();
                             var poseAmbiguity = target.getPoseAmbiguity();

@@ -86,10 +86,14 @@ public final class VisionConstants {
 
     public static final Transform3d intakeMount = new Transform3d(
         new Translation3d(
-            Inches.of(26),
+            Inches.of(-26),
             Inches.zero(),
             Inches.zero()
         ),
-        Rotation3d.kZero
+        new Rotation3d(
+            Degrees.zero(),
+            Degrees.zero(),
+            Degrees.of(180)
+        )
     );
 }

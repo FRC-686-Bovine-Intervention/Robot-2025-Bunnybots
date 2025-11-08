@@ -72,7 +72,7 @@ public class RobotContainer {
                         .toArray(ModuleIO[]::new)
                 );
                 this.intakeCamera = new Camera(
-                    new CameraIOPhoton("Arducam_OV9782_USB_Camera"),
+                    new CameraIOPhoton("Intake"),
                     "Intake",
                     VisionConstants.intakeMount,
                     (isConnected) -> {
