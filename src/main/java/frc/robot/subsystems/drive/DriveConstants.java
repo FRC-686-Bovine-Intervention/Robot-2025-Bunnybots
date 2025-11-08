@@ -124,8 +124,9 @@ public final class DriveConstants {
         .gear(15).gear(45).axle()
     ;
     public static final GearRatio azimuthMotorToEncoderRatio = new GearRatio()
-        .gear(15).gear(32).axle()
-        .gear(10).gear(60).axle()
+        .planetary(GearRatio.ULTRAPLANETARY_3_1)
+        .planetary(GearRatio.ULTRAPLANETARY_4_1)
+        .gear(14).gear(62).axle()
     ;
     public static final GearRatio azimuthEncoderToCarriageRatio = new GearRatio()
     
@@ -135,18 +136,7 @@ public final class DriveConstants {
     public static final LinearVelocity maxModuleSpeed = wheel.angularVelocityToLinearVelocity(driveMotorToWheelRatio.applyUnsigned(RadiansPerSecond.of(DCMotor.getFalcon500(1).freeSpeedRadPerSec)));
 
     public static final LinearVelocity maxDriveSpeed = MetersPerSecond.of(6);
-    /**Tangential speed (m/s) = radial speed (rad/s) * radius (m)*/
     public static final AngularVelocity maxTurnRate = RadiansPerSecond.of(maxDriveSpeed.in(MetersPerSecond) / driveBaseRadius.in(Meters));
-    public static final DoubleSupplier maxDriveSpeedEnvCoef = Environment.switchVar(
-        () -> 1.0,
-        new LoggedNetworkNumber("Demo Constraints/Max Translational Percentage", 0.25)::get
-    );
-    public static final DoubleSupplier maxTurnRateEnvCoef = Environment.switchVar(
-        () -> 1.0,
-        new LoggedNetworkNumber("Demo Constraints/Max Rotational Percentage", 0.5)::get
-    );
-
-    public static final LinearVelocity maxAdjustmentSpeed = InchesPerSecond.of(12);
 
     public static final RobotConfig robotConfig = new RobotConfig(
         RobotConstants.robotWeight,

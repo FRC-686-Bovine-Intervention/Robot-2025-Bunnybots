@@ -8,6 +8,13 @@ import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public class GearRatio {
+    public static double planetaryReduction(int sunCount, int ringCount) {
+        return (double)(sunCount + ringCount) / sunCount;
+    }
+    public static final double ULTRAPLANETARY_3_1 = planetaryReduction(29, 55);
+    public static final double ULTRAPLANETARY_4_1 = planetaryReduction(21, 55);
+    public static final double ULTRAPLANETARY_5_1 = planetaryReduction(13, 55);
+    
     private final double reduction;
     private final GearRatio inverse;
 

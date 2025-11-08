@@ -21,6 +21,7 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.commands.FollowPathCommand;
@@ -58,6 +59,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.RobotState;
 import frc.robot.RobotState.OdometryObservation;
 import frc.robot.constants.RobotConstants;
+import frc.util.Environment;
 import frc.util.LazyOptional;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
@@ -78,9 +80,19 @@ public class Drive extends VirtualSubsystem {
     private final GyroIO gyroIO;
     private final GyroIOInputsAutoLogged gyroInputs = new GyroIOInputsAutoLogged();
 
-    public final Root structureRoot = new Root();
-
     public final Module[] modules = new Module[DriveConstants.moduleConstants.length];
+
+    private static final LoggedTunableNumber rotationCorrection = LoggedTunable.from("Drive/Rotation Correction", 0.125);
+    public static final DoubleSupplier maxDriveSpeedEnvCoef = Environment.switchVar(
+        () -> 1.0,
+        new LoggedNetworkNumber("Demo Constraints/Max Translational Percentage", 0.25)::get
+    );
+    public static final DoubleSupplier maxTurnRateEnvCoef = Environment.switchVar(
+        () -> 1.0,
+        new LoggedNetworkNumber("Demo Constraints/Max Rotational Percentage", 0.5)::get
+    );
+
+    public final Root structureRoot = new Root();
 
     private SwerveModulePosition[] lastMeasuredPositions = null;
     private SwerveModuleState[] measuredStates = new SwerveModuleState[] {
@@ -91,8 +103,6 @@ public class Drive extends VirtualSubsystem {
     };
     private ChassisSpeeds robotMeasuredSpeeds = new ChassisSpeeds();
     private ChassisSpeeds fieldMeasuredSpeeds = new ChassisSpeeds();
-
-    private static final LoggedTunableNumber rotationCorrection = LoggedTunable.from("Drive/Rotation Correction", 0.125);
 
     private ChassisSpeeds desiredRobotSpeeds = new ChassisSpeeds();
     private Translation2d centerOfRotation = new Translation2d();
@@ -639,7 +649,7 @@ public class Drive extends VirtualSubsystem {
                     }
                     var omega = dot
                         * DriveConstants.maxTurnRate.in(RadiansPerSecond)
-                        * DriveConstants.maxTurnRateEnvCoef.getAsDouble() * 0.25
+                        * maxTurnRateEnvCoef.getAsDouble() * 0.25
                     ;
                     driveVelocity(omega);
                     if(desiredLinear.norm() <= defenseSpinLinearThreshold.get()) {
@@ -722,8 +732,8 @@ public class Drive extends VirtualSubsystem {
                     turnInput = this.headingPID.atSetpoint() ? 0 : turnInput + this.headingPID.getSetpoint().velocity;
                     turnInput = MathUtil.clamp(
                         turnInput, 
-                        -0.5 * DriveConstants.maxTurnRateEnvCoef.getAsDouble(), 
-                        +0.5 * DriveConstants.maxTurnRateEnvCoef.getAsDouble()
+                        -0.5 * maxTurnRateEnvCoef.getAsDouble(), 
+                        +0.5 * maxTurnRateEnvCoef.getAsDouble()
                     );
                     driveVelocity(turnInput * DriveConstants.maxTurnRate.in(RadiansPerSecond));
                 }
@@ -773,8 +783,8 @@ public class Drive extends VirtualSubsystem {
                     turnInput = this.headingPID.atSetpoint() ? 0 : turnInput + this.headingPID.getSetpoint().velocity;
                     turnInput = MathUtil.clamp(
                         turnInput, 
-                        -0.5 * DriveConstants.maxTurnRateEnvCoef.getAsDouble(), 
-                        +0.5 * DriveConstants.maxTurnRateEnvCoef.getAsDouble()
+                        -0.5 * maxTurnRateEnvCoef.getAsDouble(), 
+                        +0.5 * maxTurnRateEnvCoef.getAsDouble()
                     );
                     driveVelocity(turnInput * DriveConstants.maxTurnRate.in(RadiansPerSecond));
                 }
