@@ -226,7 +226,8 @@ public class ObjectVision {
             var camPose = mount.getFieldRelative();
 
             var rayOrigin = camPose.getTranslation();
-            var rayDir = camPose.rotateBy(new Rotation3d(
+            var origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
+            var rayDir = origin.rotateBy(new Rotation3d(
                 Radians.zero(),
                 Radians.of(target.pitchRads),
                 Radians.of(-target.yawRads)
@@ -234,15 +235,10 @@ public class ObjectVision {
                 new Translation3d(1, 0, 0),
                 Rotation3d.kZero
             )).getTranslation();
-
-            if (rayDir.getZ() >= rayOrigin.getZ()) {
-                // Target above horizon, ignore
-                return Optional.empty();
-            }
             
-            var originDotNormalPlusD = -rayOrigin.toVector().dot(planeNormal.toVector()) + planeD;
-            var directionDotNormal = rayDir.toVector().dot(planeNormal.toVector());
-            var t = originDotNormalPlusD / directionDotNormal;
+            var numerator = - (rayOrigin.toVector().dot(planeNormal.toVector()) + planeD);
+            var denominator = rayDir.toVector().dot(planeNormal.toVector());
+            var t = numerator / denominator;   
 
             var intersectionPoint = rayOrigin.toVector().plus(rayDir.toVector().times(t));
 
@@ -250,7 +246,8 @@ public class ObjectVision {
                 intersectionPoint.get(0),
                 intersectionPoint.get(1)
             );
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPos, target.objectConfidence));
+            var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));
             /*var camPose = mount.getFieldRelative();
             double h = (camPose.getZ() - FieldConstants.luniteDimensions.getZ() / 2) / Math.tan(target.pitchRads);
             double x = h * Math.cos(target.yawRads);
