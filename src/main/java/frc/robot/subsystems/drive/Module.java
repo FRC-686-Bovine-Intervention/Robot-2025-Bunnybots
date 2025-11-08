@@ -1,7 +1,9 @@
 package frc.robot.subsystems.drive;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
@@ -16,6 +18,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.VoltageUnit;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -83,6 +86,12 @@ public class Module {
     private final Alert azimuthMotorDisconnectedGlobalAlert;
     private final Alert azimuthEncoderDisconnectedGlobalAlert;
 
+    private static final LoggedTunable<Angle> azimuthStdDevThreshold = LoggedTunable.from("Drive/Module/Azimuth StdDev Threshold", Degrees::of, 5);
+    private double azimuthPositionRads = 0.0;
+
+    private double azimuthMotorOffsetRads = 0.0;
+    private double azimuthEncoderOffsetRads = 0.0;
+
     public Module(ModuleIO io, ModuleConstants config) {
         this.io = io;
         this.config = config;
@@ -110,6 +119,11 @@ public class Module {
         this.driveMotorDisconnectedGlobalAlert = new Alert("Module " + this.config.name + " Drive Motor Disconnected!", AlertType.kError);
         this.azimuthMotorDisconnectedGlobalAlert = new Alert("Module " + this.config.name + " Azimuth Motor Disconnected!", AlertType.kError);
         this.azimuthEncoderDisconnectedGlobalAlert = new Alert("Module " + this.config.name + " Azimuth Encoder Disconnected!", AlertType.kError);
+
+        this.io.updateInputs(this.inputs);
+        Logger.processInputs("Inpus/Drive/Module " + this.config.name, this.inputs);
+
+        this.resetInternalAzimuthPosition(this.inputs.azimuthEncoder.getPositionRads());
     }
 
     /** Updates inputs and checks tunable numbers. */
@@ -132,6 +146,32 @@ public class Module {
             this.modulePositionSampleBuffer[i].angle = angle;
         }
         System.arraycopy(this.modulePositionSampleBuffer, 0, this.modulePositionSamples, 0, this.modulePositionSamples.length);
+
+        var azimuthEncoderRads = DriveConstants.azimuthEncoderToCarriageRatio.applyUnsigned(this.inputs.azimuthEncoder.getPositionRads()) + this.azimuthEncoderOffsetRads;
+        var azimuthMotorRads = DriveConstants.azimuthMotorToCarriageRatio.applyUnsigned(this.inputs.azimuthMotor.encoder.getPositionRads()) + this.azimuthMotorOffsetRads;
+        var measurementCount = 2;
+        var azimuthMeanRads = (azimuthEncoderRads + azimuthMotorRads) / measurementCount;
+        var azimuthEncoderVarRad2 = (azimuthEncoderRads - azimuthMeanRads) * (azimuthEncoderRads - azimuthMeanRads);
+        var azimuthMotorVarRad2 = (azimuthMotorRads - azimuthMeanRads) * (azimuthMotorRads - azimuthMeanRads);
+        var azimuthVarianceRad2 = (azimuthEncoderVarRad2 + azimuthMotorVarRad2) / Math.min(measurementCount - 1, 1);
+        var azimuthStdDevRad = Math.sqrt(azimuthVarianceRad2);
+        while (azimuthStdDevRad >= azimuthStdDevThreshold.get().in(Radians)) {
+            measurementCount -= 1;
+            if (Math.abs(azimuthEncoderRads - this.azimuthPositionRads) > Math.abs(azimuthMotorRads - this.azimuthPositionRads)) {
+                azimuthEncoderRads = 0.0;
+                azimuthMeanRads = (azimuthEncoderRads + azimuthMotorRads) / measurementCount;
+                azimuthEncoderVarRad2 = 0.0;
+                azimuthMotorVarRad2 = (azimuthMotorRads - azimuthMeanRads) * (azimuthMotorRads - azimuthMeanRads);
+            } else {
+                azimuthMotorRads = 0.0;
+                azimuthMeanRads = (azimuthEncoderRads + azimuthMotorRads) / measurementCount;
+                azimuthEncoderVarRad2 = (azimuthEncoderRads - azimuthMeanRads) * (azimuthEncoderRads - azimuthMeanRads);
+                azimuthMotorVarRad2 = 0.0;
+            }
+            azimuthVarianceRad2 = (azimuthEncoderVarRad2 + azimuthMotorVarRad2) / Math.min(measurementCount - 1, 1);
+            azimuthStdDevRad = Math.sqrt(azimuthVarianceRad2);
+        }
+        this.resetInternalAzimuthPosition(azimuthMeanRads);
 
         var angle = this.config.moduleForwardDirection.plus(
             Rotation2d.fromRadians(
@@ -250,5 +290,11 @@ public class Module {
     }
     public double getDriveStatorCurrentAmps() {
         return this.inputs.driveMotor.motor.getStatorCurrentAmps();
+    }
+
+    private void resetInternalAzimuthPosition(double positionRads) {
+        this.azimuthPositionRads = positionRads;
+        this.azimuthMotorOffsetRads = this.azimuthPositionRads - DriveConstants.azimuthMotorToCarriageRatio.applyUnsigned(this.inputs.azimuthMotor.encoder.getPositionRads());
+        this.azimuthEncoderOffsetRads = this.azimuthPositionRads - DriveConstants.azimuthEncoderToCarriageRatio.applyUnsigned(this.inputs.azimuthEncoder.getPositionRads());
     }
 }

@@ -91,6 +91,7 @@ public class ModuleIOFalcon550 implements ModuleIO {
         ;
         azimuthConfig.absoluteEncoder
             .zeroOffset(config.encoderZeroOffset.in(Rotations))
+            .zeroCentered(true)
             .inverted(true)
         ;
         azimuthConfig.signals.absoluteEncoderPositionPeriodMs((int) DriveConstants.odometryLoopFrequency.asPeriod().in(Milliseconds));
@@ -121,6 +122,8 @@ public class ModuleIOFalcon550 implements ModuleIO {
             this.driveMotorStatusSignalCache.encoder().velocity(),
             this.driveMotorStatusSignalCache.motor().appliedVoltage(),
             this.driveMotorStatusSignalCache.motor().statorCurrent(),
+            this.driveMotorStatusSignalCache.motor().supplyCurrent(),
+            this.driveMotorStatusSignalCache.motor().torqueCurrent(),
             this.driveMotorStatusSignalCache.motor().deviceTemperature()
         );
         inputs.driveMotorConnected = BaseStatusSignal.isAllGood(
@@ -128,6 +131,8 @@ public class ModuleIOFalcon550 implements ModuleIO {
             this.driveMotorStatusSignalCache.encoder().velocity(),
             this.driveMotorStatusSignalCache.motor().appliedVoltage(),
             this.driveMotorStatusSignalCache.motor().statorCurrent(),
+            this.driveMotorStatusSignalCache.motor().supplyCurrent(),
+            this.driveMotorStatusSignalCache.motor().torqueCurrent(),
             this.driveMotorStatusSignalCache.motor().deviceTemperature()
         );
         inputs.azimuthMotorConnected = true;
