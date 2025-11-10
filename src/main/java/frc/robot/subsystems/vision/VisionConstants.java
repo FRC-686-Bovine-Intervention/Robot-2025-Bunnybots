@@ -88,7 +88,7 @@ public final class VisionConstants {
         new Translation3d(
             Inches.of(-26),
             Inches.zero(),
-            Inches.zero()
+            Inches.of(6)
         ),
         new Rotation3d(
             Degrees.zero(),
