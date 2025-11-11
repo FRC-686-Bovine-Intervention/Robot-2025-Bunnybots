@@ -69,6 +69,8 @@ public class IntakePivot extends SubsystemBase{
     private double angleRads = 0;
     private double velocityRadsPerSec = 0.0;
 
+    private boolean hasDeployGoal = false;
+
     public final ArmMech mech = new ArmMech(IntakePivotConstants.pivotBase);
 
     private final Alert motorDisconnectedAlert = new Alert("IntakePivot/Alerts", "Motor Disconnected", AlertType.kError);
@@ -130,6 +132,9 @@ public class IntakePivot extends SubsystemBase{
     }
     public double getAppliedVolts() {
         return this.inputs.motor.motor.getAppliedVolts();
+    }
+    public boolean hasDeployGoal() {
+        return this.hasDeployGoal;
     }
 
     public void setVolts(double volts) {
@@ -195,12 +200,17 @@ public class IntakePivot extends SubsystemBase{
         };
     }
 
-    private Command genCommand(String name, DoubleSupplier angleRads) {
+    private Command genCommand(String name, DoubleSupplier angleRads, boolean isDeployGoal) {
         var subsystem = this;
         return new Command() {
             {
                 setName(name);
                 addRequirements(subsystem);
+            }
+
+            @Override
+            public void initialize() {
+                hasDeployGoal = isDeployGoal;
             }
 
             @Override
@@ -213,14 +223,16 @@ public class IntakePivot extends SubsystemBase{
     public Command idle() {
         return genCommand(
             "Idle", 
-            () -> IntakePivotConstants.minAngle.in(Radians)
+            () -> IntakePivotConstants.minAngle.in(Radians),
+            false
         );
     }
 
     public Command deploy() {
         return genCommand(
             "Deploy", 
-            () -> IntakePivotConstants.maxAngle.in(Radians)
+            () -> IntakePivotConstants.maxAngle.in(Radians),
+            true
         );
     }
 }

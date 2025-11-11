@@ -47,4 +47,5 @@ public class IntakePivotConstants {
 
     public static final Angle minAngle = Degrees.of(20);
     public static final Angle maxAngle = Degrees.of(115);
+    public static final double angleToleranceDegs = 10;
 }

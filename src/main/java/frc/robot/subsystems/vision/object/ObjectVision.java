@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -188,6 +189,10 @@ public class ObjectVision {
         return intakeTargetLocked;
     }
 
+    public void setTargetLocked(boolean targetLocked) {
+        this.intakeTargetLocked = targetLocked;
+    }
+
     public void clearMemory() {
         //objectMemories.clear();
         optIntakeTarget = Optional.empty();
@@ -203,6 +208,19 @@ public class ObjectVision {
             .finallyDo(() -> intakeTargetLocked = false)
             .withName("Auto Intake")
         ;
+    }
+
+    public double getIntakeOffsetSpeedFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
+        if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
+            return 0.0;
+        }
+        var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
+        var intakeTargetPos = optIntakeTarget.get().fieldPos;
+        var objectRelativeToRobot = new Pose2d(intakeTargetPos, Rotation2d.kZero).relativeTo(robotPose).getTranslation();
+        return inputSpeeds.vyMetersPerSecond + inputSpeeds.vxMetersPerSecond*Math.tan(
+            objectRelativeToRobot.getY() /
+            objectRelativeToRobot.getX()
+        );
     }
 
     private static record TargetMemoryConnection(TrackedObject memory, TrackedObject cameraTarget) {

@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
@@ -33,6 +34,10 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.intakePivot.IntakePivot;
+import frc.robot.subsystems.intakePivot.IntakePivotIO;
+import frc.robot.subsystems.intakePivot.IntakePivotIOSim;
+import frc.robot.subsystems.intakePivot.IntakePivotIOTalonFX;
 import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.cameras.Camera;
 import frc.robot.subsystems.vision.cameras.CameraIO;
@@ -45,6 +50,7 @@ import frc.util.controllers.XboxController;
 public class RobotContainer {
     // Subsystems
     public final Drive drive;
+    public final IntakePivot intakePivot;
     
     // Vision
     public final Camera intakeCamera;
@@ -79,6 +85,7 @@ public class RobotContainer {
                         System.out.println("");
                     }
                 );
+                this.intakePivot = new IntakePivot(new IntakePivotIOSim());
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -94,6 +101,7 @@ public class RobotContainer {
                     VisionConstants.intakeMount,
                     (isConnected) -> {}
                 );
+                this.intakePivot = new IntakePivot(new IntakePivotIOSim());
             }
             default -> {
                 this.drive = new Drive(
@@ -110,6 +118,7 @@ public class RobotContainer {
                     VisionConstants.intakeMount,
                     (isConnected) -> {}
                 );
+                this.intakePivot = new IntakePivot(new IntakePivotIOSim());
             }
         }
 
@@ -225,22 +234,17 @@ public class RobotContainer {
                     var robotXMetersPerSecond = fieldXMetersPerSecond * +robotRotation.getCos() + fieldYMetersPerSecond * +robotRotation.getSin();
                     var robotYMetersPerSecond = fieldXMetersPerSecond * -robotRotation.getSin() + fieldYMetersPerSecond * +robotRotation.getCos();
 
-                    // Robot relative adjustments
-                    double adjustX;
-                    double adjustY;
-                    if (driveController.leftTrigger.getAsDouble() > 0.1 && driveController.rightTrigger.getAsDouble() > 0.1) {
-                        adjustX = Math.min(driveController.leftTrigger.getAsDouble(), driveController.rightTrigger.getAsDouble());
-                        adjustY = 0.0;
+                    //
+                    double intakeY;
+                    if (intakePivot.hasDeployGoal() && objectVision.hasTarget()) {
+                        intakeY = objectVision.getIntakeOffsetSpeedFromRobotSpeeds(new ChassisSpeeds(MetersPerSecond.of(robotXMetersPerSecond), MetersPerSecond.of(robotYMetersPerSecond), RadiansPerSecond.of(0)));
                     } else {
-                        adjustX = 0.0;
-                        adjustY = driveController.leftTrigger.getAsDouble() - driveController.rightTrigger.getAsDouble();
+                        intakeY = 0.0;
                     }
-                    var adjustXMetersPerSecond = adjustX * DriveConstants.maxAdjustmentSpeed.in(MetersPerSecond);
-                    var adjustYMetersPerSecond = adjustY * DriveConstants.maxAdjustmentSpeed.in(MetersPerSecond);
 
                     drive.translationSubsystem.driveVelocity(
-                        robotXMetersPerSecond + adjustXMetersPerSecond,
-                        robotYMetersPerSecond + adjustYMetersPerSecond
+                        robotXMetersPerSecond,
+                        robotYMetersPerSecond + intakeY
                     );
                 }
 
@@ -255,7 +259,8 @@ public class RobotContainer {
                 .withName("Robot spin")
         );
         new Trigger(DriverStation::isDisabled).and(() -> driveJoystick.magnitude() > 0).whileTrue(drive.coast());
+        driveController.x().onChange();
 
-        driveController.rightBumper().and(objectVision::hasTarget).whileTrue(objectVision.autoIntake(objectVision.applyDotProduct(() -> ChassisSpeeds.discretize(0, 0, 0, 0)), () -> true, drive));
+        //driveController.rightBumper().and(objectVision::hasTarget).whileTrue(objectVision.autoIntake(objectVision.applyDotProduct(() -> ChassisSpeeds.discretize(0, 0, 0, 0)), () -> true, drive));
     }
 }
