@@ -259,7 +259,7 @@ public class RobotContainer {
                 .withName("Robot spin")
         );
         new Trigger(DriverStation::isDisabled).and(() -> driveJoystick.magnitude() > 0).whileTrue(drive.coast());
-        driveController.x().onChange();
+        //driveController.x().onChange();
 
         //driveController.rightBumper().and(objectVision::hasTarget).whileTrue(objectVision.autoIntake(objectVision.applyDotProduct(() -> ChassisSpeeds.discretize(0, 0, 0, 0)), () -> true, drive));
     }

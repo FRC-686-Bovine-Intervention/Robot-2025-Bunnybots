@@ -62,6 +62,7 @@ public class ObjectVision {
     
     //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
 
+    private static final Pose3d origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
     private static final Translation3d planeNormal = new Translation3d(0, 0, 1);
     private static final Translation3d planePoint = new Translation3d(0, 0, FieldConstants.luniteDimensions.getZ()/2);
     private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
@@ -245,7 +246,7 @@ public class ObjectVision {
 
             var rayOrigin = camPose.getTranslation();
             var origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
-            var rayDir = origin.rotateBy(new Rotation3d(
+            var rayDir = origin.rotateBy(camPose.getRotation()).rotateBy(new Rotation3d(
                 Radians.zero(),
                 Radians.of(target.pitchRads),
                 Radians.of(-target.yawRads)
@@ -265,8 +266,7 @@ public class ObjectVision {
                 intersectionPoint.get(1)
             );
             var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));
-            /*var camPose = mount.getFieldRelative();
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));/*var camPose = mount.getFieldRelative();
             double h = (camPose.getZ() - FieldConstants.luniteDimensions.getZ() / 2) / Math.tan(target.pitchRads);
             double x = h * Math.cos(target.yawRads);
             double y = h * Math.sin(target.yawRads);
