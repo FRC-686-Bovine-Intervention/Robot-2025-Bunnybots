@@ -253,6 +253,19 @@ public class RobotContainer {
             }
         }));
 
+        driveController.povUp().onTrue(Commands.runOnce(() -> {
+            AimingParameters.applyPivotOffset(3);
+        }));
+        driveController.povDown().onTrue(Commands.runOnce(() -> {
+            AimingParameters.applyPivotOffset(-3);
+        }));
+        driveController.povRight().onTrue(Commands.runOnce(() -> {
+            AimingParameters.applyShooterOffset(0.5);
+        }));
+        driveController.povLeft().onTrue(Commands.runOnce(() -> {
+            AimingParameters.applyShooterOffset(-0.5);
+        }));
+
         final Command autoAimLock = this.drive.rotationalSubsystem.pidControlledHeading(() -> AimingParameters.shotPose().getRotation()).alongWith(pivot.aim()).alongWith(shooter.aimWithoutAutoShoot());
         this.automationsLoop.bind(() -> {
             LoggedTracer.logEpoch("CommandScheduler Periodic/Automations/Aim Lock/Before");
