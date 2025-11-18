@@ -234,7 +234,7 @@ public class RobotContainer {
                     var robotXMetersPerSecond = fieldXMetersPerSecond * +robotRotation.getCos() + fieldYMetersPerSecond * +robotRotation.getSin();
                     var robotYMetersPerSecond = fieldXMetersPerSecond * -robotRotation.getSin() + fieldYMetersPerSecond * +robotRotation.getCos();
 
-                    //
+                    
                     double intakeY;
                     if (intakePivot.hasDeployGoal() && objectVision.hasTarget()) {
                         intakeY = objectVision.getIntakeOffsetSpeedFromRobotSpeeds(new ChassisSpeeds(MetersPerSecond.of(robotXMetersPerSecond), MetersPerSecond.of(robotYMetersPerSecond), RadiansPerSecond.of(0)));
@@ -259,8 +259,11 @@ public class RobotContainer {
                 .withName("Robot spin")
         );
         new Trigger(DriverStation::isDisabled).and(() -> driveJoystick.magnitude() > 0).whileTrue(drive.coast());
-        //driveController.x().onChange();
-
+        
+        intakeCamera.setDefaultCommand(this.intakeCamera.setPipelineIndex(0));
+        
+        intakePivot.setDefaultCommand(intakePivot.idle());
+        driveController.x().toggleOnTrue(intakePivot.deploy());
         //driveController.rightBumper().and(objectVision::hasTarget).whileTrue(objectVision.autoIntake(objectVision.applyDotProduct(() -> ChassisSpeeds.discretize(0, 0, 0, 0)), () -> true, drive));
     }
 }

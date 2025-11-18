@@ -57,7 +57,7 @@ public class ObjectVision {
     private static final LoggedTunableNumber confidenceDecayPerSecond = new LoggedTunableNumber(loggingKey + "Confidence/Decay Per Second", 3);
     private static final LoggedTunableNumber priorityPerConfidence = new LoggedTunableNumber(loggingKey + "Priority/Priority Per Confidence", 4);
     private static final LoggedTunableNumber priorityPerDistance = new LoggedTunableNumber(loggingKey + "Priority/Priority Per Distance", -2);
-    private static final LoggedTunableNumber acquireConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Acquire", -2);
+    private static final LoggedTunableNumber acquireConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Acquire", 0.75);
     private static final LoggedTunableNumber detargetConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Detarget", -3);
     
     //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
@@ -218,7 +218,7 @@ public class ObjectVision {
         var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
         var intakeTargetPos = optIntakeTarget.get().fieldPos;
         var objectRelativeToRobot = new Pose2d(intakeTargetPos, Rotation2d.kZero).relativeTo(robotPose).getTranslation();
-        return inputSpeeds.vyMetersPerSecond + inputSpeeds.vxMetersPerSecond*Math.tan(
+        return -inputSpeeds.vyMetersPerSecond + inputSpeeds.vxMetersPerSecond*Math.tan(
             objectRelativeToRobot.getY() /
             objectRelativeToRobot.getX()
         );
