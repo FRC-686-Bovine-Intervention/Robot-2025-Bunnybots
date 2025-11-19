@@ -59,8 +59,7 @@ public class HardwareDevices {
 
     // Intake
     public static final CANDevice intakeMotorID = rio.id(9);
-    public static final DIOPort coralSensor = DIOPort.port(1);
-    public static final DIOPort algaeSensor = DIOPort.port(2);
+    public static final DIOPort intakeSlamCalibrationSensor = DIOPort.port(1);
 
     // Climber
     public static final CANDevice climberMotorID = rio.id(10);
