@@ -2,9 +2,7 @@ package frc.robot.subsystems.vision.object;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -27,7 +25,6 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.networktables.RawTopic;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.util.struct.Struct;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -42,29 +39,25 @@ import frc.util.LoggedTracer;
 import frc.util.loggerUtil.LoggerUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
-import frc.util.misc.MathExtraUtil;
 import frc.util.robotStructure.CameraMount;
 import frc.util.rust.iter.Iterator;
 
 public class ObjectVision {
     private final ObjectPipeline[] pipelines;
 
-    private static final String loggingKey = "Vision/Object/";
-
-    private static final LoggedTunable<Distance> updateDistanceThreshold = LoggedTunable.from(loggingKey + "Updating/Update Distance Threshold", Meters::of, 5);
-    private static final LoggedTunableNumber posUpdatingFilteringFactor = new LoggedTunableNumber(loggingKey + "Updating/Pos Updating Filtering Factor", 0.8);
-    private static final LoggedTunableNumber confUpdatingFilteringFactor = new LoggedTunableNumber(loggingKey + "Confidence/Updating Filtering Factor", 0.5);
-    private static final LoggedTunableNumber confidenceDecayPerSecond = new LoggedTunableNumber(loggingKey + "Confidence/Decay Per Second", 3);
-    private static final LoggedTunableNumber priorityPerConfidence = new LoggedTunableNumber(loggingKey + "Priority/Priority Per Confidence", 4);
-    private static final LoggedTunableNumber priorityPerDistance = new LoggedTunableNumber(loggingKey + "Priority/Priority Per Distance", -2);
-    private static final LoggedTunableNumber acquireConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Acquire", 0.75);
-    private static final LoggedTunableNumber detargetConfidenceThreshold = new LoggedTunableNumber(loggingKey + "Target Threshold/Detarget", -3);
+    private static final LoggedTunable<Distance> updateDistanceThreshold = LoggedTunable.from("Vision/Object/Updating/Update Distance Threshold", Meters::of, 5);
+    private static final LoggedTunableNumber posUpdatingFilteringFactor =  LoggedTunable.from("Vision/Object/Updating/Pos Updating Filtering Factor", 0.8);
+    private static final LoggedTunableNumber confUpdatingFilteringFactor = LoggedTunable.from("Vision/Object/Confidence/Updating Filtering Factor", 0.5);
+    private static final LoggedTunableNumber confidenceDecayPerSecond =    LoggedTunable.from("Vision/Object/Confidence/Decay Per Second", 3);
+    private static final LoggedTunableNumber priorityPerConfidence =       LoggedTunable.from("Vision/Object/Priority/Priority Per Confidence", 4);
+    private static final LoggedTunableNumber priorityPerDistance =         LoggedTunable.from("Vision/Object/Priority/Priority Per Distance", -2);
+    private static final LoggedTunableNumber acquireConfidenceThreshold =  LoggedTunable.from("Vision/Object/Target Threshold/Acquire", 0.75);
+    private static final LoggedTunableNumber detargetConfidenceThreshold = LoggedTunable.from("Vision/Object/Target Threshold/Detarget", -3);
     
     //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
 
-    private static final Pose3d origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
     private static final Translation3d planeNormal = new Translation3d(0, 0, 1);
-    private static final Translation3d planePoint = new Translation3d(0, 0, FieldConstants.luniteDimensions.getZ()/2);
+    private static final Translation3d planePoint = new Translation3d(0, 0, FieldConstants.luniteDimensions.getZ() / 2.0);
     private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
@@ -140,8 +133,8 @@ public class ObjectVision {
                             var relA = new Pose2d(a.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
                             var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
                 
-                            double distA = MathExtraUtil.hypot2(relA.getX(), 2 * relA.getY());
-                            double distB = MathExtraUtil.hypot2(relB.getX(), 2 * relB.getY());
+                            double distA = Math.hypot(relA.getX(), 2 * relA.getY());
+                            double distB = Math.hypot(relB.getX(), 2 * relB.getY());
                             return Double.compare(distA, distB);
                         })
                         .findFirst();

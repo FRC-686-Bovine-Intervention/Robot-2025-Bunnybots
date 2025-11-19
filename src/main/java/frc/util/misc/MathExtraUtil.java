@@ -10,8 +10,4 @@ public class MathExtraUtil {
     public static boolean isWithin(double value, double min, double max) {
         return value >= min && value <= max;
     }
-
-    public static double hypot2(double x, double y) {
-        return x*x + y*y;
-    }
 }

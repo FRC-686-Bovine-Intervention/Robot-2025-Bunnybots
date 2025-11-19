@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Meter;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
@@ -35,9 +34,7 @@ import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometr
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
 import frc.robot.subsystems.intakePivot.IntakePivot;
-import frc.robot.subsystems.intakePivot.IntakePivotIO;
 import frc.robot.subsystems.intakePivot.IntakePivotIOSim;
-import frc.robot.subsystems.intakePivot.IntakePivotIOTalonFX;
 import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.cameras.Camera;
 import frc.robot.subsystems.vision.cameras.CameraIO;
@@ -81,9 +78,7 @@ public class RobotContainer {
                     new CameraIOPhoton("Intake"),
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {
-                        System.out.println("");
-                    }
+                    (isConnected) -> {}
                 );
                 this.intakePivot = new IntakePivot(new IntakePivotIOSim());
             }
@@ -127,7 +122,8 @@ public class RobotContainer {
         );
 
         this.drive.structureRoot
-            .addChild(intakeCamera.mount);
+            .addChild(intakeCamera.mount)
+        ;
 
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();
@@ -237,7 +233,11 @@ public class RobotContainer {
                     
                     double intakeY;
                     if (intakePivot.hasDeployGoal() && objectVision.hasTarget()) {
-                        intakeY = objectVision.getIntakeOffsetSpeedFromRobotSpeeds(new ChassisSpeeds(MetersPerSecond.of(robotXMetersPerSecond), MetersPerSecond.of(robotYMetersPerSecond), RadiansPerSecond.of(0)));
+                        intakeY = objectVision.getIntakeOffsetSpeedFromRobotSpeeds(new ChassisSpeeds(
+                            robotXMetersPerSecond,
+                            robotYMetersPerSecond,
+                            0.0
+                        ));
                     } else {
                         intakeY = 0.0;
                     }
@@ -260,10 +260,10 @@ public class RobotContainer {
         );
         new Trigger(DriverStation::isDisabled).and(() -> driveJoystick.magnitude() > 0).whileTrue(drive.coast());
         
-        intakeCamera.setDefaultCommand(this.intakeCamera.setPipelineIndex(0));
+        this.intakeCamera.setDefaultCommand(this.intakeCamera.setPipelineIndex(0));
         
-        intakePivot.setDefaultCommand(intakePivot.idle());
-        driveController.x().toggleOnTrue(intakePivot.deploy());
+        this.intakePivot.setDefaultCommand(this.intakePivot.idle());
+        this.driveController.x().toggleOnTrue(this.intakePivot.deploy());
         //driveController.rightBumper().and(objectVision::hasTarget).whileTrue(objectVision.autoIntake(objectVision.applyDotProduct(() -> ChassisSpeeds.discretize(0, 0, 0, 0)), () -> true, drive));
     }
 }
