@@ -1,5 +1,6 @@
 package frc.robot.subsystems.pivot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Radians;
@@ -16,6 +17,7 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -33,6 +35,9 @@ public class Pivot extends SubsystemBase {
     private final PivotIO io;
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
+    protected static final LoggedTunable<Angle> minAngle = LoggedTunable.from("Pivot/Min Angle", Degrees::of, 20);
+    protected static final LoggedTunable<Angle> maxAngle = LoggedTunable.from("Pivot/Max Angle", Degrees::of, 115);
+    
     private static final LoggedTunable<TrapezoidProfile.Constraints> profileConsts = LoggedTunable.fromDashboardUnits(
         "Pivot/Profile",
         DegreesPerSecond,
@@ -225,7 +230,7 @@ public class Pivot extends SubsystemBase {
     public Command idle() {
         return genCommand(
             "Idle", 
-            () -> PivotConstants.minAngle.in(Radians)
+            () -> minAngle.get().in(Radians)
         );
     }
 

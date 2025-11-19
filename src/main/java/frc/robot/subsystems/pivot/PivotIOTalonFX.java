@@ -16,7 +16,6 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.fasterxml.jackson.databind.JsonSerializable.Base;
 
 import edu.wpi.first.math.util.Units;
 import frc.robot.constants.HardwareDevices;
@@ -63,9 +62,9 @@ public class PivotIOTalonFX implements PivotIO {
         ;
         motorConfig.SoftwareLimitSwitch
             .withReverseSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(PivotConstants.minAngle)
+            .withReverseSoftLimitThreshold(Pivot.minAngle.get())
             .withForwardSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(PivotConstants.maxAngle)
+            .withReverseSoftLimitThreshold(Pivot.maxAngle.get())
         ;
 
         this.motor.getConfigurator().apply(motorConfig);
