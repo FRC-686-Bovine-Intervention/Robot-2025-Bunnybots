@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Mechanism;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -28,11 +29,15 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.intake.slam.IntakeSlam;
+import frc.robot.subsystems.intake.slam.IntakeSlamIO;
 import frc.util.controllers.XboxController;
+import frc.util.robotStructure.Mechanism3d;
 
 public class RobotContainer {
     // Subsystems
     public final Drive drive;
+    public final IntakeSlam intakeSlam;
     
     // Vision
 
@@ -57,6 +62,7 @@ public class RobotContainer {
                         .map(ModuleIOFalcon550::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.intakeSlam = new IntakeSlam(new IntakeSlamIO() {});
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -66,6 +72,7 @@ public class RobotContainer {
                         .map(ModuleIOSim::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.intakeSlam = new IntakeSlam(new IntakeSlamIO() {});
             }
             default -> {
                 this.drive = new Drive(
@@ -76,8 +83,29 @@ public class RobotContainer {
                     new ModuleIO(){},
                     new ModuleIO(){}
                 );
+                this.intakeSlam = new IntakeSlam(new IntakeSlamIO() {});
             }
         }
+
+        this.drive.structureRoot
+            .addChild(
+                this.intakeSlam.primaryDriverMech
+                    .addChild(
+                        this.intakeSlam.primaryCouplerMech
+                            .addChild(this.intakeSlam.secondaryCouplerMech)
+                    )
+                    .addChild(this.intakeSlam.secondaryFollowerMech)
+            )
+            .addChild(this.intakeSlam.primaryFollowerMech)
+        ;
+
+        Mechanism3d.registerMechs(
+            this.intakeSlam.primaryDriverMech,
+            this.intakeSlam.primaryFollowerMech,
+            this.intakeSlam.primaryCouplerMech,
+            this.intakeSlam.secondaryFollowerMech,
+            this.intakeSlam.secondaryCouplerMech
+        );
 
         System.out.println("[Init RobotContainer] Configuring Commands");
 

@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake.slam;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 
 import java.util.Optional;
@@ -8,8 +9,11 @@ import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -17,6 +21,7 @@ import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.tunables.LoggedTunable;
+import frc.util.robotStructure.FourBarLinkage;
 import frc.util.robotStructure.angle.ArmMech;
 
 public class IntakeSlam extends SubsystemBase{
@@ -38,7 +43,27 @@ public class IntakeSlam extends SubsystemBase{
     private double angleRads = 0;
     private double velocityRadsPerSec = 0.0;
 
-    public final ArmMech mech = new ArmMech(IntakeSlamConstants.slamBase);
+    private final FourBarLinkage primaryLinkage = new FourBarLinkage(
+        IntakeSlamConstants.primaryFrameLength.in(Meters),
+        IntakeSlamConstants.primaryDriverLength.in(Meters),
+        IntakeSlamConstants.primaryFollowerLength.in(Meters),
+        IntakeSlamConstants.primaryCouplerLength.in(Meters),
+        true,
+        false
+    );
+    private final FourBarLinkage secondaryLinkage = new FourBarLinkage(
+        IntakeSlamConstants.secondaryFrameLength.in(Meters),
+        IntakeSlamConstants.secondaryDriverLength.in(Meters),
+        IntakeSlamConstants.secondaryFollowerLength.in(Meters),
+        IntakeSlamConstants.secondaryCouplerLength.in(Meters),
+        true,
+        false
+    );
+    public final ArmMech primaryDriverMech = new ArmMech(IntakeSlamConstants.primaryDriverBase);
+    public final ArmMech primaryFollowerMech = new ArmMech(IntakeSlamConstants.primaryFollowerBase);
+    public final ArmMech primaryCouplerMech = new ArmMech(IntakeSlamConstants.primaryCouplerBase);
+    public final ArmMech secondaryFollowerMech = new ArmMech(IntakeSlamConstants.secondaryFollowerBase);
+    public final ArmMech secondaryCouplerMech = new ArmMech(IntakeSlamConstants.secondaryCouplerBase);
 
     private final Alert motorDisconnectedAlert = new Alert("Intake/Slam/Alerts", "Motor Disconnected", AlertType.kError);
     private final Alert motorDisconnectedGlobalAlert = new Alert("Intake Slam Motor Disconnected!", AlertType.kError);
@@ -58,10 +83,42 @@ public class IntakeSlam extends SubsystemBase{
         Logger.processInputs("Inputs/Intake/Slam", this.inputs);
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Intake/Slam/Process Inputs");
 
-        this.angleRads = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads());
-        this.velocityRadsPerSec = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getVelocityRadsPerSec());
+        var maxAngle = Units.degreesToRadians(80.052205);
+        var minAngle = Units.degreesToRadians(6.695014);
+        var meanAngle = (maxAngle + minAngle) / 2.0;
+        var halfDiffAngle = (maxAngle - minAngle) / 2.0;
 
-        this.mech.setRads(this.getAngleRads());
+        this.angleRads = Math.sin(Timer.getTimestamp()) * halfDiffAngle + meanAngle;
+
+        // this.angleRads = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads());
+        // this.velocityRadsPerSec = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getVelocityRadsPerSec());
+
+        Logger.recordOutput("DEBUG/zero", new Transform3d[]{
+            new Transform3d(),
+            new Transform3d(),
+            new Transform3d(),
+            new Transform3d(),
+            new Transform3d()
+        });
+        Logger.recordOutput("DEBUG/primaryDriver", IntakeSlamConstants.cadOrigin.plus(IntakeSlamConstants.primaryDriverBase).inverse());
+        Logger.recordOutput("DEBUG/primaryFollower", IntakeSlamConstants.cadOrigin.plus(IntakeSlamConstants.primaryFollowerBase).inverse());
+        Logger.recordOutput("DEBUG/primaryCoupler", IntakeSlamConstants.cadOrigin.plus(IntakeSlamConstants.primaryDriverBase).plus(IntakeSlamConstants.primaryCouplerBase).inverse());
+        
+        this.primaryLinkage.setDriverAngleRads(this.getAngleRads() - IntakeSlamConstants.primaryFrameNormalAngle.in(Radians));
+        Logger.recordOutput("DEBUG/primary driver angle", this.primaryLinkage.getDriverAngleRads());
+        Logger.recordOutput("DEBUG/primary follower angle", this.primaryLinkage.getFollowerAngleRads());
+        Logger.recordOutput("DEBUG/primary coupler angle", this.primaryLinkage.getCouplerAngleRads());
+
+        this.secondaryLinkage.setDriverAngleRads(this.primaryLinkage.getCouplerAngleRads() + IntakeSlamConstants.primaryFrameNormalAngle.in(Radians) - this.getAngleRads() - IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians));
+        Logger.recordOutput("DEBUG/secondary driver angle", this.secondaryLinkage.getDriverAngleRads());
+        Logger.recordOutput("DEBUG/secondary follower angle", this.secondaryLinkage.getFollowerAngleRads());
+        Logger.recordOutput("DEBUG/secondary coupler angle", this.secondaryLinkage.getCouplerAngleRads());
+
+        this.primaryDriverMech.setRads(this.angleRads - maxAngle);
+        this.primaryFollowerMech.setRads(this.primaryLinkage.getFollowerAngleRads() + IntakeSlamConstants.primaryFrameNormalAngle.in(Radians) - Units.degreesToRadians(87.881550));
+        this.primaryCouplerMech.setRads(this.primaryLinkage.getCouplerAngleRads() + IntakeSlamConstants.primaryFrameNormalAngle.in(Radians) - this.primaryLinkage.getDriverAngleRads() - maxAngle - Units.degreesToRadians(-139.604453));
+        this.secondaryFollowerMech.setRads(this.secondaryLinkage.getFollowerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - Units.degreesToRadians(-144.10743));
+        this.secondaryCouplerMech.setRads(this.secondaryLinkage.getCouplerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - this.secondaryLinkage.getDriverAngleRads() - Units.degreesToRadians(-180));
 
         Logger.recordOutput("Intake/Slam/Angle/Measured", this.getAngleRads());
         Logger.recordOutput("Intake/Slam/Velocity/Measured", this.getVelocityRadsPerSec());
