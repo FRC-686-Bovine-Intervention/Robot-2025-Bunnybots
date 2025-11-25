@@ -14,10 +14,10 @@ public class IntakeSlamIOSim extends IntakeSlamIOTalonFX{
         DCMotor.getFalcon500(2),
         IntakeSlamConstants.motorToMechanism.reductionUnsigned(),
         1,
-        IntakeSlam.minAngle.get().in(Radians),
-        IntakeSlam.maxAngle.get().in(Radians),
+        IntakeSlam.retractAngle.get().in(Radians),
+        IntakeSlam.deployAngle.get().in(Radians),
         false,
-        IntakeSlam.minAngle.get().in(Radians)
+        IntakeSlam.retractAngle.get().in(Radians)
     );
 
     @Override

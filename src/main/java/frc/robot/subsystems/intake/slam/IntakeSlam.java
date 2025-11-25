@@ -17,14 +17,13 @@ import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.tunables.LoggedTunable;
-import frc.util.robotStructure.angle.ArmMech;
 
-public class IntakeSlam extends SubsystemBase{
+public class IntakeSlam extends SubsystemBase {
     private final IntakeSlamIO io;
     private final IntakeSlamIOInputsAutoLogged inputs = new IntakeSlamIOInputsAutoLogged();
 
-    protected static final LoggedTunable<Angle> minAngle = LoggedTunable.from("Intake/Slam/Min Angle", Degrees::of, 20);
-    protected static final LoggedTunable<Angle> maxAngle = LoggedTunable.from("Intake/Slam/Max Angle", Degrees::of, 20);
+    protected static final LoggedTunable<Angle> retractAngle = LoggedTunable.from("Intake/Slam/Retract Angle", Degrees::of, 80);
+    protected static final LoggedTunable<Angle> deployAngle = LoggedTunable.from("Intake/Slam/Deploy Angle", Degrees::of, 0);
 
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Intake/Slam/PID",
@@ -37,8 +36,6 @@ public class IntakeSlam extends SubsystemBase{
 
     private double angleRads = 0;
     private double velocityRadsPerSec = 0.0;
-
-    public final ArmMech mech = new ArmMech(IntakeSlamConstants.slamBase);
 
     private final Alert motorDisconnectedAlert = new Alert("Intake/Slam/Alerts", "Motor Disconnected", AlertType.kError);
     private final Alert motorDisconnectedGlobalAlert = new Alert("Intake Slam Motor Disconnected!", AlertType.kError);
@@ -60,8 +57,6 @@ public class IntakeSlam extends SubsystemBase{
 
         this.angleRads = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads());
         this.velocityRadsPerSec = IntakeSlamConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getVelocityRadsPerSec());
-
-        this.mech.setRads(this.getAngleRads());
 
         Logger.recordOutput("Intake/Slam/Angle/Measured", this.getAngleRads());
         Logger.recordOutput("Intake/Slam/Velocity/Measured", this.getVelocityRadsPerSec());
@@ -99,21 +94,21 @@ public class IntakeSlam extends SubsystemBase{
     }
 
     public Command coast() {
-        var subsystem = this;
+        final var intakeSlam = this;
         return new Command() {
             {
-                setName("Coast");
-                addRequirements(subsystem);
+                this.setName("Coast");
+                this.addRequirements(intakeSlam);
             }
 
             @Override
             public void initialize() {
-                subsystem.stop(Optional.of(NeutralMode.Coast));
+                intakeSlam.stop(NeutralMode.COAST);
             }
 
             @Override
             public void end(boolean interrupted) {
-                subsystem.stop(Optional.of(NeutralMode.Brake));
+                intakeSlam.stop(NeutralMode.DEFAULT);
             }
 
             @Override
@@ -124,31 +119,36 @@ public class IntakeSlam extends SubsystemBase{
     }
 
     private Command genCommand(String name, DoubleSupplier angleRads) {
-        var subsystem = this;
+        final var intakeSlam = this;
         return new Command() {
             {
-                setName(name);
-                addRequirements(subsystem);
+                this.setName(name);
+                this.addRequirements(intakeSlam);
             }
 
             @Override
             public void execute() {
-                subsystem.setAngleGoalRads(angleRads.getAsDouble());
+                intakeSlam.setAngleGoalRads(angleRads.getAsDouble());
+            }
+
+            @Override
+            public void end(boolean interrupted) {
+                intakeSlam.stop(NeutralMode.DEFAULT);
             }
         };
     }
 
-    public Command idle() {
+    public Command retract() {
         return genCommand(
-            "Idle", 
-            () -> minAngle.get().in(Radians)
+            "Retract", 
+            () -> retractAngle.get().in(Radians)
         );
     }
 
     public Command deploy() {
         return genCommand(
             "Deploy", 
-            () -> maxAngle.get().in(Radians)
+            () -> deployAngle.get().in(Radians)
         );
     }
 }
