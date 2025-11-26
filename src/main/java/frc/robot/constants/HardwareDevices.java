@@ -41,30 +41,21 @@ public class HardwareDevices {
     public static final CANDevice backRightDriveMotorID = canivore.id(4);
     public static final CANDevice backRightTurnMotorID = rio.id(4);
 
-    // Pivot
-    public static final CANDevice pivotLeftMotorID = rio.id(5);
-    public static final CANDevice pivotEncoderID = rio.id(5);
-
-    // Intake Slam
-    public static final CANDevice intakeSlamMotorID = rio.id(6);
-    public static final CANDevice intakeSlamEncoderID = rio.id(6);
-    
-    // Elevator
-    public static final CANDevice elevatorMotorID = rio.id(7);
-    public static final CANDevice elevatorEncoderID = rio.id(7);
-
-    // Wrist
-    public static final CANDevice wristMotorID = rio.id(8);
-    public static final CANDevice wristEncoderID = rio.id(8);
+    // Shooter
+    // | Pivot
+    public static final CANDevice pivotMotorID = canivore.id(5);
+    // | Flywheel
+    public static final CANDevice flywheelLeftMotorID = canivore.id(11);
+    public static final CANDevice flywheelRightMotorID = canivore.id(12);
+    // | CANDi
+    public static final CANDevice candiID = canivore.id(0);
 
     // Intake
+    // | Slam
+    public static final CANDevice intakeSlamMotorID = rio.id(6);
+    public static final CANDevice intakeSlamEncoderID = rio.id(6);
+    // | Rollers
     public static final CANDevice intakeMotorID = rio.id(9);
-    public static final DIOPort intakeSlamCalibrationSensor = DIOPort.port(1);
-
-    // Climber
-    public static final CANDevice climberMotorID = rio.id(10);
-    public static final PWMPort climberServoPort = PWMPort.port(1);
-    public static final DIOPort climberSensor = DIOPort.port(9);
 
     // RIO
     public static final PWMPort ledPort = PWMPort.port(0);

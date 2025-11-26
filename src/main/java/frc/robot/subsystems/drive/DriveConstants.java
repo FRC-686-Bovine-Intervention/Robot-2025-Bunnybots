@@ -3,16 +3,12 @@ package frc.robot.subsystems.drive;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Hertz;
 import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
 
 import java.util.Arrays;
-import java.util.function.DoubleSupplier;
-
-import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.pathplanner.lib.config.RobotConfig;
@@ -30,7 +26,6 @@ import edu.wpi.first.units.measure.Frequency;
 import edu.wpi.first.units.measure.LinearVelocity;
 import frc.robot.constants.HardwareDevices;
 import frc.robot.constants.RobotConstants;
-import frc.util.Environment;
 import frc.util.geometry.GeomUtil;
 import frc.util.hardwareID.can.CANDevice;
 import frc.util.mechanismUtil.GearRatio;
