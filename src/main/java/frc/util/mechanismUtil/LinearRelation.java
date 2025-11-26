@@ -57,13 +57,7 @@ public class LinearRelation {
     public LinearVelocity angularVelocityToLinearVelocity(Measure<AngularVelocityUnit> angularVelocity) {
         return MetersPerSecond.of(this.radiansToMeters(angularVelocity.in(RadiansPerSecond)));
     }
-    public double angularVelocityToLinearVelocity(double angularVelocity) {
-        return this.rotationsToMeters(angularVelocity);
-    }
     public AngularVelocity linearVelocityToAngularVelocity(Measure<LinearVelocityUnit> linearVelocity) {
         return RadiansPerSecond.of(this.metersToRadians(linearVelocity.in(MetersPerSecond)));
-    }
-    public double linearVelocityToAngularVelocity(double linearVelocity) {
-        return this.metersToRotations(linearVelocity);
     }
 }

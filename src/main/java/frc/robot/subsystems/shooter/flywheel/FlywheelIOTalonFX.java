@@ -1,4 +1,4 @@
-package frc.robot.subsystems.shooter;
+package frc.robot.subsystems.shooter.flywheel;
 
 import java.util.Optional;
 
@@ -15,6 +15,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.util.Units;
 import frc.robot.constants.HardwareDevices;
 import frc.robot.constants.RobotConstants;
 import frc.util.NeutralMode;
@@ -23,12 +24,16 @@ import frc.util.faults.DeviceFaults;
 import frc.util.faults.DeviceFaults.FaultType;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor.EncodedMotorStatusSignalCache;
 
-public class ShooterIOTalonFX implements ShooterIO {
-    protected final TalonFX leftMotor = HardwareDevices.shooterLeftMotorID.talonFX();
-    protected final TalonFX rightMotor = HardwareDevices.shooterRightMotorID.talonFX();
+public class FlywheelIOTalonFX implements FlywheelIO {
+    protected final TalonFX leftMotor = HardwareDevices.flywheelLeftMotorID.talonFX();
+    protected final TalonFX rightMotor = HardwareDevices.flywheelRightMotorID.talonFX();
 
     private final EncodedMotorStatusSignalCache leftMotorStatusSignalCache;
     private final EncodedMotorStatusSignalCache rightMotorStatusSignalCache;
+
+    private final BaseStatusSignal[] refreshSignals;
+    private final BaseStatusSignal[] leftMotorConnectedSignals;
+    private final BaseStatusSignal[] rightMotorConnectedSignals;
     
     private final VoltageOut voltageRequest = new VoltageOut(0);
     private final VelocityVoltage velocityRequest = new VelocityVoltage(0);
@@ -37,39 +42,24 @@ public class ShooterIOTalonFX implements ShooterIO {
     private final StaticBrake staticBrakeRequest = new StaticBrake();
     private final StrictFollower followerRequest;
 
-    public ShooterIOTalonFX() {
+    public FlywheelIOTalonFX() {
         var motorConfig = new TalonFXConfiguration();
         motorConfig.MotorOutput
-            .withInverted(InvertedValue.Clockwise_Positive)
+            .withInverted(InvertedValue.CounterClockwise_Positive)
             .withNeutralMode(NeutralModeValue.Coast)
         ;
         this.leftMotor.getConfigurator().apply(motorConfig);
 
         motorConfig.MotorOutput
-            .withInverted(InvertedValue.CounterClockwise_Positive)
+            .withInverted(InvertedValue.Clockwise_Positive)
         ;
         this.rightMotor.getConfigurator().apply(motorConfig);
         this.followerRequest = new StrictFollower(this.leftMotor.getDeviceID());
-        this.rightMotor.setControl(this.followerRequest);
 
         this.leftMotorStatusSignalCache = EncodedMotorStatusSignalCache.from(this.leftMotor);
         this.rightMotorStatusSignalCache = EncodedMotorStatusSignalCache.from(this.rightMotor);
-        
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.leftMotorStatusSignalCache.encoder().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.rightMotorStatusSignalCache.encoder().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.leftMotorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.rightMotorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.leftMotor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.leftMotor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.rightMotor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.rightMotor));
-        this.leftMotor.optimizeBusUtilization();
-        this.rightMotor.optimizeBusUtilization();
-    }
 
-    @Override
-    public void updateInputs(ShooterIOInputs inputs) {
-        BaseStatusSignal.refreshAll(
+        this.refreshSignals = new BaseStatusSignal[] {
             this.leftMotorStatusSignalCache.encoder().position(),
             this.leftMotorStatusSignalCache.encoder().velocity(),
             this.leftMotorStatusSignalCache.motor().appliedVoltage(),
@@ -84,8 +74,8 @@ public class ShooterIOTalonFX implements ShooterIO {
             this.rightMotorStatusSignalCache.motor().supplyCurrent(),
             this.rightMotorStatusSignalCache.motor().torqueCurrent(),
             this.rightMotorStatusSignalCache.motor().deviceTemperature()
-        );
-        inputs.leftMotorConnected = BaseStatusSignal.isAllGood(
+        };
+        this.leftMotorConnectedSignals = new BaseStatusSignal[] {
             this.leftMotorStatusSignalCache.encoder().position(),
             this.leftMotorStatusSignalCache.encoder().velocity(),
             this.leftMotorStatusSignalCache.motor().appliedVoltage(),
@@ -93,8 +83,8 @@ public class ShooterIOTalonFX implements ShooterIO {
             this.leftMotorStatusSignalCache.motor().supplyCurrent(),
             this.leftMotorStatusSignalCache.motor().torqueCurrent(),
             this.leftMotorStatusSignalCache.motor().deviceTemperature()
-        );
-        inputs.rightMotorConnected = BaseStatusSignal.isAllGood(
+        };
+        this.rightMotorConnectedSignals = new BaseStatusSignal[] {
             this.rightMotorStatusSignalCache.encoder().position(),
             this.rightMotorStatusSignalCache.encoder().velocity(),
             this.rightMotorStatusSignalCache.motor().appliedVoltage(),
@@ -102,7 +92,26 @@ public class ShooterIOTalonFX implements ShooterIO {
             this.rightMotorStatusSignalCache.motor().supplyCurrent(),
             this.rightMotorStatusSignalCache.motor().torqueCurrent(),
             this.rightMotorStatusSignalCache.motor().deviceTemperature()
-        );
+        };
+        
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.leftMotorStatusSignalCache.encoder().getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.rightMotorStatusSignalCache.encoder().getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.leftMotorStatusSignalCache.motor().getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.rightMotorStatusSignalCache.motor().getStatusSignals());
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.leftMotor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.leftMotor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.rightMotor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.rightMotor));
+        this.leftMotor.optimizeBusUtilization();
+        this.rightMotor.optimizeBusUtilization();
+    }
+
+    @Override
+    public void updateInputs(FlywheelIOInputs inputs) {
+        BaseStatusSignal.refreshAll(this.refreshSignals);
+        inputs.leftMotorConnected = BaseStatusSignal.isAllGood(this.leftMotorConnectedSignals);
+        inputs.rightMotorConnected = BaseStatusSignal.isAllGood(this.rightMotorConnectedSignals);
+
         inputs.leftMotor.updateFrom(this.leftMotorStatusSignalCache);
         inputs.rightMotor.updateFrom(this.rightMotorStatusSignalCache);
     }
@@ -116,9 +125,9 @@ public class ShooterIOTalonFX implements ShooterIO {
     }
 
     @Override
-    public void setVelocity(double velocity, double feedforwardVolts) {
+    public void setVelocity(double velocityRadsPerSec, double feedforwardVolts) {
         this.leftMotor.setControl(this.velocityRequest
-            .withVelocity(velocity)
+            .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
             .withFeedForward(feedforwardVolts)
         );
         this.rightMotor.setControl(this.followerRequest);

@@ -1,4 +1,4 @@
-package frc.robot.subsystems.pivot;
+package frc.robot.subsystems.shooter.pivot;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.DegreesPerSecond;
@@ -13,8 +13,6 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.controller.ArmFeedforward;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
 import edu.wpi.first.units.measure.Angle;
@@ -22,8 +20,8 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.AimingParameters;
 import frc.robot.constants.RobotConstants;
+import frc.util.EdgeDetector;
 import frc.util.FFConstants;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
@@ -35,35 +33,34 @@ public class Pivot extends SubsystemBase {
     private final PivotIO io;
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
-    protected static final LoggedTunable<Angle> minAngle = LoggedTunable.from("Pivot/Min Angle", Degrees::of, 20);
-    protected static final LoggedTunable<Angle> maxAngle = LoggedTunable.from("Pivot/Max Angle", Degrees::of, 115);
+    protected static final LoggedTunable<Angle> idleAngle = LoggedTunable.from("Shooter/Pivot/Idle Angle", Degrees::of, PivotConstants.minAngle.in(Degrees));
     
     private static final LoggedTunable<TrapezoidProfile.Constraints> profileConsts = LoggedTunable.fromDashboardUnits(
-        "Pivot/Profile",
+        "Shooter/Pivot/Profile",
         DegreesPerSecond,
         DegreesPerSecondPerSecond,
         RadiansPerSecond,
         RadiansPerSecondPerSecond,
         new TrapezoidProfile.Constraints(
-            225,
-            115
+            0.0,
+            0.0
         )
     );
     private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from(
-        "Pivot/FF",
+        "Shooter/Pivot/FF",
         new FFConstants(
-            0,
-            0,
-            17 /2/Math.PI,
-            0
+            0.0,
+            0.0,
+            0.0,
+            0.0
         )
     );
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
-        "Pivot/PID",
+        "Shooter/Pivot/PID",
         new PIDConstants(
-            150,
-            0,
-            0
+            0.0,
+            0.0,
+            0.0
         )
     );
 
@@ -76,15 +73,22 @@ public class Pivot extends SubsystemBase {
     
     private double angleRads = 0.0;
     private double velocityRadsPerSec = 0.0;
+    private double motorOffsetRads = 0.0;
+    private boolean calibrated = false;
+
+    private final EdgeDetector limitSwitchEdgeDetector = new EdgeDetector(false);
 
     public final ArmMech mech = new ArmMech(PivotConstants.pivotBase);
 
-    private final Alert motorDisconnectedAlert = new Alert("Pivot/Alerts", "Motor Disconnected", AlertType.kError);
-    private final Alert encoderDisconnectedAlert = new Alert("Pivot/Alerts", "Encoder Disconnected", AlertType.kError);
+    private final Alert notCalibratedAlert = new Alert("Shooter/Pivot/Alerts", "Not Calibrated", AlertType.kError);
+    private final Alert notCalibratedGlobalAlert = new Alert("Pivot Not Calibrated!", AlertType.kError);
+
+    private final Alert motorDisconnectedAlert = new Alert("Shooter/Pivot/Alerts", "Motor Disconnected", AlertType.kError);
     private final Alert motorDisconnectedGlobalAlert = new Alert("Pivot Motor Disconnected!", AlertType.kError);
-    private final Alert encoderDisconnectedGlobalAlert = new Alert("Pivot Encoder Disconnected!", AlertType.kError);
 
     public Pivot(PivotIO io) {
+        super("Shooter/Pivot");
+
         System.out.println("[Init Pivot] Instantiating Pivot with " + io.getClass().getSimpleName());
         this.io = io;
 
@@ -92,23 +96,30 @@ public class Pivot extends SubsystemBase {
         this.io.configPID(pidConsts.get());
     }
 
+    @Override
     public void periodic() {
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot/Before");
+        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter Pivot/Before");
         this.io.updateInputs(this.inputs);
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot/Update Inputs");
-        Logger.processInputs("Inputs/Superstructure/Pivot", this.inputs);
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot/Process Inputs");
+        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter Pivot/Update Inputs");
+        Logger.processInputs("Inputs/Superstructure/Shooter/Pivot", this.inputs);
+        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter Pivot/Process Inputs");
 
-        this.angleRads = PivotConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getPositionRads());
-        this.velocityRadsPerSec = PivotConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getVelocityRadsPerSec());
+        this.limitSwitchEdgeDetector.update(this.inputs.limitSwitch);
+        if (this.limitSwitchEdgeDetector.risingEdge()) {
+            this.calibrated = true;
+            this.resetInternalAngleRads(PivotConstants.minAngle.in(Radians));
+        }
+
+        this.angleRads = PivotConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads()) + this.motorOffsetRads;
+        this.velocityRadsPerSec = PivotConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getVelocityRadsPerSec());
 
         this.measuredState.position = this.getAngleRads();
         this.measuredState.velocity = this.getVelocityRadsPerSec();
 
         this.mech.setRads(this.getAngleRads());
 
-        Logger.recordOutput("Pivot/Angle/Measured", this.getAngleRads());
-        Logger.recordOutput("Pivot/Velocity/Measured", this.getVelocityRadsPerSec());
+        Logger.recordOutput("Shooter/Pivot/Angle/Measured", this.getAngleRads());
+        Logger.recordOutput("Shooter/Pivot/Velocity/Measured", this.getVelocityRadsPerSec());
 
         if (profileConsts.hasChanged(hashCode())) {
             this.motionProfile = new TrapezoidProfile(profileConsts.get());
@@ -121,24 +132,30 @@ public class Pivot extends SubsystemBase {
         }
 
         this.motorDisconnectedAlert.set(!this.inputs.motorConnected);
-        this.encoderDisconnectedAlert.set(!this.inputs.encoderConnected);
         this.motorDisconnectedGlobalAlert.set(!this.inputs.motorConnected);
-        this.encoderDisconnectedGlobalAlert.set(!this.inputs.encoderConnected);
 
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot/Periodic");
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Pivot");
+        this.notCalibratedAlert.set(!this.calibrated);
+        this.notCalibratedGlobalAlert.set(!this.calibrated);
+
+        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter Pivot/Periodic");
+        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter Pivot");
     }
 
-    public static Transform3d getRobotToPivot(double angle) {
-        return new Transform3d(
-            PivotConstants.pivotBase.getTranslation(),
-            new Rotation3d(
-                0,
-                PivotConstants.minAngle.in(Radians)-angle,
-                0
-            )
-        );
+    private void resetInternalAngleRads(double angleRads) {
+        this.angleRads = angleRads;
+        this.motorOffsetRads = this.angleRads - PivotConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads());
     }
+
+    // public static Transform3d getRobotToPivot(double angle) {
+    //     return new Transform3d(
+    //         PivotConstants.pivotBase.getTranslation(),
+    //         new Rotation3d(
+    //             0,
+    //             PivotConstants.minAngle.in(Radians)-angle,
+    //             0
+    //         )
+    //     );
+    // }
 
     public double getAngleRads() {
         return this.angleRads;
@@ -146,20 +163,13 @@ public class Pivot extends SubsystemBase {
     public double getVelocityRadsPerSec() {
         return this.velocityRadsPerSec;
     }
-    public double getAppliedVolts() {
-        return this.inputs.motor.motor.getAppliedVolts();
-    }
 
-    public void setVolts(double volts) {
-        this.motionProfiling = false;
-        this.io.setVolts(volts);
-    }
-    public void stop(Optional<NeutralMode> neutralMode) {
+    private void stop(Optional<NeutralMode> neutralMode) {
         this.motionProfiling = false;
         this.io.stop(neutralMode);
     }
 
-    private void setAngleGoalRads(double angleRads, TrapezoidProfile motionProfile) {
+    private void setAngleGoalRads(double angleRads) {
         this.goalState.position = angleRads;
         this.goalState.velocity = 0.0;
         if (!this.motionProfiling) {
@@ -167,42 +177,38 @@ public class Pivot extends SubsystemBase {
             this.setpointState.velocity = this.measuredState.velocity;
             this.motionProfiling = true;
         }
-        var newSetpointState = motionProfile.calculate(RobotConstants.rioUpdatePeriodSecs, this.setpointState, this.goalState);
+        var newSetpointState = this.motionProfile.calculate(RobotConstants.rioUpdatePeriodSecs, this.setpointState, this.goalState);
         var ffout = this.feedforward.calculateWithVelocities(this.setpointState.position, this.setpointState.velocity, newSetpointState.velocity);
         this.setpointState.position = newSetpointState.position;
         this.setpointState.velocity = newSetpointState.velocity;
-        this.io.setPosition(
-            this.setpointState.position,
-            this.setpointState.velocity,
+        this.io.setPositionRads(
+            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.position) - this.motorOffsetRads,
+            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.velocity),
             ffout
         );
-        Logger.recordOutput("Pivot/FF/FF Out", ffout);
-        Logger.recordOutput("Pivot/Angle/Setpoint", this.setpointState.position);
-        Logger.recordOutput("Pivot/Velocity/Setpoint", this.setpointState.velocity);
-        Logger.recordOutput("Pivot/Angle/Goal", this.goalState.position);
-        Logger.recordOutput("Pivot/Velocity/Goal", this.goalState.velocity);
-    }
-
-    public void setAngleGoalRads(double angleRads) {
-        this.setAngleGoalRads(angleRads, this.motionProfile);
+        Logger.recordOutput("Shooter/Pivot/FF/FF Out", ffout);
+        Logger.recordOutput("Shooter/Pivot/Angle/Setpoint", this.setpointState.position);
+        Logger.recordOutput("Shooter/Pivot/Velocity/Setpoint", this.setpointState.velocity);
+        Logger.recordOutput("Shooter/Pivot/Angle/Goal", this.goalState.position);
+        Logger.recordOutput("Shooter/Pivot/Velocity/Goal", this.goalState.velocity);
     }
 
     public Command coast() {
-        var subsystem = this;
+        final var pivot = this;
         return new Command() {
             {
-                setName("Coast");
-                addRequirements(subsystem);
+                this.setName("Coast");
+                this.addRequirements(pivot);
             }
 
             @Override
             public void initialize() {
-                subsystem.stop(Optional.of(NeutralMode.Coast));
+                pivot.stop(NeutralMode.COAST);
             }
 
             @Override
             public void end(boolean interrupted) {
-                subsystem.stop(Optional.of(NeutralMode.Brake));
+                pivot.stop(NeutralMode.DEFAULT);
             }
 
             @Override
@@ -212,32 +218,30 @@ public class Pivot extends SubsystemBase {
         };
     }
 
-    private Command genCommand(String name, DoubleSupplier angleRads) {
-        var subsystem = this;
+    public Command genAngleCommand(String name, DoubleSupplier angleRads) {
+        final var pivot = this;
         return new Command() {
             {
-                setName(name);
-                addRequirements(subsystem);
+                this.setName(name);
+                this.addRequirements(pivot);
             }
 
             @Override
             public void execute() {
-                subsystem.setAngleGoalRads(angleRads.getAsDouble());
+                pivot.setAngleGoalRads(angleRads.getAsDouble());
+            }
+
+            @Override
+            public void end(boolean interrupted) {
+                pivot.stop(NeutralMode.DEFAULT);
             }
         };
     }
 
     public Command idle() {
-        return genCommand(
+        return this.genAngleCommand(
             "Idle", 
-            () -> minAngle.get().in(Radians)
-        );
-    }
-
-    public Command aim() {
-        return genCommand(
-            "Aim",
-            AimingParameters::pivotAltitude
+            () -> idleAngle.get().in(Radians)
         );
     }
 }

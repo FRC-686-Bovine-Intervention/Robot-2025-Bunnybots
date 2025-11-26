@@ -48,8 +48,6 @@ public class RobotState {
     private static final LoggedTunable<Time> txtyStaleTime = LoggedTunable.from("RobotState/TxTy Stale Time", Seconds::of, 0.2);
     private final Map<Integer, TxTyObservation> txtyObservations = new HashMap<>(FieldConstants.apriltagLayout.getTags().size());
 
-    private ShootTarget selectedShootTarget = ShootTarget.NONE;
-
     private RobotState() {
         this.qStdDevs = new Matrix<>(Nat.N3(), Nat.N1());
         for (int i = 0; i < 3; i++) {
@@ -206,14 +204,6 @@ public class RobotState {
         }
 
         return Optional.of(observation.pose().plus(new Transform2d(odometrySample.get(), this.odometryPose)));
-    }
-
-    public ShootTarget getSelectedShootTarget() {
-        return this.selectedShootTarget;
-    }
-
-    public void setSelectedShootTarget(ShootTarget target) {
-        this.selectedShootTarget = target;
     }
 
     public static record OdometryObservation(

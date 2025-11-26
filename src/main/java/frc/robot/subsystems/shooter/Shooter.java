@@ -1,276 +1,159 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Centimeters;
+import static edu.wpi.first.units.Units.Seconds;
 
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
-import org.littletonrobotics.junction.Logger;
-
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.units.measure.LinearVelocity;
-import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.InternalButton;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.AimingParameters;
-import frc.util.Cooldown;
-import frc.util.FFConstants;
-import frc.util.LoggedInternalButton;
-import frc.util.LoggedTracer;
-import frc.util.NeutralMode;
-import frc.util.PIDConstants;
+import frc.robot.constants.FieldConstants.Goals.Goal;
+import frc.robot.subsystems.shooter.flywheel.Flywheel;
+import frc.robot.subsystems.shooter.pivot.Pivot;
 import frc.util.loggerUtil.tunables.LoggedTunable;
-import frc.util.misc.MathExtraUtil;
 
-public class Shooter extends SubsystemBase {
-    private final ShooterIO io;
-    private final ShooterIOInputsAutoLogged inputs = new ShooterIOInputsAutoLogged();
+public class Shooter {
+    public final Pivot pivot;
+    public final Flywheel flywheel;
+    private final SubsystemBase aimingResource;
 
-    private static final LoggedTunable<LinearVelocity> preemptiveTargetSpeed = LoggedTunable.from("Shooter/Pre-emptive/Target Speed", MetersPerSecond::of, 17);
-    private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Custom/Target Speed", MetersPerSecond::of, 15);
-    private static final LoggedTunable<LinearVelocity> customMinimumSpeed = LoggedTunable.from("Shooter/Custom/Minimum Speed", MetersPerSecond::of, 50);
-    private static final LoggedTunable<LinearVelocity> customMaximumSpeed = LoggedTunable.from("Shooter/Custom/Maximum Speed", MetersPerSecond::of, 50);
-    private static final LoggedTunable<LinearVelocity> customIncrement = LoggedTunable.from("Shooter/Custom/Increment", MetersPerSecond::of, 0.5);
-    
-    public final InternalButton readyToShoot = new LoggedInternalButton("Shooter/Ready to Shoot");
-    public final InternalButton autoShootEnabled = new LoggedInternalButton("Shooter/AutoShoot Enabled");
-    public final Trigger readyToAutoShoot = readyToShoot.and(autoShootEnabled);
+    private static final LoggedTunable<Time> lookaheadTime = LoggedTunable.from("Shooter/Aiming/Lookahead Seconds", Seconds::of, 0.035);
+    private static final LoggedTunable<Distance> azimuthTolerance = LoggedTunable.from("Shooter/Aiming/Tolerance/Azimuth", Centimeters::of, 100);
+    private static final LoggedTunable<Distance> altitudeDegsTolerance = LoggedTunable.from("Shooter/Aiming/Tolerance/Altitude", Centimeters::of, 46);
 
-    private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("Shooter/PID",
-        new PIDConstants(
-            3.0,
-            0.0,
-            0.05
-        )
-    );
-    private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from("Shooter/FF",
-        new FFConstants(
-            0.0,
-            0.0,
-            0.0,
-            0.0
-        )
-    );
-    private static final LoggedTunable<TrapezoidProfile.Constraints> profileConstraints = LoggedTunable.from("Profile",
-        new Constraints(
-            0.25 * 2 * Math.PI,
-            0.5 * 2 * Math.PI
-        )
-    );
-    
-    private final SimpleMotorFeedforward ff = new SimpleMotorFeedforward(
-        ffConsts.get().kS(),
-        ffConsts.get().kV(),
-        ffConsts.get().kA()
-    );
-    private TrapezoidProfile motionProfile = new TrapezoidProfile(profileConstraints.get());
-    private State setpointState = new State();
-    
-    private final Alert leftMotorDisconnectedAlert = new Alert("Shooter/Alerts", "Left Motor Disconnected", AlertType.kError);
-    private final Alert rightMotorDisconnectedAlert = new Alert("Shooter/Alerts", "Right Motor Disconnected", AlertType.kError);
-    private final Alert leftMotorDisconnectedGlobalAlert = new Alert("Shooter Left Motor Disconnected!", AlertType.kError);
-    private final Alert rightMotorDisconnectedGlobalAlert = new Alert("Shooter Right Motor Disconnected!", AlertType.kError);
-
-    public Shooter(ShooterIO io) {
-        System.out.println("[Init Shooter] Instantiating Shooter with " + io.getClass().getSimpleName());
-        this.io = io;
+    public Shooter(Pivot pivot, Flywheel flywheel) {
+        this.pivot = pivot;
+        this.flywheel = flywheel;
+        this.aimingResource = new SubsystemBase("Shooter/Aiming") {};
     }
 
-    public void periodic() {
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Before");
-        io.updateInputs(inputs);
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Update Inputs");
-        Logger.processInputs("Inputs/Shooter", this.inputs);
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Process Inputs");
-        Logger.recordOutput("Shooter/Average MPS", getAverageSurfaceSpeed());
+    private Translation3d aimPoint;
+    // private Pose2d shotPose;
+    // private ChassisSpeeds shotSpeeds;
+    private double effectiveDistanceMeters;
+    private double targetPivotAltitudeRads;
+    private double targetFlywheelVeloMPS;
+    private double targetDriveHeadingRads;
+    // private double minimumShooterSpeedMPS;
 
-        if (pidConsts.hasChanged(this.hashCode())) {
-            io.configPID(pidConsts.get());
-        }
-        if (ffConsts.hasChanged(this.hashCode())) {
-            ffConsts.get().update(ff);
-        }
-        if (profileConstraints.hasChanged(this.hashCode())) {
-            motionProfile = new TrapezoidProfile(profileConstraints.get());
-        }
-
-        this.leftMotorDisconnectedAlert.set(!this.inputs.leftMotorConnected);
-        this.rightMotorDisconnectedAlert.set(!this.inputs.rightMotorConnected);
-        this.leftMotorDisconnectedGlobalAlert.set(!this.inputs.leftMotorConnected);
-        this.rightMotorDisconnectedGlobalAlert.set(!this.inputs.rightMotorConnected);
-        
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter/Periodic");
-        LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Shooter");
+    public Command aim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, Goal target) {
+        return this.aim(() -> robotPose, () -> fieldSpeeds, () -> target);
     }
-
-    public double getAverageSurfaceSpeed() {
-        return ShooterConstants.flywheel.angularVelocityToLinearVelocity(MathExtraUtil.average(inputs.leftMotor.encoder.getVelocityRadsPerSec(), inputs.rightMotor.encoder.getVelocityRadsPerSec()));
-    }
-
-    private void applySurfaceSpeed(double surfaceSpeed) {
-        var goalSpeed = surfaceSpeed * ShooterConstants.shooterSpeedEnvCoef.getAsDouble();
-        var motorSpeed = ShooterConstants.flywheel.linearVelocityToAngularVelocity(goalSpeed) / ShooterConstants.motorToMechRatio.reductionUnsigned();
-        Logger.recordOutput("Shooter/Goal Speed", motorSpeed);
-        io.setVelocity(motorSpeed, ff.calculate(surfaceSpeed));
-    }
-
-    private void setReadyToShoot(double minimum, double maximum) {
-        readyToShoot.setPressed(MathExtraUtil.isWithin(getAverageSurfaceSpeed(), minimum, maximum));
-    }
-    
-    private Command genCommand(
-        String name,
-        DoubleSupplier targetSpeed,
-        DoubleSupplier minimumSpeed,
-        DoubleSupplier maximumSpeed,
-        boolean enableAutoShoot
-    ) {
-        var subsystem = this;
+    public Command aim(Supplier<Pose2d> robotPose, Supplier<ChassisSpeeds> fieldSpeeds, Supplier<Goal> target) {
+        final var shooter = this;
         return new Command() {
             {
-                setName(name);
-                addRequirements(subsystem);
+                this.setName("Aim");
+                this.addRequirements(shooter.aimingResource);
             }
 
             @Override
             public void initialize() {
-                autoShootEnabled.setPressed(enableAutoShoot);
+                shooter.calculate(robotPose.get().getTranslation(), fieldSpeeds.get(), target.get());
             }
 
             @Override
-            public void execute() {
-                applySurfaceSpeed(targetSpeed.getAsDouble());
-                setReadyToShoot(minimumSpeed.getAsDouble(), maximumSpeed.getAsDouble());
-            }
-
-            @Override
-            public void end(boolean interrupted) {
-                readyToShoot.setPressed(false);
-                autoShootEnabled.setPressed(false);
+            public boolean isFinished() {
+                return true;
             }
         };
     }
 
-    private Command genCommand(
-        String name,
-        LoggedTunable<LinearVelocity> targetSpeed,
-        LoggedTunable<LinearVelocity> minimumSpeed,
-        LoggedTunable<LinearVelocity> maximumSpeed,
-        boolean enableAutoShoot
-    ) {
-        var subsystem = this;
-        return new Command() {
-            {
-                setName(name);
-                addRequirements(subsystem);
-            }
-
-            @Override
-            public void initialize() {
-                autoShootEnabled.setPressed(enableAutoShoot);
-            }
-
-            @Override
-            public void execute() {
-                applySurfaceSpeed(targetSpeed.get().in(MetersPerSecond));
-                setReadyToShoot(minimumSpeed.get().in(MetersPerSecond), maximumSpeed.get().in(MetersPerSecond));
-            }
-
-            @Override
-            public void end(boolean interrupted) {
-                readyToShoot.setPressed(false);
-                autoShootEnabled.setPressed(false);
-            }
-        };
-    }
-
-    private static final double VelocityMax = MetersPerSecond.of(Double.POSITIVE_INFINITY).in(MetersPerSecond);
-    public Command idle() {
-        var subsystem = this;
-        return new Command() {
-            {
-                setName("Idle");
-                addRequirements(subsystem);
-            }
-
-            @Override
-            public void execute() {
-                io.stop(NeutralMode.COAST);
-            }
-        };
-    }
-
-    public Command aimWithAutoShoot() {
-        return genCommand(
-            "Aim-AutoShoot", 
-            AimingParameters::targetShooterSpeed,
-            AimingParameters::minimumShooterSpeed, 
-            () -> VelocityMax,
-            true
-        );
-    }
-    
-    public Command aimWithoutAutoShoot() {
-        return genCommand(
+    public Command aimPivot() {
+        return this.pivot.genAngleCommand(
             "Aim",
-            AimingParameters::targetShooterSpeed,
-            AimingParameters::minimumShooterSpeed,
-            () -> VelocityMax,
-            false
+            () -> this.targetPivotAltitudeRads
         );
     }
-    public Command preemptive() {
-        return genCommand(
-            "Pre-emptive",
-            () -> preemptiveTargetSpeed.get().in(MetersPerSecond),
-            () -> 0,
-            () -> VelocityMax,
-            false
+    public Command aimFlywheel() {
+        return this.flywheel.genSurfaceVeloCommand(
+            "Aim",
+            () -> this.targetFlywheelVeloMPS
         );
     }
-    public Command custom() {
-        return genCommand(
-            "Custom",
-            customTargetSpeed,
-            customMinimumSpeed,
-            customMaximumSpeed,
-            false
-        );
-    }
-    public Command customIncrement(BooleanSupplier increase, BooleanSupplier decrease) {
-        DoubleSupplier speed = new DoubleSupplier() {
-            private double speed = customTargetSpeed.get().in(MetersPerSecond);
-            private final Cooldown cooldown = new Cooldown();
-            @Override
-            public double getAsDouble() {
-                Logger.recordOutput("Custom Shoot/Shooter Speed", speed);
-                if(!cooldown.hasExpired()) {
-                    return speed;
-                }
-                if(increase.getAsBoolean()) {
-                    cooldown.reset(0.25);
-                    speed += customIncrement.get().in(MetersPerSecond);
-                }
-                if(decrease.getAsBoolean()) {
-                    cooldown.reset(0.25);
-                    speed -= customIncrement.get().in(MetersPerSecond);
-                }
 
-                return speed;
-            }
-        };
-        return genCommand(
-            "Custom Increment",
-            speed,
-            speed,
-            speed,
-            false
+    private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Goal goal) {
+        this.calculate(
+            robotPos,
+            fieldRelativeSpeeds,
+            goal.centerPoint,
+            goal.type.select(ShooterConstants.highGoalTargetPivotAltitudeRads, ShooterConstants.lowGoalTargetPivotAltitudeRads),
+            goal.type.select(ShooterConstants.highGoalTargetFlywheelVeloMPS, ShooterConstants.lowGoalTargetFlywheelVeloMPS)
         );
     }
+    private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Translation3d aimPoint, InterpolatingDoubleTreeMap pivotAltitudeMap, InterpolatingDoubleTreeMap flywheelVeloMap) {
+        this.aimPoint = aimPoint;
+
+        var predictedX = robotPos.getX() + fieldRelativeSpeeds.vxMetersPerSecond * lookaheadTime.get().in(Seconds);
+        var predictedY = robotPos.getY() + fieldRelativeSpeeds.vyMetersPerSecond * lookaheadTime.get().in(Seconds);
+
+        var predictedToTargetX = this.aimPoint.getX() - predictedX;
+        var predictedToTargetY = this.aimPoint.getY() - predictedY;
+
+        this.targetDriveHeadingRads = Math.atan2(predictedToTargetY, predictedToTargetX);
+        this.effectiveDistanceMeters = Math.hypot(predictedToTargetX, predictedToTargetY);
+
+        this.targetPivotAltitudeRads = pivotAltitudeMap.get(this.effectiveDistanceMeters);
+        this.targetFlywheelVeloMPS = flywheelVeloMap.get(this.effectiveDistanceMeters);
+    }
+
+    // public final boolean withinAzimuthTolerance(Pose2d robotPose) {
+    //     var blueRobotPose = AllianceFlipUtil.apply(robotPose);
+    //     var blueAimPoint = AllianceFlipUtil.apply(AimingParameters.aimPoint);
+    //     var aimPointToRobot = blueRobotPose.getTranslation().minus(blueAimPoint.toTranslation2d()).getAngle();
+    //     var horizontalTolerance = Math.abs(aimPointToRobot.getCos()) * AimingParameters.azimuthTolerance.get().in(Meters) * 0.5;
+    //     var azimuthTolerance = Math.atan2(horizontalTolerance, effectiveDistanceMeters);
+    //     var result = MathUtil.isNear(AimingParameters.shotPose().getRotation().getRadians(), robotPose.getRotation().getRadians(), azimuthTolerance);
+    //     Logger.recordOutput("AimingTolerance/Azimuth", result);
+    //     return result;
+    // }
+
+    // public final boolean withinAltitudeTolerance(double altitudeDegs) {
+    //     var pivotDist = effectiveDistanceMeters - PivotConstants.pivotBase.getX();
+    //     var targetHeight = aimPoint.getZ() - PivotConstants.pivotBase.getZ();
+    //     var pivotToTargetDist = Math.hypot(pivotDist, targetHeight);
+    //     var verticalTolerance = Math.abs(targetHeight / pivotToTargetDist) * AimingParameters.altitudeDegsTolerance.get().in(Meters) * 0.5;
+    //     var altitudeDegsTolerance = Math.atan2(verticalTolerance, pivotToTargetDist - (targetHeight / pivotDist * verticalTolerance));
+    //     Logger.recordOutput("AimingTolerance/pivotDist", pivotDist);
+    //     Logger.recordOutput("AimingTolerance/pivotToTargetDist", pivotToTargetDist);
+    //     Logger.recordOutput("AimingTolerance/verticalTolerance", verticalTolerance);
+    //     Logger.recordOutput("AimingTolerance/altitudeDegsTolerance", altitudeDegsTolerance);
+    //     var result = MathUtil.isNear(AimingParameters.pivotAltitude(), altitudeDegs, altitudeDegsTolerance);
+    //     Logger.recordOutput("AimingTolerance/Altitude", result);
+    //     return result;
+    // }
+    
+    // private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeed, Translation3d aimPoint) {
+    //     var predictedRobotPos = robotPos.plus(GeomUtil.translationFromSpeeds(fieldRelativeSpeed).times(lookaheadTime.get().in(Seconds)));
+    //     // var velocityTowardsSpeaker = robotPos.minus(aimPoint).toVector().unit().dot(VecBuilder.fill(fieldRelativeSpeed.vxMetersPerSecond, fieldRelativeSpeed.vyMetersPerSecond));
+    //     // var timeToAimPoint = robotPos.getDistance(aimPoint) / (ShooterConstants.exitVelocity + velocityTowardsSpeaker);
+    //     // var chassisOffset = fieldRelativeSpeed.times(timeToAimPoint);
+    //     // var translationalOffset = new Translation2d(chassisOffset.vxMetersPerSecond, chassisOffset.vyMetersPerSecond);
+    //     // var pointTo = aimPoint.minus(translationalOffset);
+    //     var driveAzimuth = aimPoint.toTranslation2d().minus(predictedRobotPos).getAngle();
+    //     var predictedDistToAimPoint = aimPoint.toTranslation2d().getDistance(predictedRobotPos);
+    //     AimingParameters.aimPoint = aimPoint;
+    //     AimingParameters.shotPose = new Pose2d(robotPos, driveAzimuth);
+    //     AimingParameters.shotSpeeds = new ChassisSpeeds(fieldRelativeSpeed.vxMetersPerSecond, fieldRelativeSpeed.vyMetersPerSecond, 0);
+    //     AimingParameters.effectiveDistanceMeters = predictedDistToAimPoint;
+    //     AimingParameters.pivotAltitudeDegs = ShooterConstants.pivotAltitude.get(predictedDistToAimPoint) + pivotOffsetDegs;
+    //     AimingParameters.targetShooterSpeedMPS = ShooterConstants.targetShooterVelo.get(predictedDistToAimPoint) + shooterOffsetMPS;
+    //     AimingParameters.minimumShooterSpeedMPS = ShooterConstants.minimumShooterSpeed.get(predictedDistToAimPoint) + shooterOffsetMPS;
+    //     Logger.recordOutput("AimingParameters/Aim Point", AimingParameters.aimPoint);
+    //     Logger.recordOutput("AimingParameters/Shot Pose", shotPose());
+    //     Logger.recordOutput("AimingParameters/Shot Speeds", shotSpeeds());
+    //     Logger.recordOutput("AimingParameters/Pivot Altitude", pivotAltitude());
+    //     Logger.recordOutput("AimingParameters/Target Shooter Speed", targetShooterSpeed());
+    //     Logger.recordOutput("AimingParameters/Minimum Shooter Speed", minimumShooterSpeed());
+    //     Logger.recordOutput("AimingParameters/Predicted Pose", new Pose2d(predictedRobotPos, driveAzimuth));
+    //     Logger.recordOutput("AimingParameters/Effective Distance",  effectiveDistanceMeters);
+    //     Logger.recordOutput("AimingParameters/Shooter Mech3d", Pivot.getRobotToPivot(Math.toRadians(pivotAltitude())));
+    // }
 }
