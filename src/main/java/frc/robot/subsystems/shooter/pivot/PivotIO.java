@@ -1,4 +1,4 @@
-package frc.robot.subsystems.pivot;
+package frc.robot.subsystems.shooter.pivot;
 
 import java.util.Optional;
 
@@ -7,25 +7,20 @@ import org.littletonrobotics.junction.AutoLog;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor;
-import frc.util.loggerUtil.inputs.LoggedEncoder;
-import frc.util.loggerUtil.inputs.LoggedFaults;
 
 public interface PivotIO {
     @AutoLog
     public static class PivotIOInputs {
-        boolean encoderConnected = false;
+        boolean limitSwitch = false;
         boolean motorConnected = false;
-        LoggedEncoder encoder = new LoggedEncoder();
         LoggedEncodedMotor motor = new LoggedEncodedMotor();
-        LoggedFaults motorFaults = new LoggedFaults();
-        LoggedFaults encoderFaults = new LoggedFaults();
     }
 
     public default void updateInputs(PivotIOInputs inputs) {}
 
     public default void setVolts(double volts) {}
 
-    public default void setPosition(double positionRads, double velocityRadsPerSec, double feedforwardVolts) {}
+    public default void setPositionRads(double positionRads, double velocityRadsPerSec, double feedforwardVolts) {}
     
     public default void stop(Optional<NeutralMode> neutralMode) {}
 

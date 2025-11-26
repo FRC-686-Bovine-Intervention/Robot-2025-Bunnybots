@@ -1,4 +1,4 @@
-package frc.robot.subsystems.pivot;
+package frc.robot.subsystems.shooter.pivot;
 
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -12,9 +12,9 @@ import frc.robot.constants.RobotConstants;
 public class PivotIOSim extends PivotIOTalonFX {
     private final SingleJointedArmSim pivotSim = new SingleJointedArmSim(
         LinearSystemId.identifyPositionSystem(5, 2),
-        DCMotor.getFalcon500(2),
+        DCMotor.getKrakenX60(1),
         PivotConstants.motorToMechanism.reductionUnsigned(),
-        1,
+        0.5,
         PivotConstants.minAngle.in(Radians),
         PivotConstants.maxAngle.in(Radians),
         false,
@@ -23,19 +23,20 @@ public class PivotIOSim extends PivotIOTalonFX {
 
     @Override
     public void updateInputs(PivotIOInputs inputs) {
-        var motorSimState = motor.getSimState();
-        var cancoderSimState = cancoder.getSimState();
+        var motorSimState = this.motor.getSimState();
 
-        pivotSim.setInputVoltage(motorSimState.getMotorVoltage());
-        pivotSim.update(RobotConstants.rioUpdatePeriodSecs);
+        this.pivotSim.setInputVoltage(motorSimState.getMotorVoltage());
+        this.pivotSim.update(RobotConstants.rioUpdatePeriodSecs);
 
-        var position = Radians.of(pivotSim.getAngleRads());
-        var velocity = RadiansPerSecond.of(pivotSim.getVelocityRadPerSec());
+        var position = Radians.of(this.pivotSim.getAngleRads());
+        var velocity = RadiansPerSecond.of(this.pivotSim.getVelocityRadPerSec());
 
-        cancoderSimState.setRawPosition(PivotConstants.sensorToMechanism.inverse().applyUnsigned(position.unaryMinus()));
-        cancoderSimState.setVelocity(PivotConstants.sensorToMechanism.inverse().applyUnsigned(velocity.unaryMinus()));
+        motorSimState.setRawRotorPosition(PivotConstants.motorToMechanism.inverse().applyUnsigned(position));
+        motorSimState.setRotorVelocity(PivotConstants.motorToMechanism.inverse().applyUnsigned(velocity));
 
         motorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
+
+        motorSimState.setReverseLimit(this.pivotSim.hasHitLowerLimit());
 
         super.updateInputs(inputs);
     }

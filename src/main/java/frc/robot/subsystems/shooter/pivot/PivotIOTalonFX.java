@@ -1,9 +1,9 @@
-package frc.robot.subsystems.pivot;
+package frc.robot.subsystems.shooter.pivot;
 
 import java.util.Optional;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.CoastOut;
@@ -11,11 +11,12 @@ import com.ctre.phoenix6.controls.NeutralOut;
 import com.ctre.phoenix6.controls.PositionVoltage;
 import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.controls.VoltageOut;
-import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.signals.ReverseLimitSourceValue;
+import com.ctre.phoenix6.signals.ReverseLimitTypeValue;
+import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.util.Units;
 import frc.robot.constants.HardwareDevices;
@@ -25,14 +26,15 @@ import frc.util.PIDConstants;
 import frc.util.faults.DeviceFaults;
 import frc.util.faults.DeviceFaults.FaultType;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor.EncodedMotorStatusSignalCache;
-import frc.util.loggerUtil.inputs.LoggedEncoder.EncoderStatusSignalCache;
 
 public class PivotIOTalonFX implements PivotIO {
     protected final TalonFX motor = HardwareDevices.pivotMotorID.talonFX();
-    protected final CANcoder cancoder = HardwareDevices.pivotEncoderID.cancoder();
 
     private final EncodedMotorStatusSignalCache motorStatusSignalCache;
-    private final EncoderStatusSignalCache encoderStatusSignalCache;
+    private final StatusSignal<ReverseLimitValue> limitSwitchStatusSignal;
+
+    private final BaseStatusSignal[] refreshSignals;
+    private final BaseStatusSignal[] motorConnectionSignals;
 
     private final VoltageOut voltageRequest = new VoltageOut(0);
     private final PositionVoltage positionRequest = new PositionVoltage(0);
@@ -41,51 +43,31 @@ public class PivotIOTalonFX implements PivotIO {
     private final StaticBrake staticBrakeRequest = new StaticBrake();
     
     public PivotIOTalonFX() {
-        var encoderConfig = new CANcoderConfiguration();
-
-        this.cancoder.getConfigurator().refresh(encoderConfig.MagnetSensor);
-        encoderConfig.MagnetSensor
-            .withSensorDirection(SensorDirectionValue.Clockwise_Positive)
-        ;
-
-        this.cancoder.getConfigurator().apply(encoderConfig);
-
         var motorConfig = new TalonFXConfiguration();
+
         motorConfig.MotorOutput
-            .withInverted(InvertedValue.Clockwise_Positive)
+            .withInverted(InvertedValue.CounterClockwise_Positive)
             .withNeutralMode(NeutralModeValue.Brake)
         ;
-        motorConfig.Feedback
-            .withRemoteCANcoder(this.cancoder)
-            .withRotorToSensorRatio(PivotConstants.motorToMechanism.then(PivotConstants.sensorToMechanism.inverse()).reductionUnsigned())
-            .withSensorToMechanismRatio(PivotConstants.sensorToMechanism.reductionUnsigned())
-        ;
         motorConfig.SoftwareLimitSwitch
-            .withReverseSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(Pivot.minAngle.get())
+            .withReverseSoftLimitEnable(false)
             .withForwardSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(Pivot.maxAngle.get())
+            .withForwardSoftLimitThreshold(PivotConstants.motorToMechanism.inverse().applyUnsigned(PivotConstants.maxAngle))
+        ;
+        motorConfig.HardwareLimitSwitch
+            .withReverseLimitEnable(true)
+            .withReverseLimitSource(ReverseLimitSourceValue.RemoteCANdiS1)
+            .withReverseLimitRemoteSensorID(HardwareDevices.candiID.id)
+            .withReverseLimitType(ReverseLimitTypeValue.NormallyOpen)
+            .withForwardLimitEnable(false)
         ;
 
         this.motor.getConfigurator().apply(motorConfig);
 
         this.motorStatusSignalCache = EncodedMotorStatusSignalCache.from(this.motor);
-        this.encoderStatusSignalCache = EncoderStatusSignalCache.from(this.cancoder);
+        this.limitSwitchStatusSignal = this.motor.getReverseLimit();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.motorStatusSignalCache.encoder().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.encoderStatusSignalCache.getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.motorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.cancoder));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.cancoder));
-        this.motor.optimizeBusUtilization();
-        this.cancoder.optimizeBusUtilization();
-    }
-
-    @Override
-    public void updateInputs(PivotIOInputs inputs) {
-        BaseStatusSignal.refreshAll(
+        this.refreshSignals = new BaseStatusSignal[] {
             this.motorStatusSignalCache.encoder().position(),
             this.motorStatusSignalCache.encoder().velocity(),
             this.motorStatusSignalCache.motor().appliedVoltage(),
@@ -93,24 +75,33 @@ public class PivotIOTalonFX implements PivotIO {
             this.motorStatusSignalCache.motor().supplyCurrent(),
             this.motorStatusSignalCache.motor().torqueCurrent(),
             this.motorStatusSignalCache.motor().deviceTemperature(),
-            this.encoderStatusSignalCache.position(),
-            this.encoderStatusSignalCache.velocity()
-        );
-        inputs.encoderConnected = BaseStatusSignal.isAllGood(
-            this.encoderStatusSignalCache.position(),
-            this.encoderStatusSignalCache.velocity()
-        );
-        inputs.motorConnected = BaseStatusSignal.isAllGood(
+            this.limitSwitchStatusSignal
+        };
+        this.motorConnectionSignals = new BaseStatusSignal[] {
             this.motorStatusSignalCache.encoder().position(),
             this.motorStatusSignalCache.encoder().velocity(),
             this.motorStatusSignalCache.motor().appliedVoltage(),
             this.motorStatusSignalCache.motor().statorCurrent(),
             this.motorStatusSignalCache.motor().supplyCurrent(),
             this.motorStatusSignalCache.motor().torqueCurrent(),
-            this.motorStatusSignalCache.motor().deviceTemperature()
-        );
-        inputs.encoder.updateFrom(this.encoderStatusSignalCache);
+            this.motorStatusSignalCache.motor().deviceTemperature(),
+            this.limitSwitchStatusSignal
+        };
+
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.motorStatusSignalCache.encoder().getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.limitSwitchStatusSignal);
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.motorStatusSignalCache.motor().getStatusSignals());
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
+        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
+        this.motor.optimizeBusUtilization();
+    }
+
+    @Override
+    public void updateInputs(PivotIOInputs inputs) {
+        BaseStatusSignal.refreshAll(this.refreshSignals);
+        inputs.motorConnected = BaseStatusSignal.isAllGood(this.motorConnectionSignals);
         inputs.motor.updateFrom(this.motorStatusSignalCache);
+        inputs.limitSwitch = this.limitSwitchStatusSignal.getValue() == ReverseLimitValue.ClosedToGround;
     }
 
     @Override
@@ -121,7 +112,7 @@ public class PivotIOTalonFX implements PivotIO {
     }
 
     @Override
-    public void setPosition(double positionRads, double velocityRadsPerSec, double feedforwardVolts) {
+    public void setPositionRads(double positionRads, double velocityRadsPerSec, double feedforwardVolts) {
         this.motor.setControl(this.positionRequest
             .withPosition(Units.radiansToRotations(positionRads))
             .withVelocity(Units.radiansToRotations(velocityRadsPerSec))
@@ -152,20 +143,6 @@ public class PivotIOTalonFX implements PivotIO {
             for (var faultType : FaultType.possibleTalonFXFaults) {
                 if (faultType.isPartOf(bitmask)) {
                     faultType.clearStickyFaultOn(this.motor);
-                }
-            }
-        }
-    }
-
-    @Override
-    public void clearEncoderStickyFaults(long bitmask) {
-        if (bitmask == DeviceFaults.noneMask) {return;}
-        if (bitmask == DeviceFaults.allMask) {
-            this.cancoder.clearStickyFaults();
-        } else {
-            for (var faultType : FaultType.possibleCancoderFaults) {
-                if (faultType.isPartOf(bitmask)) {
-                    faultType.clearStickyFaultOn(this.cancoder);
                 }
             }
         }

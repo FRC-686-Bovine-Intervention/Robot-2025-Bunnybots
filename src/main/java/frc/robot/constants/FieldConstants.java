@@ -1,6 +1,5 @@
 package frc.robot.constants;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
@@ -19,7 +18,10 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constants.FieldConstants.LunarOutpost.CosmicConverter.Goal.GoalType;
+import frc.util.flipping.AllianceFlipUtil;
+import frc.util.flipping.AllianceFlippable;
 import frc.util.flipping.AllianceFlipped;
+import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
 
 public final class FieldConstants {
     public static final Distance fieldLength = Inches.of(57*12 + 6 + 7.0/8.0);
@@ -51,6 +53,50 @@ public final class FieldConstants {
             e.printStackTrace();
         }
         apriltagLayout = a;
+    }
+
+    public static final class Goals {
+        public static final Distance highGoalCenterHeight = Meters.zero();
+        public static final Distance lowGoalCenterHeight = Meters.zero();
+
+        public static final AllianceFlipped<Goal> shutoffHighGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.High));
+        public static final AllianceFlipped<Goal> shutoffLowGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.Low));
+        public static final AllianceFlipped<Goal> permanentHighGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.High));
+        public static final AllianceFlipped<Goal> permanentLowGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.Low));
+
+        public static final AllianceFlipped<Goal> leftHighGoal = new AllianceFlipped<>(permanentHighGoal.getBlue(), shutoffHighGoal.getRed());
+        public static final AllianceFlipped<Goal> rightHighGoal = new AllianceFlipped<>(shutoffHighGoal.getBlue(), permanentHighGoal.getRed());
+        public static final AllianceFlipped<Goal> leftLowGoal = new AllianceFlipped<>(permanentLowGoal.getBlue(), shutoffLowGoal.getRed());
+        public static final AllianceFlipped<Goal> rightLowGoal = new AllianceFlipped<>(shutoffLowGoal.getBlue(), permanentLowGoal.getRed());
+
+        public static enum GoalType {
+            High,
+            Low,
+            ;
+            public <T> T select(T high, T low) {
+                return switch (this) {
+                    case High -> high;
+                    case Low -> low;
+                };
+            }
+        }
+        public static final class Goal implements AllianceFlippable<Goal> {
+            public final Translation3d centerPoint;
+            public final GoalType type;
+
+            private Goal(Translation3d centerPoint, GoalType type) {
+                this.centerPoint = centerPoint;
+                this.type = type;
+            }
+
+            @Override
+            public Goal flip(FieldFlipType flipType) {
+                return new Goal(
+                    AllianceFlipUtil.flip(this.centerPoint, flipType),
+                    this.type
+                );
+            }
+        }
     }
 
     public static final class LunarOutpost {

@@ -375,11 +375,11 @@ public class Drive extends VirtualSubsystem {
             }
             @Override
             public void initialize() {
-                Arrays.stream(modules).forEach((module) -> module.stopDrive(Optional.of(NeutralMode.Coast)));
+                Arrays.stream(modules).forEach((module) -> module.stopDrive(NeutralMode.COAST));
             }
             @Override
             public void end(boolean interrupted) {
-                Arrays.stream(modules).forEach((module) -> module.stopDrive(Optional.of(NeutralMode.Brake)));
+                Arrays.stream(modules).forEach((module) -> module.stopDrive(NeutralMode.BRAKE));
             }
             @Override
             public boolean runsWhenDisabled() {
