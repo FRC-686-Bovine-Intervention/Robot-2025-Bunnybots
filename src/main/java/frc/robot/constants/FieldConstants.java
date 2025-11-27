@@ -24,8 +24,8 @@ import frc.util.flipping.AllianceFlipped;
 import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
 
 public final class FieldConstants {
-    public static final Distance fieldLength = Inches.of(57*12 + 6 + 7.0/8.0);
-    public static final Distance fieldWidth =  Inches.of(26*12 + 5);
+    public static final Distance fieldLength = Inches.of(648.000000);
+    public static final Distance fieldWidth =  Inches.of(324.00000);
 
     public static final AllianceFlipped<Predicate<Translation2d>> onAllianceSide = new AllianceFlipped<>(
         new Predicate<>() {
@@ -56,13 +56,45 @@ public final class FieldConstants {
     }
 
     public static final class Goals {
-        public static final Distance highGoalCenterHeight = Meters.zero();
-        public static final Distance lowGoalCenterHeight = Meters.zero();
+        public static final Distance highGoalBottomHeight = Inches.of(60.000000);
+        public static final Distance highGoalTopHeight = Inches.of(80.000000);
+        public static final Distance highGoalCenterHeight = highGoalBottomHeight.plus(highGoalTopHeight).div(2);
+        public static final Distance lowGoalCenterHeight = Inches.of(22.000000);
 
-        public static final AllianceFlipped<Goal> shutoffHighGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.High));
-        public static final AllianceFlipped<Goal> shutoffLowGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.Low));
-        public static final AllianceFlipped<Goal> permanentHighGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.High));
-        public static final AllianceFlipped<Goal> permanentLowGoal = AllianceFlipped.fromBlue(new Goal(new Translation3d(), GoalType.Low));
+        private static final Distance goalCenterYOffset = Inches.of(35.500000).plus(Inches.of(5.500000)).div(2);
+
+        public static final AllianceFlipped<Goal> shutoffHighGoal = AllianceFlipped.fromBlue(new Goal(
+            new Translation3d(
+                Inches.of(4.000000),
+                goalCenterYOffset,
+                highGoalCenterHeight
+            ),
+            GoalType.High
+        ));
+        public static final AllianceFlipped<Goal> permanentHighGoal = AllianceFlipped.fromBlue(new Goal(
+            new Translation3d(
+                Inches.of(4.000000),
+                goalCenterYOffset.plus(Inches.of(175.625000)),
+                highGoalCenterHeight
+            ),
+            GoalType.High
+        ));
+        public static final AllianceFlipped<Goal> shutoffLowGoal = AllianceFlipped.fromBlue(new Goal(
+            new Translation3d(
+                Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
+                goalCenterYOffset,
+                lowGoalCenterHeight
+            ),
+            GoalType.Low
+        ));
+        public static final AllianceFlipped<Goal> permanentLowGoal = AllianceFlipped.fromBlue(new Goal(
+            new Translation3d(
+                Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
+                goalCenterYOffset.plus(Inches.of(175.625000)),
+                lowGoalCenterHeight
+            ),
+            GoalType.Low
+        ));
 
         public static final AllianceFlipped<Goal> leftHighGoal = new AllianceFlipped<>(permanentHighGoal.getBlue(), shutoffHighGoal.getRed());
         public static final AllianceFlipped<Goal> rightHighGoal = new AllianceFlipped<>(shutoffHighGoal.getBlue(), permanentHighGoal.getRed());
