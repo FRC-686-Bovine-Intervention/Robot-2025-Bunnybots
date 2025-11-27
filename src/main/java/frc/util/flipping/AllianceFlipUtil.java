@@ -22,7 +22,7 @@ public class AllianceFlipUtil {
         CenterLineMirror,
         XenterLineMirror,
     }
-    public static final FieldFlipType defaultFlipType = FieldFlipType.CenterPointRotation;
+    public static final FieldFlipType defaultFlipType = FieldFlipType.CenterLineMirror;
 
     public static <T extends AllianceFlippable<T>> T apply(T flippable) {
         return apply(flippable, defaultFlipType);

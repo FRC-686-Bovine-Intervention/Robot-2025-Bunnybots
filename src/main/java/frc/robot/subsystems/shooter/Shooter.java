@@ -5,7 +5,10 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
@@ -102,6 +105,17 @@ public class Shooter {
 
         this.targetPivotAltitudeRads = pivotAltitudeMap.get(this.effectiveDistanceMeters);
         this.targetFlywheelVeloMPS = flywheelVeloMap.get(this.effectiveDistanceMeters);
+
+        Logger.recordOutput("Shooter/Aiming/Aim Point", this.aimPoint);
+        Logger.recordOutput("Shooter/Aiming/Shot Pose", new Pose2d(
+            new Translation2d(
+                predictedX,
+                predictedY
+            ),
+            Rotation2d.fromRadians(
+                this.targetDriveHeadingRads
+            )
+        ));
     }
 
     // public final boolean withinAzimuthTolerance(Pose2d robotPose) {

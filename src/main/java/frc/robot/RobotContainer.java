@@ -181,37 +181,33 @@ public class RobotContainer {
             .roughRadialDeadband(0.5) // Intentional to make pass selection less error-prone
         ; 
         
-        var rightHigh = new Trigger(() -> {
-            var aimPos = aimJoystick.radsFromPosXCCW();
-            if (aimPos > 0 && aimPos <= Math.PI/2){
-                return true;
-            } else {
-                return false;
-            }
-        });
         var leftHigh = new Trigger(() -> {
-            var aimPos = aimJoystick.radsFromPosXCCW();
-            if (aimPos > Math.PI/2 && aimPos <= Math.PI){
-                return true;
-            } else {
+            if (aimJoystick.magnitude() <= 0.0) {
                 return false;
             }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos >= 0 && aimPos <= Math.PI / 2.0;
         });
         var leftLow = new Trigger(() -> {
-            var aimPos = aimJoystick.radsFromPosXCCW();
-            if (aimPos > Math.PI && aimPos <= 3*Math.PI/2){
-                return true;
-            } else {
+            if (aimJoystick.magnitude() <= 0.0) {
                 return false;
             }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos > Math.PI / 2.0;
+        });
+        var rightHigh = new Trigger(() -> {
+            if (aimJoystick.magnitude() <= 0.0) {
+                return false;
+            }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos < 0 && aimPos >= -Math.PI / 2.0;
         });
         var rightLow = new Trigger(() -> {
-            var aimPos = aimJoystick.radsFromPosXCCW();
-            if (aimPos > 3*Math.PI/2 || aimPos <= 0){
-                return true;
-            } else {
+            if (aimJoystick.magnitude() <= 0.0) {
                 return false;
             }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos < -Math.PI / 2.0;
         });
         var pass = driveController.rightStickButton();
         
