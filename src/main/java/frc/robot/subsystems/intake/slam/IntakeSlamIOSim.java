@@ -1,6 +1,7 @@
 package frc.robot.subsystems.intake.slam;
 
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
@@ -8,24 +9,34 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import frc.robot.constants.RobotConstants;
 
-public class IntakeSlamIOSim extends IntakeSlamIOTalonFX{
-    private final SingleJointedArmSim pivotSim = new SingleJointedArmSim(
+public class IntakeSlamIOSim extends IntakeSlamIOTalonFX {
+    private final SingleJointedArmSim slamSim = new SingleJointedArmSim(
         LinearSystemId.identifyPositionSystem(5, 2),
-        DCMotor.getFalcon500(2),
+        DCMotor.getKrakenX60(1),
         IntakeSlamConstants.motorToMechanism.reductionUnsigned(),
         1,
-        IntakeSlam.retractAngle.get().in(Radians),
-        IntakeSlam.deployAngle.get().in(Radians),
-        false,
-        IntakeSlam.retractAngle.get().in(Radians)
+        IntakeSlamConstants.minAngle.in(Radians),
+        IntakeSlamConstants.maxAngle.in(Radians),
+        true,
+        IntakeSlamConstants.maxAngle.in(Radians)
     );
 
     @Override
     public void updateInputs(IntakeSlamIOInputs inputs) {
-        var motorSimState = motor.getSimState();
+        var motorSimState = this.motor.getSimState();
+        var encoderSimState = this.cancoder.getSimState();
 
-        pivotSim.setInputVoltage(motorSimState.getMotorVoltage());
-        pivotSim.update(RobotConstants.rioUpdatePeriodSecs);
+        this.slamSim.setInputVoltage(motorSimState.getMotorVoltage());
+        this.slamSim.update(RobotConstants.rioUpdatePeriodSecs);
+
+        var mechAngle = Radians.of(this.slamSim.getAngleRads());
+        var mechVelo = RadiansPerSecond.of(this.slamSim.getVelocityRadPerSec());
+
+        encoderSimState.setRawPosition(IntakeSlamConstants.sensorToMechanism.inverse().applyUnsigned(mechAngle));
+        encoderSimState.setVelocity(IntakeSlamConstants.sensorToMechanism.inverse().applyUnsigned(mechVelo));
+
+        motorSimState.setRawRotorPosition(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(mechAngle));
+        motorSimState.setRotorVelocity(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(mechVelo));
 
         motorSimState.setSupplyVoltage(RobotController.getBatteryVoltage());
 

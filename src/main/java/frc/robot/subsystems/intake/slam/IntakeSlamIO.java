@@ -22,7 +22,7 @@ public interface IntakeSlamIO {
 
     public default void setVolts(double volts) {}
 
-    public default void setPosition(double positionRads, double velocityRadsPerSec) {}
+    public default void setPositionRads(double positionRads, double velocityRadsPerSec, double feedforwardVolts) {}
     
     public default void stop(Optional<NeutralMode> neutralMode) {}
 

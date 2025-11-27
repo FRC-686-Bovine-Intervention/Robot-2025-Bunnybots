@@ -182,7 +182,7 @@ public class Pivot extends SubsystemBase {
         this.setpointState.position = newSetpointState.position;
         this.setpointState.velocity = newSetpointState.velocity;
         this.io.setPositionRads(
-            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.position) - this.motorOffsetRads,
+            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.position - this.motorOffsetRads),
             PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.velocity),
             ffout
         );
