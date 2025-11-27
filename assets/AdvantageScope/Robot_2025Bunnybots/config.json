@@ -1,0 +1,30 @@
+{
+    "name": "2025 Bunnybots",
+    "sourceUrl": "https://cad.onshape.com/documents/62a21464d34e46bb2b7d9c9b/w/e0c09022af1412aec5851809/e/f2552ef0d3b00617a3783b47",
+    "disableSimplification": true,
+    "rotations": [{ "axis": "x", "degrees": 90 },{ "axis": "z", "degrees": -90 }],
+    "position": [-0.016920, 0.001222, 0.123726],
+    "cameras": [],
+    "components": [
+        {
+            "zeroedRotations": [{ "axis": "z", "degrees": -90 },{ "axis": "y", "degrees": -90 },{"axis": "z", "degrees": 180},{"axis": "y", "degrees": 80.052205}],
+            "zeroedPosition": [-0.15,-0.001222,0.13]
+        },
+        {
+            "zeroedRotations": [{ "axis": "z", "degrees": -90 },{ "axis": "y", "degrees": -90 },{"axis": "z", "degrees": 180},{"axis": "y", "degrees": 87.881550}],
+            "zeroedPosition": [-0.085,-0.001222,0.24]
+        },
+        {
+            "zeroedRotations": [{ "axis": "z", "degrees": -90 },{ "axis": "y", "degrees": -90 },{"axis": "z", "degrees": 180},{"axis": "y", "degrees": -59.552248}],
+            "zeroedPosition": [0.26,-0.001222,-0.38]
+        },
+        {
+            "zeroedRotations": [{ "axis": "z", "degrees": -90 },{ "axis": "y", "degrees": -90 },{"axis": "z", "degrees": 180},{"axis": "y", "degrees": -64.055225}],
+            "zeroedPosition": [0.26,-0.001222,-0.32]
+        },
+        {
+            "zeroedRotations": [{ "axis": "z", "degrees": -90 },{ "axis": "y", "degrees": -90 },{"axis": "z", "degrees": 180},{"axis": "y", "degrees": -92.127920}],
+            "zeroedPosition": [0.25,-0.001222,-0.29]
+        }
+    ]
+}

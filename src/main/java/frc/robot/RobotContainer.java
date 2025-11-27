@@ -60,6 +60,7 @@ import frc.robot.subsystems.shooter.pivot.PivotIOTalonFX;
 import frc.util.Perspective;
 import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
+import frc.util.robotStructure.Mechanism3d;
 
 public class RobotContainer {
     // Subsystems
@@ -148,6 +149,26 @@ public class RobotContainer {
                 );
             }
         }
+
+        this.drive.structureRoot
+            .addChild(
+                this.intake.slam.primaryDriverMech
+                    .addChild(
+                        this.intake.slam.primaryCouplerMech
+                            .addChild(this.intake.slam.secondaryCouplerMech)
+                    )
+                    .addChild(this.intake.slam.secondaryFollowerMech)
+            )
+            .addChild(this.intake.slam.primaryFollowerMech)
+        ;
+
+        Mechanism3d.registerMechs(
+            this.intake.slam.primaryDriverMech,
+            this.intake.slam.primaryFollowerMech,
+            this.intake.slam.primaryCouplerMech,
+            this.intake.slam.secondaryFollowerMech,
+            this.intake.slam.secondaryCouplerMech
+        );
 
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();
