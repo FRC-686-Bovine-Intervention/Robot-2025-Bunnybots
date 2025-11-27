@@ -61,7 +61,7 @@ public class IntakeSlamIOTalonFX implements IntakeSlamIO {
             .withReverseSoftLimitEnable(true)
             .withReverseSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.minAngle))
             .withForwardSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.maxAngle))
+            .withForwardSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.maxAngle))
         ;
 
         this.motor.getConfigurator().apply(motorConfig);

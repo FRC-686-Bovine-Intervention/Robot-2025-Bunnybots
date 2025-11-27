@@ -11,7 +11,7 @@ import frc.robot.constants.RobotConstants;
 
 public class IntakeSlamIOSim extends IntakeSlamIOTalonFX {
     private final SingleJointedArmSim slamSim = new SingleJointedArmSim(
-        LinearSystemId.identifyPositionSystem(5, 2),
+        LinearSystemId.identifyPositionSystem(0.5, 0.1),
         DCMotor.getKrakenX60(1),
         IntakeSlamConstants.motorToMechanism.reductionUnsigned(),
         1,
@@ -26,11 +26,11 @@ public class IntakeSlamIOSim extends IntakeSlamIOTalonFX {
         var motorSimState = this.motor.getSimState();
         var encoderSimState = this.cancoder.getSimState();
 
-        this.slamSim.setInputVoltage(motorSimState.getMotorVoltage());
+        this.slamSim.setInputVoltage(-motorSimState.getMotorVoltage());
         this.slamSim.update(RobotConstants.rioUpdatePeriodSecs);
 
-        var mechAngle = Radians.of(this.slamSim.getAngleRads());
-        var mechVelo = RadiansPerSecond.of(this.slamSim.getVelocityRadPerSec());
+        var mechAngle = Radians.of(this.slamSim.getAngleRads()).unaryMinus();
+        var mechVelo = RadiansPerSecond.of(this.slamSim.getVelocityRadPerSec()).unaryMinus();
 
         encoderSimState.setRawPosition(IntakeSlamConstants.sensorToMechanism.inverse().applyUnsigned(mechAngle));
         encoderSimState.setVelocity(IntakeSlamConstants.sensorToMechanism.inverse().applyUnsigned(mechVelo));

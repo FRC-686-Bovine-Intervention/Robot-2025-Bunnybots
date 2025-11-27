@@ -36,6 +36,11 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.slam.IntakeSlam;
+import frc.robot.subsystems.intake.slam.IntakeSlamIO;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOTalonFX;
 import frc.robot.subsystems.rollers.RollerSensorsIO;
 import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
 import frc.robot.subsystems.rollers.Rollers;
@@ -61,6 +66,7 @@ public class RobotContainer {
     public final Drive drive;
     public final Shooter shooter;
     public final Rollers rollers;
+    public final Intake intake;
 
     // Vision
 
@@ -94,6 +100,9 @@ public class RobotContainer {
                     new Indexer(new IndexerIO() {}),
                     new RollerSensorsIOCANDi()
                 );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOTalonFX())
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -111,6 +120,9 @@ public class RobotContainer {
                     new Kicker(new KickerIO() {}),
                     new Indexer(new IndexerIO() {}),
                     new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOSim())
                 );
             }
             default -> {
@@ -130,6 +142,9 @@ public class RobotContainer {
                     new Kicker(new KickerIO() {}),
                     new Indexer(new IndexerIO() {}),
                     new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIO() {})
                 );
             }
         }
@@ -257,6 +272,7 @@ public class RobotContainer {
         this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
 
         this.shooter.pivot.setDefaultCommand(this.shooter.pivot.genAngleCommand("aa", () -> Degrees.of(40).in(Radian)));
+        this.intake.slam.setDefaultCommand(this.intake.slam.retract());
         
         // Set aim to be locked
         var aimJoystick = this.driveController.rightStick
