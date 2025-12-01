@@ -3,6 +3,7 @@ package frc.util.hardwareID.can;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.CANdi;
 import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
@@ -39,6 +40,9 @@ public class CANDevice {
     }
     public Pigeon2 pigeon2() {
         return new Pigeon2(id, bus.name);
+    }
+    public CANdi candi() {
+        return new CANdi(id, bus.name);
     }
     // | Phoenix 5
     public TalonSRX talonSRX() {

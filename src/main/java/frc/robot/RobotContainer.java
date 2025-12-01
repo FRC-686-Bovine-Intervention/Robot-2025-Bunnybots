@@ -20,6 +20,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
@@ -32,14 +34,24 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.shooter.Shooter;
+import frc.robot.subsystems.shooter.flywheel.Flywheel;
+import frc.robot.subsystems.shooter.flywheel.FlywheelIO;
+import frc.robot.subsystems.shooter.flywheel.FlywheelIOSim;
+import frc.robot.subsystems.shooter.flywheel.FlywheelIOTalonFX;
+import frc.robot.subsystems.shooter.pivot.Pivot;
+import frc.robot.subsystems.shooter.pivot.PivotIO;
+import frc.robot.subsystems.shooter.pivot.PivotIOSim;
+import frc.robot.subsystems.shooter.pivot.PivotIOTalonFX;
+import frc.util.Perspective;
 import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
-import frc.util.Perspective;
 
 public class RobotContainer {
     // Subsystems
     public final Drive drive;
-    
+    public final Shooter shooter;
+
     // Vision
 
     // Event Loops
@@ -53,7 +65,7 @@ public class RobotContainer {
     @SuppressWarnings("resource")
     public RobotContainer() {
         System.out.println("[Init RobotContainer] Creating " + RobotType.getMode().name() + " " + RobotType.getRobot().name());
-
+        
         switch (RobotType.getMode()) {
             case REAL -> {
                 this.drive = new Drive(
@@ -63,6 +75,10 @@ public class RobotContainer {
                         .map(ModuleIOFalcon550::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.shooter = new Shooter(
+                    new Pivot(new PivotIOTalonFX()),
+                    new Flywheel(new FlywheelIOTalonFX())
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -71,6 +87,10 @@ public class RobotContainer {
                     Arrays.stream(DriveConstants.moduleConstants)
                         .map(ModuleIOSim::new)
                         .toArray(ModuleIO[]::new)
+                );
+                this.shooter = new Shooter(
+                    new Pivot(new PivotIOSim()),
+                    new Flywheel(new FlywheelIOSim())
                 );
             }
             default -> {
@@ -82,58 +102,15 @@ public class RobotContainer {
                     new ModuleIO(){},
                     new ModuleIO(){}
                 );
+                this.shooter = new Shooter(
+                    new Pivot(new PivotIO() {}),
+                    new Flywheel(new FlywheelIO() {})
+                );
             }
         }
 
         System.out.println("[Init RobotContainer] Configuring Commands");
-        this.drive.translationSubsystem.setDefaultCommand(new Command() {
-            {
-                this.setName("Driver Controlled");
-                this.addRequirements(drive.translationSubsystem);
-            }
-            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05);
-            @Override
-            public void execute() {
-                var joyX = +driveJoystick.y().getAsDouble();
-                var joyY = -driveJoystick.x().getAsDouble();
-                
-                var perspectiveForward = Perspective.getCurrent().getForwardDirection();
-                var fieldX = joyX * perspectiveForward.getCos() - joyY * perspectiveForward.getSin();
-                var fieldY = joyX * perspectiveForward.getSin() + joyY * perspectiveForward.getCos();
-
-                var robotRot = RobotState.getInstance().getEstimatedGlobalPose().getRotation();
-                var robotX = fieldX * robotRot.getCos() - fieldY * -robotRot.getSin();
-                var robotY = fieldX * -robotRot.getSin() + fieldY * robotRot.getCos();
-
-                var driveX = robotX * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
-                var driveY = robotY * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
-
-                drive.translationSubsystem.driveVelocity(driveX, driveY);
-            }
-            @Override
-            public void end(boolean interrupted) {
-                drive.translationSubsystem.stop();
-            }
-        });
-        this.drive.rotationalSubsystem.setDefaultCommand(new Command() {
-            {
-                this.setName("Drive Controlled");
-                this.addRequirements(drive.rotationalSubsystem);
-            }
-            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05);
-            @Override
-            public void execute() {
-                var omega = this.axis.getAsDouble() * DriveConstants.maxTurnRate.in(RadiansPerSecond);
-
-                drive.rotationalSubsystem.driveVelocity(omega);
-            }
-            @Override
-            public void end(boolean interrupted) {
-                drive.rotationalSubsystem.stop();
-            }
-        });
-
-        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
+        this.configureCommands();
 
         System.out.println("[Init RobotContainer] Configuring Notifications");
 
@@ -202,5 +179,173 @@ public class RobotContainer {
         if (RobotConstants.tuningMode) {
             new Alert("Tuning mode active", AlertType.kInfo).set(true);
         }
+    }
+
+    private void configureCommands() {
+        this.drive.translationSubsystem.setDefaultCommand(new Command() {
+            {
+                this.setName("Driver Controlled");
+                this.addRequirements(drive.translationSubsystem);
+            }
+            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05);
+            @Override
+            public void execute() {
+                var joyX = +driveJoystick.y().getAsDouble();
+                var joyY = -driveJoystick.x().getAsDouble();
+                
+                var perspectiveForward = Perspective.getCurrent().getForwardDirection();
+                var fieldX = joyX * perspectiveForward.getCos() - joyY * perspectiveForward.getSin();
+                var fieldY = joyX * perspectiveForward.getSin() + joyY * perspectiveForward.getCos();
+
+                var robotRot = RobotState.getInstance().getEstimatedGlobalPose().getRotation();
+                var robotX = fieldX * robotRot.getCos() - fieldY * -robotRot.getSin();
+                var robotY = fieldX * -robotRot.getSin() + fieldY * robotRot.getCos();
+
+                var driveX = robotX * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
+                var driveY = robotY * DriveConstants.maxDriveSpeed.in(MetersPerSecond);
+
+                drive.translationSubsystem.driveVelocity(driveX, driveY);
+            }
+            @Override
+            public void end(boolean interrupted) {
+                drive.translationSubsystem.stop();
+            }
+        });
+        this.drive.rotationalSubsystem.setDefaultCommand(new Command() {
+            {
+                this.setName("Drive Controlled");
+                this.addRequirements(drive.rotationalSubsystem);
+            }
+            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05);
+            @Override
+            public void execute() {
+                var omega = this.axis.getAsDouble() * DriveConstants.maxTurnRate.in(RadiansPerSecond);
+
+                drive.rotationalSubsystem.driveVelocity(omega);
+            }
+            @Override
+            public void end(boolean interrupted) {
+                drive.rotationalSubsystem.stop();
+            }
+        });
+
+        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
+        
+        // Set aim to be locked
+        var aimJoystick = this.driveController.rightStick
+            .roughRadialDeadband(0.5) // Intentional to make pass selection less error-prone
+        ; 
+        
+        var leftHigh = new Trigger(() -> {
+            if (aimJoystick.magnitude() <= 0.0) {
+                return false;
+            }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos >= 0 && aimPos <= Math.PI / 2.0;
+        });
+        var leftLow = new Trigger(() -> {
+            if (aimJoystick.magnitude() <= 0.0) {
+                return false;
+            }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos > Math.PI / 2.0;
+        });
+        var rightHigh = new Trigger(() -> {
+            if (aimJoystick.magnitude() <= 0.0) {
+                return false;
+            }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos < 0 && aimPos >= -Math.PI / 2.0;
+        });
+        var rightLow = new Trigger(() -> {
+            if (aimJoystick.magnitude() <= 0.0) {
+                return false;
+            }
+            var aimPos = aimJoystick.radsFromPosYCCW();
+            return aimPos < -Math.PI / 2.0;
+        });
+        var pass = driveController.rightStickButton();
+        
+        leftHigh.toggleOnTrue(Commands.parallel(
+            this.shooter.aim(
+                RobotState.getInstance()::getEstimatedGlobalPose,
+                this.drive::getFieldMeasuredSpeeds,
+                () -> FieldConstants.Goals.leftHighGoal.getOurs()
+            )
+            .repeatedly(),
+            this.shooter.aimPivot(),
+            this.shooter.aimFlywheel()
+        ));
+
+        rightHigh.toggleOnTrue(Commands.parallel(
+            this.shooter.aim(
+                RobotState.getInstance()::getEstimatedGlobalPose,
+                this.drive::getFieldMeasuredSpeeds,
+                () -> FieldConstants.Goals.rightHighGoal.getOurs()
+            )
+            .repeatedly(),
+            this.shooter.aimPivot(),
+            this.shooter.aimFlywheel()
+        ));
+
+        leftLow.toggleOnTrue(Commands.parallel(
+            this.shooter.aim(
+                RobotState.getInstance()::getEstimatedGlobalPose,
+                this.drive::getFieldMeasuredSpeeds,
+                () -> FieldConstants.Goals.leftLowGoal.getOurs()
+            )
+            .repeatedly(),
+            this.shooter.aimPivot(),
+            this.shooter.aimFlywheel()
+        ));
+
+        rightLow.toggleOnTrue(Commands.parallel(
+            this.shooter.aim(
+                RobotState.getInstance()::getEstimatedGlobalPose,
+                this.drive::getFieldMeasuredSpeeds,
+                () -> FieldConstants.Goals.rightLowGoal.getOurs()
+            )
+            .repeatedly(),
+            this.shooter.aimPivot(),
+            this.shooter.aimFlywheel()
+        ));
+
+        // pass.onTrue(Commands.runOnce(() -> {
+        //     if (RobotState.getInstance().getSelectedShootTarget() != ShootTarget.PASS) {
+        //         RobotState.getInstance().setSelectedShootTarget(ShootTarget.PASS);
+        //     } else {
+        //         RobotState.getInstance().setSelectedShootTarget(ShootTarget.NONE);
+        //     }
+        // }));
+
+        // driveController.povUp().onTrue(Commands.runOnce(() -> {
+        //     AimingParameters.applyPivotOffset(3);
+        // }));
+        // driveController.povDown().onTrue(Commands.runOnce(() -> {
+        //     AimingParameters.applyPivotOffset(-3);
+        // }));
+        // driveController.povRight().onTrue(Commands.runOnce(() -> {
+        //     AimingParameters.applyShooterOffset(0.5);
+        // }));
+        // driveController.povLeft().onTrue(Commands.runOnce(() -> {
+        //     AimingParameters.applyShooterOffset(-0.5);
+        // }));
+
+        // final Command autoAimLock = this.drive.rotationalSubsystem.pidControlledHeading(() -> AimingParameters.shotPose().getRotation()).alongWith(pivot.aim()).alongWith(shooter.aimWithoutAutoShoot());
+        // this.automationsLoop.bind(() -> {
+        //     LoggedTracer.logEpoch("CommandScheduler Periodic/Automations/Aim Lock/Before");
+        //     var selectedShootTarget = this.RobotState.getInstance().getSelectedShootTarget();
+        //     if (selectedShootTarget != ShootTarget.NONE) {
+        //         AimingParameters.setFrom(drive);
+        //         if (!autoAimLock.isScheduled()) {
+        //             autoAimLock.schedule();
+        //         }
+        //     } else {
+        //         if (autoAimLock.isScheduled()) {
+        //             autoAimLock.cancel();
+        //         }
+        //     }
+        //     LoggedTracer.logEpoch("CommandScheduler Periodic/Automations/Aim Lock");
+        // });
     }
 }
