@@ -14,6 +14,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -53,6 +54,8 @@ public class RobotContainer {
     public final Shooter shooter;
 
     // Vision
+    public final Camera intakeCamera;
+    public final ObjectVision objectVision;
 
     // Event Loops
     public final EventLoop automationsLoop = new EventLoop();
@@ -108,6 +111,14 @@ public class RobotContainer {
                 );
             }
         }
+
+        this.objectVision = new ObjectVision(
+            new ObjectPipeline(this.intakeCamera, 0)
+        );
+
+        this.drive.structureRoot
+            .addChild(intakeCamera.mount)
+        ;
 
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();
