@@ -28,6 +28,12 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.apriltag.ApriltagPipeline;
+import frc.robot.subsystems.vision.apriltag.ApriltagVision;
+import frc.robot.subsystems.vision.cameras.Camera;
+import frc.robot.subsystems.vision.cameras.CameraIO;
+import frc.robot.subsystems.vision.cameras.CameraIOPhoton;
 import frc.util.controllers.XboxController;
 
 public class RobotContainer {
@@ -35,6 +41,9 @@ public class RobotContainer {
     public final Drive drive;
     
     // Vision
+    public final Camera frontLeftCamera;
+    public final Camera frontRightCamera;
+    public final ApriltagVision apriltagVision;
 
     // Event Loops
     public final EventLoop automationsLoop = new EventLoop();
@@ -57,6 +66,18 @@ public class RobotContainer {
                         .map(ModuleIOFalcon550::new)
                         .toArray(ModuleIO[]::new)
                 );
+                this.frontLeftCamera = new Camera(
+                    new CameraIOPhoton("Front Left"),
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIOPhoton("Front Right"),
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -65,6 +86,18 @@ public class RobotContainer {
                     Arrays.stream(DriveConstants.moduleConstants)
                         .map(ModuleIOSim::new)
                         .toArray(ModuleIO[]::new)
+                );
+                this.frontLeftCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
                 );
             }
             default -> {
@@ -76,8 +109,29 @@ public class RobotContainer {
                     new ModuleIO(){},
                     new ModuleIO(){}
                 );
+                this.frontLeftCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
+                );
             }
         }
+        this.apriltagVision = new ApriltagVision(
+            new ApriltagPipeline(this.frontLeftCamera, 0, 1),
+            new ApriltagPipeline(this.frontRightCamera, 0, 1)
+        );
+
+        this.drive.structureRoot
+            .addChild(this.frontLeftCamera.mount)
+            .addChild(this.frontRightCamera.mount)
+        ;
 
         System.out.println("[Init RobotContainer] Configuring Commands");
 

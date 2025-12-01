@@ -16,13 +16,14 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constants.FieldConstants.LunarOutpost.CosmicConverter.Goal.GoalType;
 import frc.util.flipping.AllianceFlipped;
 
 public final class FieldConstants {
-    public static final Distance fieldLength = Inches.of(57*12 + 6 + 7.0/8.0);
-    public static final Distance fieldWidth =  Inches.of(26*12 + 5);
+    public static final Distance fieldLength = Inches.of(54*12);
+    public static final Distance fieldWidth =  Inches.of(27*12);
 
     public static final AllianceFlipped<Predicate<Translation2d>> onAllianceSide = new AllianceFlipped<>(
         new Predicate<>() {
@@ -45,7 +46,7 @@ public final class FieldConstants {
     static {
         AprilTagFieldLayout a = null;
         try {
-            a = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
+            a = new AprilTagFieldLayout(Filesystem.getDeployDirectory() + "/apriltags.json");
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -332,4 +333,20 @@ public final class FieldConstants {
             starspireZones = AllianceFlipped.fromFunction((alliance) -> new StarspireZone(alliance));
         }
     }
+    public static final Translation3d luniteDimensions = new Translation3d(
+        Inches.of(7),
+        Inches.of(4),
+        Inches.of(4)
+    );
+
+    public static final AllianceFlipped<Translation2d[]> luniteIntakeLocations = new AllianceFlipped<>(
+        new Translation2d[] {
+            new Translation2d(0, 0),
+            new Translation2d(0, 0)
+        },
+        new Translation2d[] {
+            new Translation2d(0, 0),
+            new Translation2d(0, 0)
+        }
+    );
 }
