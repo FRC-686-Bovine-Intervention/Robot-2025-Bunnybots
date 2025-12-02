@@ -57,13 +57,19 @@ public class IntakeSlamIOTalonFX implements IntakeSlamIO {
             .withInverted(InvertedValue.Clockwise_Positive)
             .withNeutralMode(NeutralModeValue.Brake)
         ;
+        motorConfig.Feedback
+            .withRemoteCANcoder(this.cancoder)
+            .withRotorToSensorRatio(IntakeSlamConstants.motorToMechanism.then(IntakeSlamConstants.sensorToMechanism.inverse()).reductionUnsigned())
+            .withSensorToMechanismRatio(IntakeSlamConstants.sensorToMechanism.reductionUnsigned())
+        ;
         motorConfig.SoftwareLimitSwitch
             .withReverseSoftLimitEnable(true)
-            .withReverseSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.minAngle))
+            // .withReverseSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.minAngle))
+            .withReverseSoftLimitThreshold(IntakeSlamConstants.minAngle)
             .withForwardSoftLimitEnable(true)
-            .withForwardSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.maxAngle))
+            // .withForwardSoftLimitThreshold(IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(IntakeSlamConstants.maxAngle))
+            .withForwardSoftLimitThreshold(IntakeSlamConstants.maxAngle)
         ;
-
         this.motor.getConfigurator().apply(motorConfig);
 
         this.encoderStatusSignalCache = EncoderStatusSignalCache.from(this.cancoder);
@@ -97,8 +103,8 @@ public class IntakeSlamIOTalonFX implements IntakeSlamIO {
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.encoderStatusSignalCache.getStatusSignals());
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.motorStatusSignalCache.encoder().getStatusSignals());
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.motorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
         this.cancoder.optimizeBusUtilization();
         this.motor.optimizeBusUtilization();
     }

@@ -134,7 +134,8 @@ public class IntakeSlam extends SubsystemBase {
 
     private void setAngleGoalRads(double angleRads) {
         this.io.setPositionRads(
-            IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(angleRads - this.motorOffsetRads),
+            // IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(angleRads - this.motorOffsetRads),
+            angleRads,
             0.0,
             0.0
         );
