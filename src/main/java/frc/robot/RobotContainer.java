@@ -4,7 +4,9 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radian;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.Arrays;
@@ -34,6 +36,18 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.slam.IntakeSlam;
+import frc.robot.subsystems.intake.slam.IntakeSlamIO;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOTalonFX;
+import frc.robot.subsystems.rollers.RollerSensorsIO;
+import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
+import frc.robot.subsystems.rollers.Rollers;
+import frc.robot.subsystems.rollers.indexer.Indexer;
+import frc.robot.subsystems.rollers.indexer.IndexerIO;
+import frc.robot.subsystems.rollers.kicker.Kicker;
+import frc.robot.subsystems.rollers.kicker.KickerIO;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIO;
@@ -57,6 +71,8 @@ public class RobotContainer {
     // Subsystems
     public final Drive drive;
     public final Shooter shooter;
+    public final Rollers rollers;
+    public final Intake intake;
 
     // Vision
     public final Camera intakeCamera;
@@ -87,6 +103,14 @@ public class RobotContainer {
                     new Pivot(new PivotIOTalonFX()),
                     new Flywheel(new FlywheelIOTalonFX())
                 );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIO() {}),
+                    new Indexer(new IndexerIO() {}),
+                    new RollerSensorsIOCANDi()
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOTalonFX())
+                );
                 this.intakeCamera = new Camera(
                     new CameraIOPhoton("Intake"),
                     "Intake",
@@ -105,6 +129,14 @@ public class RobotContainer {
                 this.shooter = new Shooter(
                     new Pivot(new PivotIOSim()),
                     new Flywheel(new FlywheelIOSim())
+                );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIO() {}),
+                    new Indexer(new IndexerIO() {}),
+                    new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOSim())
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
@@ -125,6 +157,14 @@ public class RobotContainer {
                 this.shooter = new Shooter(
                     new Pivot(new PivotIO() {}),
                     new Flywheel(new FlywheelIO() {})
+                );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIO() {}),
+                    new Indexer(new IndexerIO() {}),
+                    new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIO() {})
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
@@ -264,6 +304,9 @@ public class RobotContainer {
         });
 
         this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
+
+        this.shooter.pivot.setDefaultCommand(this.shooter.pivot.genAngleCommand("aa", () -> Degrees.of(40).in(Radian)));
+        this.intake.slam.setDefaultCommand(this.intake.slam.retract());
         
         this.intakeCamera.setDefaultCommand(this.intakeCamera.setPipelineIndex(0));
 
