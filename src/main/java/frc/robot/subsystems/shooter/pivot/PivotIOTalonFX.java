@@ -135,6 +135,11 @@ public class PivotIOTalonFX implements PivotIO {
     }
 
     @Override
+    public void resetMotorPositionRads(double positionRads) {
+        this.motor.setPosition(Units.radiansToRotations(positionRads));
+    }
+
+    @Override
     public void clearMotorStickyFaults(long bitmask) {
         if (bitmask == DeviceFaults.noneMask) { return; }
         if (bitmask == DeviceFaults.allMask) {
