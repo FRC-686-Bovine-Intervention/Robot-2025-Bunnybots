@@ -14,7 +14,6 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -44,6 +43,12 @@ import frc.robot.subsystems.shooter.pivot.Pivot;
 import frc.robot.subsystems.shooter.pivot.PivotIO;
 import frc.robot.subsystems.shooter.pivot.PivotIOSim;
 import frc.robot.subsystems.shooter.pivot.PivotIOTalonFX;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.cameras.Camera;
+import frc.robot.subsystems.vision.cameras.CameraIO;
+import frc.robot.subsystems.vision.cameras.CameraIOPhoton;
+import frc.robot.subsystems.vision.object.ObjectPipeline;
+import frc.robot.subsystems.vision.object.ObjectVision;
 import frc.util.Perspective;
 import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
@@ -82,6 +87,12 @@ public class RobotContainer {
                     new Pivot(new PivotIOTalonFX()),
                     new Flywheel(new FlywheelIOTalonFX())
                 );
+                this.intakeCamera = new Camera(
+                    new CameraIOPhoton("Intake"),
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -94,6 +105,12 @@ public class RobotContainer {
                 this.shooter = new Shooter(
                     new Pivot(new PivotIOSim()),
                     new Flywheel(new FlywheelIOSim())
+                );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
                 );
             }
             default -> {
@@ -109,6 +126,12 @@ public class RobotContainer {
                     new Pivot(new PivotIO() {}),
                     new Flywheel(new FlywheelIO() {})
                 );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
         }
 
@@ -117,7 +140,7 @@ public class RobotContainer {
         );
 
         this.drive.structureRoot
-            .addChild(intakeCamera.mount)
+            .addChild(this.intakeCamera.mount)
         ;
 
         System.out.println("[Init RobotContainer] Configuring Commands");
@@ -242,6 +265,8 @@ public class RobotContainer {
 
         this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
         
+        this.intakeCamera.setDefaultCommand(this.intakeCamera.setPipelineIndex(0));
+
         // Set aim to be locked
         var aimJoystick = this.driveController.rightStick
             .roughRadialDeadband(0.5) // Intentional to make pass selection less error-prone

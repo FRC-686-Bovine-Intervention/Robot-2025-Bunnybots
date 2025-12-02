@@ -424,4 +424,10 @@ public final class FieldConstants {
             Inches.of(0)
         )
     );
+
+    public static final Translation3d luniteDimensions = new Translation3d(
+        Inches.of(7),
+        Inches.of(4),
+        Inches.of(4)
+    );
 }
