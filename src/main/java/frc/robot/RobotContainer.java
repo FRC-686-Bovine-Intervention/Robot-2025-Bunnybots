@@ -4,9 +4,7 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Radian;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.Arrays;
@@ -16,6 +14,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -37,6 +36,9 @@ import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometr
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
 import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.rollers.IntakeRollers;
+import frc.robot.subsystems.intake.rollers.IntakeRollersIO;
+import frc.robot.subsystems.intake.rollers.IntakeRollersIOTalonFX;
 import frc.robot.subsystems.intake.slam.IntakeSlam;
 import frc.robot.subsystems.intake.slam.IntakeSlamIO;
 import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
@@ -46,8 +48,10 @@ import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
 import frc.robot.subsystems.rollers.Rollers;
 import frc.robot.subsystems.rollers.indexer.Indexer;
 import frc.robot.subsystems.rollers.indexer.IndexerIO;
+import frc.robot.subsystems.rollers.indexer.IndexerIOVictorSPX;
 import frc.robot.subsystems.rollers.kicker.Kicker;
 import frc.robot.subsystems.rollers.kicker.KickerIO;
+import frc.robot.subsystems.rollers.kicker.KickerIOTalonFX;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIO;
@@ -97,12 +101,13 @@ public class RobotContainer {
                     new Flywheel(new FlywheelIOTalonFX())
                 );
                 this.rollers = new Rollers(
-                    new Kicker(new KickerIO() {}),
-                    new Indexer(new IndexerIO() {}),
+                    new Kicker(new KickerIOTalonFX()),
+                    new Indexer(new IndexerIOVictorSPX()),
                     new RollerSensorsIOCANDi()
                 );
                 this.intake = new Intake(
-                    new IntakeSlam(new IntakeSlamIOTalonFX())
+                    new IntakeSlam(new IntakeSlamIOTalonFX()),
+                    new IntakeRollers(new IntakeRollersIOTalonFX())
                 );
             }
             case SIM -> {
@@ -123,7 +128,8 @@ public class RobotContainer {
                     new RollerSensorsIO() {}
                 );
                 this.intake = new Intake(
-                    new IntakeSlam(new IntakeSlamIOSim())
+                    new IntakeSlam(new IntakeSlamIOSim()),
+                    new IntakeRollers(new IntakeRollersIO() {})
                 );
             }
             default -> {
@@ -145,7 +151,8 @@ public class RobotContainer {
                     new RollerSensorsIO() {}
                 );
                 this.intake = new Intake(
-                    new IntakeSlam(new IntakeSlamIO() {})
+                    new IntakeSlam(new IntakeSlamIO() {}),
+                    new IntakeRollers(new IntakeRollersIO() {})
                 );
             }
         }
@@ -248,7 +255,7 @@ public class RobotContainer {
                 this.setName("Driver Controlled");
                 this.addRequirements(drive.translationSubsystem);
             }
-            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05);
+            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05).radialSensitivity(0.5);
             @Override
             public void execute() {
                 var joyX = +driveJoystick.y().getAsDouble();
@@ -277,7 +284,7 @@ public class RobotContainer {
                 this.setName("Drive Controlled");
                 this.addRequirements(drive.rotationalSubsystem);
             }
-            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05);
+            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05).sensitivity(0.5);
             @Override
             public void execute() {
                 var omega = this.axis.getAsDouble() * DriveConstants.maxTurnRate.in(RadiansPerSecond);
@@ -292,8 +299,17 @@ public class RobotContainer {
 
         this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
 
-        this.shooter.pivot.setDefaultCommand(this.shooter.pivot.genAngleCommand("aa", () -> Degrees.of(40).in(Radian)));
+        this.shooter.pivot.setDefaultCommand(this.shooter.pivot.idle());
+        this.shooter.flywheel.setDefaultCommand(this.shooter.flywheel.idle());
         this.intake.slam.setDefaultCommand(this.intake.slam.retract());
+        this.intake.rollers.setDefaultCommand(this.intake.rollers.idle());
+        this.rollers.kicker.setDefaultCommand(this.rollers.kicker.idle());
+        this.rollers.indexer.setDefaultCommand(this.rollers.indexer.idle());
+
+        new Trigger(() -> DriverStation.isEnabled() && !this.rollers.stageBeamBroken()).whileTrue(this.rollers.stage());
+
+        this.driveController.a().toggleOnTrue(Commands.parallel(this.shooter.flywheel.custom(), this.shooter.pivot.custom()));
+        this.driveController.y().toggleOnTrue(this.intake.intake());
         
         // Set aim to be locked
         var aimJoystick = this.driveController.rightStick
