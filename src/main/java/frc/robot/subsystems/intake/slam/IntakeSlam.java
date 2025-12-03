@@ -80,7 +80,7 @@ public class IntakeSlam extends SubsystemBase {
         Logger.processInputs("Inputs/Intake/Slam", this.inputs);
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Intake Slam/Process Inputs");
 
-        this.resetInternalAngleRads(IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getPositionRads()));
+        this.resetInternalAngleRads(IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getPositionRads() - IntakeSlamConstants.cancoderZeroOffset.in(Radians)));
         this.velocityRadsPerSec = IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getVelocityRadsPerSec());
 
         var maxAngle = Units.degreesToRadians(80.052205);
@@ -135,11 +135,11 @@ public class IntakeSlam extends SubsystemBase {
     private void setAngleGoalRads(double angleRads) {
         this.io.setPositionRads(
             // IntakeSlamConstants.motorToMechanism.inverse().applyUnsigned(angleRads - this.motorOffsetRads),
-            angleRads,
+            angleRads - IntakeSlamConstants.cancoderZeroOffset.in(Radians),
             0.0,
             0.0
         );
-        Logger.recordOutput("Intake/Slam/Angle/Goal", angleRads);
+        Logger.recordOutput("Intake/Slam/Angle/Goal", angleRads - IntakeSlamConstants.cancoderZeroOffset.in(Radians));
         Logger.recordOutput("Intake/Slam/Velocity/Goal", 0.0);
     }
 

@@ -18,6 +18,8 @@ public class IntakeSlamConstants {
     public static final Angle minAngle = Degrees.of(0);
     public static final Angle maxAngle = Degrees.of(80);
 
+    public static final Angle cancoderZeroOffset = Degrees.of(80);
+
     public static final GearRatio motorToMechanism = new GearRatio()
         .planetary(5)
         .planetary(5)

@@ -98,7 +98,8 @@ public class RobotContainer {
                 );
                 this.shooter = new Shooter(
                     new Pivot(new PivotIOTalonFX()),
-                    new Flywheel(new FlywheelIOTalonFX())
+                    new Flywheel(new FlywheelIOTalonFX()),
+                    drive
                 );
                 this.rollers = new Rollers(
                     new Kicker(new KickerIOTalonFX()),
@@ -120,7 +121,8 @@ public class RobotContainer {
                 );
                 this.shooter = new Shooter(
                     new Pivot(new PivotIOSim()),
-                    new Flywheel(new FlywheelIOSim())
+                    new Flywheel(new FlywheelIOSim()),
+                    drive
                 );
                 this.rollers = new Rollers(
                     new Kicker(new KickerIO() {}),
@@ -143,7 +145,8 @@ public class RobotContainer {
                 );
                 this.shooter = new Shooter(
                     new Pivot(new PivotIO() {}),
-                    new Flywheel(new FlywheelIO() {})
+                    new Flywheel(new FlywheelIO() {}),
+                    drive
                 );
                 this.rollers = new Rollers(
                     new Kicker(new KickerIO() {}),
@@ -344,7 +347,6 @@ public class RobotContainer {
             var aimPos = aimJoystick.radsFromPosYCCW();
             return aimPos < -Math.PI / 2.0;
         });
-        var pass = driveController.rightStickButton();
         
         leftHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
@@ -354,7 +356,8 @@ public class RobotContainer {
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth()
         ));
 
         rightHigh.toggleOnTrue(Commands.parallel(
@@ -365,7 +368,8 @@ public class RobotContainer {
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth()
         ));
 
         leftLow.toggleOnTrue(Commands.parallel(
@@ -376,7 +380,8 @@ public class RobotContainer {
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth()
         ));
 
         rightLow.toggleOnTrue(Commands.parallel(
@@ -387,7 +392,8 @@ public class RobotContainer {
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth()
         ));
 
         // pass.onTrue(Commands.runOnce(() -> {

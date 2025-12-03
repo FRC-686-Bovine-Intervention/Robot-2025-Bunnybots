@@ -23,6 +23,15 @@ public class ShooterConstants {
         highGoalTargetPivotAltitudeRads.put(Centimeters.of(370).plus(RobotConstants.robotLength.div(2)).in(Meters), 24.5);
         highGoalTargetPivotAltitudeRads.put(Centimeters.of(500).plus(RobotConstants.robotLength.div(2)).in(Meters), 31.5);
     }
+    public static final InterpolatingDoubleTreeMap highGoalTargetDrivetrainOffsetRads = new InterpolatingDoubleTreeMap();
+    static {
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(118).plus(RobotConstants.robotLength.div(2)).in(Meters), 14.5);
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(118).plus(RobotConstants.robotLength.div(2)).in(Meters), 14.5);
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(190).plus(RobotConstants.robotLength.div(2)).in(Meters), 16.0);
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(280).plus(RobotConstants.robotLength.div(2)).in(Meters), 21.0);
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(370).plus(RobotConstants.robotLength.div(2)).in(Meters), 24.5);
+        highGoalTargetDrivetrainOffsetRads.put(Centimeters.of(500).plus(RobotConstants.robotLength.div(2)).in(Meters), 31.5);
+    }
 
     public static final InterpolatingDoubleTreeMap lowGoalTargetFlywheelVeloMPS = new InterpolatingDoubleTreeMap();
     static {
@@ -39,5 +48,13 @@ public class ShooterConstants {
         lowGoalTargetPivotAltitudeRads.put(Centimeters.of(280).plus(RobotConstants.robotLength.div(2)).in(Meters), 21.0);
         lowGoalTargetPivotAltitudeRads.put(Centimeters.of(370).plus(RobotConstants.robotLength.div(2)).in(Meters), 24.5);
         lowGoalTargetPivotAltitudeRads.put(Centimeters.of(500).plus(RobotConstants.robotLength.div(2)).in(Meters), 31.5);
+    }
+    public static final InterpolatingDoubleTreeMap lowGoalTargetDrivetrainOffsetRads = new InterpolatingDoubleTreeMap();
+    static {
+        lowGoalTargetDrivetrainOffsetRads.put(Centimeters.of(118).plus(RobotConstants.robotLength.div(2)).in(Meters), 14.5);
+        lowGoalTargetDrivetrainOffsetRads.put(Centimeters.of(190).plus(RobotConstants.robotLength.div(2)).in(Meters), 16.0);
+        lowGoalTargetDrivetrainOffsetRads.put(Centimeters.of(280).plus(RobotConstants.robotLength.div(2)).in(Meters), 21.0);
+        lowGoalTargetDrivetrainOffsetRads.put(Centimeters.of(370).plus(RobotConstants.robotLength.div(2)).in(Meters), 24.5);
+        lowGoalTargetDrivetrainOffsetRads.put(Centimeters.of(500).plus(RobotConstants.robotLength.div(2)).in(Meters), 31.5);
     }
 }
