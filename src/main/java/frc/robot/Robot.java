@@ -133,16 +133,16 @@ public class Robot extends LoggedRobot {
             VirtualSubsystem.periodicAll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/VirtualSubsystem Periodic");
 
-            // this.robotContainer.apriltagVision.periodic();
+            this.robotContainer.apriltagVision.periodic();
             
             // this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
             RobotState.getInstance().log();
             LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
 
-            Mechanism3d.logAscopeComponents();
+            //Mechanism3d.logAscopeComponents();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
 
-            Mechanism3d.logAscopeAxes();
+            //Mechanism3d.logAscopeAxes();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
             
             // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Coral", this.robotContainer.intake.hasCoral());

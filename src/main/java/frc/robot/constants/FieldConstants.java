@@ -16,6 +16,7 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.constants.FieldConstants.LunarOutpost.CosmicConverter.Goal.GoalType;
 import frc.util.flipping.AllianceFlipUtil;
@@ -48,7 +49,7 @@ public final class FieldConstants {
     static {
         AprilTagFieldLayout a = null;
         try {
-            a = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeAndyMark);
+            a = new AprilTagFieldLayout(Filesystem.getDeployDirectory() + "/apriltags.json");
         } catch(Exception e) {
             e.printStackTrace();
         }
