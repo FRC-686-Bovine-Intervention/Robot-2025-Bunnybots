@@ -1,12 +1,14 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.List;
 import java.util.function.Predicate;
 
+import edu.wpi.first.apriltag.AprilTag;
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
-import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -16,13 +18,14 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
-import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.constants.FieldConstants.LunarOutpost.CosmicConverter.Goal.GoalType;
 import frc.util.flipping.AllianceFlipUtil;
+import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
 import frc.util.flipping.AllianceFlippable;
 import frc.util.flipping.AllianceFlipped;
-import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
+import frc.util.geometry.GeomUtil;
 
 public final class FieldConstants {
     public static final Distance fieldLength = Inches.of(648.000000);
@@ -44,12 +47,104 @@ public final class FieldConstants {
             }
         }
     );
+    private static final List<AprilTag> apriltags = 
+        List.of(
+            new AprilTag(
+                1,
+                new Pose3d(
+                    Inches.of(78),
+                    Inches.of(320),
+                    Inches.of(14),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(270))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                2,
+                new Pose3d(
+                    Inches.of(576),
+                    Inches.of(320),
+                    Inches.of(14),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(270))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                3,
+                new Pose3d(
+                    Inches.of(4),
+                    Inches.of(270),
+                    Inches.of(14),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(0))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                4,
+                new Pose3d(
+                    Inches.of(644),
+                    Inches.of(270),
+                    Inches.of(14),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(180))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                5,
+                new Pose3d(
+                    Inches.of(4),
+                    Inches.of(196.125),
+                    Inches.of(46),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(0))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                6,
+                new Pose3d(
+                    Inches.of(644),
+                    Inches.of(196.125),
+                    Inches.of(46),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(180))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                7,
+                new Pose3d(
+                    Inches.of(4),
+                    Inches.of(20.5),
+                    Inches.of(46),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(0))
+                    .build()
+                )
+            ),
+            new AprilTag(
+                8,
+                new Pose3d(
+                    Inches.of(644),
+                    Inches.of(20.5),
+                    Inches.of(46),
+                    GeomUtil.rotation3dBuilder()
+                        .yaw(Degrees.of(180))
+                    .build()
+                )
+            )
+        )
+    ;
 
     public static final AprilTagFieldLayout apriltagLayout;
     static {
         AprilTagFieldLayout a = null;
         try {
-            a = new AprilTagFieldLayout(Filesystem.getDeployDirectory() + "/apriltags.json");
+            a = new AprilTagFieldLayout(apriltags, fieldLength.in(Meters), fieldWidth.in(Meters));
         } catch(Exception e) {
             e.printStackTrace();
         }
