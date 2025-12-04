@@ -12,7 +12,7 @@ import frc.robot.constants.RobotConstants;
 import frc.util.loggerUtil.inputs.LoggedMotor.MotorStatusSignalCache;
 
 public class IntakeRollersIOTalonFX implements IntakeRollersIO {
-    private final TalonFX motor = HardwareDevices.kickerMotorID.talonFX();
+    private final TalonFX motor = HardwareDevices.intakeRollerMotorID.talonFX();
 
     private final MotorStatusSignalCache motorStatusSignalCache;
 
