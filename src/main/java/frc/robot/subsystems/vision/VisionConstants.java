@@ -54,13 +54,13 @@ public final class VisionConstants {
 
     public static final Transform3d intakeMount = new Transform3d(
         new Translation3d(
-            Inches.of(-3.93279),
-            Inches.of(-6.230788),
-            Inches.of(+21.464304)
+            Inches.of(-3.896877),
+            Inches.of(-6.210415),
+            Inches.of(+21.633440)
         ),
         GeomUtil.rotation3dBuilder()
             .yaw(Degrees.of(180))
-            .pitch(Degrees.of(-27))
+            .pitch(Degrees.of(-19))
             .yaw(Degrees.of(-9))
         .build()
     );
