@@ -23,9 +23,9 @@ public class IntakeSlam extends SubsystemBase {
     private final IntakeSlamIO io;
     private final IntakeSlamIOInputsAutoLogged inputs = new IntakeSlamIOInputsAutoLogged();
 
-    private static final LoggedTunable<Angle> retractAngle = LoggedTunable.from("Intake/Slam/Retract/Angle", Degrees::of, 80);
-    private static final LoggedTunable<Angle> deployAngle = LoggedTunable.from("Intake/Slam/Deploy/Angle", Degrees::of, 0);
-    private static final LoggedTunable<Angle> deployFlopAngle = LoggedTunable.from("Intake/Slam/Deploy/Flop Angle", Degrees::of, 70);
+    private static final LoggedTunable<Angle> retractAngle = LoggedTunable.from("Intake/Slam/Retract/Angle", Degrees::of, IntakeSlamConstants.maxAngle.in(Degrees));
+    private static final LoggedTunable<Angle> deployAngle = LoggedTunable.from("Intake/Slam/Deploy/Angle", Degrees::of, IntakeSlamConstants.minAngle.in(Degrees));
+    private static final LoggedTunable<Angle> deployFlopAngle = LoggedTunable.from("Intake/Slam/Deploy/Flop Angle", Degrees::of, IntakeSlamConstants.maxAngle.minus(Degrees.of(10)).in(Degrees));
 
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Intake/Slam/PID",
@@ -80,7 +80,7 @@ public class IntakeSlam extends SubsystemBase {
         Logger.processInputs("Inputs/Intake/Slam", this.inputs);
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Intake Slam/Process Inputs");
 
-        this.resetInternalAngleRads(IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getPositionRads() - IntakeSlamConstants.cancoderZeroOffset.in(Radians)));
+        this.resetInternalAngleRads(IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getPositionRads() + IntakeSlamConstants.cancoderZeroOffset.in(Radians)));
         this.velocityRadsPerSec = IntakeSlamConstants.sensorToMechanism.applyUnsigned(this.inputs.encoder.getVelocityRadsPerSec());
 
         var maxAngle = Units.degreesToRadians(80.052205);

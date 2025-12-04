@@ -40,7 +40,7 @@ public class Flywheel extends SubsystemBase {
         new FFConstants(
             0.0,
             0.0,
-            0.0,
+            0.02,
             0.0
         )
     );

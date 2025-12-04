@@ -48,7 +48,7 @@ public class IntakeSlamIOTalonFX implements IntakeSlamIO {
         var encoderConfig = new CANcoderConfiguration();
         this.cancoder.getConfigurator().refresh(encoderConfig.MagnetSensor);
         encoderConfig.MagnetSensor
-            .withSensorDirection(SensorDirectionValue.Clockwise_Positive)
+            .withSensorDirection(SensorDirectionValue.CounterClockwise_Positive)
         ;
         this.cancoder.getConfigurator().apply(encoderConfig);
 
@@ -105,8 +105,8 @@ public class IntakeSlamIOTalonFX implements IntakeSlamIO {
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.motorStatusSignalCache.motor().getStatusSignals());
         // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
         // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
-        this.cancoder.optimizeBusUtilization();
-        this.motor.optimizeBusUtilization();
+        // this.cancoder.optimizeBusUtilization();
+        // this.motor.optimizeBusUtilization();
     }
 
     @Override

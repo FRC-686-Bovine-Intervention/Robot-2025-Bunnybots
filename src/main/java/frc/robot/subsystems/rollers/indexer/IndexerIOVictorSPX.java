@@ -15,8 +15,8 @@ public class IndexerIOVictorSPX implements IndexerIO {
         var config = new VictorSPXConfiguration();
         this.leftMotor.configAllSettings(config);
         this.rightMotor.configAllSettings(config);
-        this.leftMotor.setInverted(InvertType.None);
-        this.rightMotor.setInverted(InvertType.InvertMotorOutput);
+        this.leftMotor.setInverted(InvertType.InvertMotorOutput);
+        this.rightMotor.setInverted(InvertType.None);
     }
 
     @Override

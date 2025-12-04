@@ -46,7 +46,7 @@ public class PivotIOTalonFX implements PivotIO {
         var motorConfig = new TalonFXConfiguration();
 
         motorConfig.MotorOutput
-            .withInverted(InvertedValue.CounterClockwise_Positive)
+            .withInverted(InvertedValue.Clockwise_Positive)
             .withNeutralMode(NeutralModeValue.Brake)
         ;
         motorConfig.SoftwareLimitSwitch

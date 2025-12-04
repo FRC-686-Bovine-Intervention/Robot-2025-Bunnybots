@@ -44,8 +44,8 @@ public class Pivot extends SubsystemBase {
         RadiansPerSecond,
         RadiansPerSecondPerSecond,
         new TrapezoidProfile.Constraints(
-            0.0,
-            0.0
+            720,
+            1440
         )
     );
     private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from(
@@ -53,14 +53,14 @@ public class Pivot extends SubsystemBase {
         new FFConstants(
             0.0,
             0.0,
-            0.0,
+            2.4,
             0.0
         )
     );
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Shooter/Pivot/PID",
         new PIDConstants(
-            0.0,
+            3.0,
             0.0,
             0.0
         )
