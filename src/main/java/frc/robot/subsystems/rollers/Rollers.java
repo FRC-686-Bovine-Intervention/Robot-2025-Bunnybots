@@ -55,4 +55,11 @@ public class Rollers extends VirtualSubsystem {
             this.indexer.kick()
         ).withName("Kick");
     }
+
+    public Command reverse() {
+        return Commands.parallel(
+            this.kicker.reverse(),
+            this.indexer.reverse()
+        ).withName("Reverse");
+    }
 }

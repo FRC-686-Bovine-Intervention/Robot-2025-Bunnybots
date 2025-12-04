@@ -361,9 +361,22 @@ public class RobotContainer {
 
         new Trigger(() -> DriverStation.isEnabled() && !this.rollers.stageBeamBroken()).whileTrue(this.rollers.stage());
 
-        this.driveController.a().toggleOnTrue(Commands.parallel(this.shooter.flywheel.custom(), this.shooter.pivot.custom()));
+        this.driveController.a().toggleOnTrue(Commands.parallel(
+            this.shooter.aim(
+                RobotState.getInstance()::getEstimatedGlobalPose,
+                this.drive::getFieldMeasuredSpeeds,
+                () -> FieldConstants.Goals.leftHighGoal.getOurs()
+            ).repeatedly(),
+            this.shooter.customAimAzimuth(),
+            this.shooter.flywheel.custom(),
+            this.shooter.pivot.custom()
+        ));
+        
         this.driveController.y().toggleOnTrue(this.intake.intake());
         
+        this.driveController.rightBumper().whileTrue(this.rollers.kick());
+        this.driveController.leftBumper().whileTrue(this.rollers.reverse());
+
         // Set aim to be locked
         var aimJoystick = this.driveController.rightStick
             .roughRadialDeadband(0.5) // Intentional to make pass selection less error-prone

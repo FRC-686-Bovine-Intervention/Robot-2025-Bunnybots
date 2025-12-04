@@ -19,6 +19,7 @@ public class Kicker extends SubsystemBase {
     private static final LoggedTunable<Voltage> idleVoltage = LoggedTunable.from("Rollers/Kicker/Idle Volts", Volts::of, 0.0);
     private static final LoggedTunable<Voltage> stageVoltage = LoggedTunable.from("Rollers/Kicker/Stage Volts", Volts::of, 3.0);
     private static final LoggedTunable<Voltage> kickVoltage = LoggedTunable.from("Rollers/Kicker/Kick Volts", Volts::of, 6.0);
+    private static final LoggedTunable<Voltage> reverseVoltage = LoggedTunable.from("Rollers/Kicker/Reverse Volts", Volts::of, -2.0);
 
     public Kicker(KickerIO io) {
         super("Rollers/Kicker");
@@ -64,5 +65,8 @@ public class Kicker extends SubsystemBase {
     }
     public Command kick() {
         return this.genVoltsCommand("Kick", () -> kickVoltage.get().in(Volts));
+    }
+    public Command reverse() {
+        return this.genVoltsCommand("Reverse", () -> reverseVoltage.get().in(Volts));
     }
 }
