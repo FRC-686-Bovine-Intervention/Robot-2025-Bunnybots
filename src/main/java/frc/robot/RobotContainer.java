@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Set;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
@@ -350,10 +351,17 @@ public class RobotContainer {
             }
         });
 
-        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
+        this.driveController.leftStickButton().onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(
+            new Pose2d(
+                14.45,
+                5,
+                Rotation2d.kZero
+            )
+        )));
 
         this.shooter.pivot.setDefaultCommand(this.shooter.pivot.idle());
         this.shooter.flywheel.setDefaultCommand(this.shooter.flywheel.idle());
+        //this.intake.slam.setDefaultCommand(this.intake.slam.deploy());
         this.intake.slam.setDefaultCommand(this.intake.slam.retract());
         this.intake.rollers.setDefaultCommand(this.intake.rollers.idle());
         this.rollers.kicker.setDefaultCommand(this.rollers.kicker.idle());
@@ -365,14 +373,14 @@ public class RobotContainer {
             this.shooter.aim(
                 RobotState.getInstance()::getEstimatedGlobalPose,
                 this.drive::getFieldMeasuredSpeeds,
-                () -> FieldConstants.Goals.leftHighGoal.getOurs()
+                () -> FieldConstants.Goals.rightHighGoal.getOurs()
             ).repeatedly(),
             this.shooter.customAimAzimuth(),
             this.shooter.flywheel.custom(),
             this.shooter.pivot.custom()
         ));
-        
-        this.driveController.y().toggleOnTrue(this.intake.intake());
+
+        this.driveController.y().whileTrue(this.intake.intake());
         
         this.driveController.rightBumper().whileTrue(this.rollers.kick());
         this.driveController.leftBumper().whileTrue(this.rollers.reverse());
@@ -425,7 +433,7 @@ public class RobotContainer {
 
         rightHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(6).get(),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightHighGoal.getOurs()
             )
@@ -449,7 +457,7 @@ public class RobotContainer {
 
         rightLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(6).get(),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightLowGoal.getOurs()
             )

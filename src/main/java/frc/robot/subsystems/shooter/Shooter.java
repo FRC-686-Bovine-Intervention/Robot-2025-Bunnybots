@@ -125,6 +125,7 @@ public class Shooter {
         this.rawTargetDriveHeadingRads = Math.atan2(predictedToTargetY, predictedToTargetX);
         this.targetDriveHeadingRads = rawTargetDriveHeadingRads + driveAzimuthMap.get(this.effectiveDistanceMeters);
         this.effectiveDistanceMeters = Math.hypot(predictedToTargetX, predictedToTargetY);
+        Logger.recordOutput("Shooter/Aiming/Effective Distance", this.effectiveDistanceMeters);
 
         this.targetPivotAltitudeRads = pivotAltitudeMap.get(this.effectiveDistanceMeters);
         this.targetFlywheelVeloMPS = flywheelVeloMap.get(this.effectiveDistanceMeters);

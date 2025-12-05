@@ -30,7 +30,7 @@ public class IntakeSlam extends SubsystemBase {
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Intake/Slam/PID",
         new PIDConstants(
-            0.0,
+            50.0,
             0.0,
             0.0
         )
@@ -105,7 +105,7 @@ public class IntakeSlam extends SubsystemBase {
         this.secondaryFollowerMech.setRads(this.secondaryLinkage.getFollowerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - Units.degreesToRadians(-144.10743));
         this.secondaryCouplerMech.setRads(this.secondaryLinkage.getCouplerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - this.secondaryLinkage.getDriverAngleRads() - Units.degreesToRadians(-180));
 
-        Logger.recordOutput("Intake/Slam/Angle/Measured", this.getAngleRads());
+        Logger.recordOutput("Intake/Slam/Angle/Measured", -this.getAngleRads() + IntakeSlamConstants.cancoderZeroOffset.in(Radians));
         Logger.recordOutput("Intake/Slam/Velocity/Measured", this.getVelocityRadsPerSec());
 
         if (pidConsts.hasChanged(this.hashCode())) {

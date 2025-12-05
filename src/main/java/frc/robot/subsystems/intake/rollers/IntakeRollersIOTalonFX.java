@@ -24,7 +24,7 @@ public class IntakeRollersIOTalonFX implements IntakeRollersIO {
     public IntakeRollersIOTalonFX() {
         var config = new TalonFXConfiguration();
         config.MotorOutput
-            .withInverted(InvertedValue.CounterClockwise_Positive)
+            .withInverted(InvertedValue.Clockwise_Positive)
             .withNeutralMode(NeutralModeValue.Coast)
         ;
         this.motor.getConfigurator().apply(config);

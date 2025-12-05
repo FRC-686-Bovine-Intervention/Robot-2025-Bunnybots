@@ -26,7 +26,7 @@ public class Flywheel extends SubsystemBase {
     private final FlywheelIOInputsAutoLogged inputs = new FlywheelIOInputsAutoLogged();
 
     private static final LoggedTunable<LinearVelocity> preemptiveTargetSpeed = LoggedTunable.from("Shooter/Flywheel/Pre-emptive/Target Speed", MetersPerSecond::of, 17);
-    private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Flywheel/Custom/Target Speed", MetersPerSecond::of, 15);
+    private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Flywheel/Custom/Target Speed", MetersPerSecond::of, 20);
     private static final LoggedTunable<LinearVelocity> customIncrement = LoggedTunable.from("Shooter/Flywheel/Custom/Increment", MetersPerSecond::of, 0.5);
     
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("Shooter/Flywheel/PID",
