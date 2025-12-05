@@ -47,6 +47,7 @@ public class Kicker extends SubsystemBase {
 
             @Override
             public void execute() {
+                System.out.println(voltSupplier.getAsDouble());
                 kicker.io.setVolts(voltSupplier.getAsDouble());
             }
 

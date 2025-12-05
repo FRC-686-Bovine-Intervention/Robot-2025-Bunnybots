@@ -33,9 +33,8 @@ public class Pivot extends SubsystemBase {
     private final PivotIO io;
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
-    protected static final LoggedTunable<Angle> idleAngle = LoggedTunable.from("Shooter/Pivot/Idle Angle", Degrees::of, PivotConstants.minAngle.in(Degrees));
-    protected static final LoggedTunable<Angle> customAngle = LoggedTunable.from("Shooter/Pivot/Custom Angle", Degrees::of, 20);
-    protected static final LoggedTunable<Angle> rezeroThreshold = LoggedTunable.from("Shooter/Pivot/Rezero Threshold", Degrees::of, 2.0);
+    private static final LoggedTunable<Angle> idleAngle = LoggedTunable.from("Shooter/Pivot/Idle Angle", Degrees::of, PivotConstants.minAngle.in(Degrees));
+    private static final LoggedTunable<Angle> rezeroThreshold = LoggedTunable.from("Shooter/Pivot/Rezero Threshold", Degrees::of, 2.0);
     
     private static final LoggedTunable<TrapezoidProfile.Constraints> profileConsts = LoggedTunable.fromDashboardUnits(
         "Shooter/Pivot/Profile",
@@ -248,13 +247,6 @@ public class Pivot extends SubsystemBase {
         return this.genAngleCommand(
             "Idle", 
             () -> idleAngle.get().in(Radians)
-        );
-    }
-
-    public Command custom() {
-        return this.genAngleCommand(
-            "Custom",
-            () -> customAngle.get().in(Radians)
         );
     }
 }

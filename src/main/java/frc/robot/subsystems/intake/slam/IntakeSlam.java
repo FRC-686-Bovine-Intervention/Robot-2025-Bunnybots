@@ -66,6 +66,8 @@ public class IntakeSlam extends SubsystemBase {
     public final ArmMech secondaryCouplerMech = new ArmMech(IntakeSlamConstants.secondaryCouplerBase);
 
     public IntakeSlam(IntakeSlamIO io) {
+        super("Intake/Slam");
+        
         System.out.println("[Init IntakeSlam] Instantiating IntakeSlam with " + io.getClass().getSimpleName());
         this.io = io;
 

@@ -28,7 +28,6 @@ import frc.util.loggerUtil.tunables.LoggedTunable;
 public class Shooter {
     public final Pivot pivot;
     public final Flywheel flywheel;
-    public final Drive drive;
     private final SubsystemBase aimingResource;
 
     private static final LoggedTunable<Time> lookaheadTime = LoggedTunable.from("Shooter/Aiming/Lookahead Seconds", Seconds::of, 0.035);
@@ -36,10 +35,9 @@ public class Shooter {
     private static final LoggedTunable<Distance> altitudeDegsTolerance = LoggedTunable.from("Shooter/Aiming/Tolerance/Altitude", Centimeters::of, 46);
     private static final LoggedTunable<Angle> customAzimuthOffset = LoggedTunable.from("Shooter/Aiming/Custom Azimuth Offset", Radians::of, 0.0);
 
-    public Shooter(Pivot pivot, Flywheel flywheel, Drive drive) {
+    public Shooter(Pivot pivot, Flywheel flywheel) {
         this.pivot = pivot;
         this.flywheel = flywheel;
-        this.drive = drive;
         this.aimingResource = new SubsystemBase("Shooter/Aiming") {};
     }
 
@@ -52,6 +50,9 @@ public class Shooter {
     private double targetDriveHeadingRads;
     private double rawTargetDriveHeadingRads;
     // private double minimumShooterSpeedMPS;
+    public double getRawDriveHeadingRads() {
+        return this.rawTargetDriveHeadingRads;
+    }
     public double getTargetDriveHeadingRads() {
         return this.targetDriveHeadingRads;
     }
@@ -91,16 +92,10 @@ public class Shooter {
             () -> this.targetFlywheelVeloMPS
         );
     }
-    public Command aimAzimuth() {
-        return this.drive.rotationalSubsystem.pidControlledHeading(
+    public Command aimAzimuth(Drive.Rotational rotationalSubsystem) {
+        return rotationalSubsystem.pidControlledHeading(
             () -> new Rotation2d(this.targetDriveHeadingRads)
         ).withName("Aim Azimuth");
-    }
-
-    public Command customAimAzimuth() {
-        return this.drive.rotationalSubsystem.pidControlledHeading(
-            () -> new Rotation2d(this.rawTargetDriveHeadingRads + customAzimuthOffset.get().in(Radians))
-        );
     }
 
     private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Goal goal) {
