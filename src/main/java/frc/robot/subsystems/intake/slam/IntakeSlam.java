@@ -30,7 +30,7 @@ public class IntakeSlam extends SubsystemBase {
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Intake/Slam/PID",
         new PIDConstants(
-            50.0,
+            25.0,
             0.0,
             0.0
         )

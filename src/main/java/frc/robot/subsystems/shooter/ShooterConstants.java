@@ -35,15 +35,17 @@ public class ShooterConstants {
 
     public static final InterpolatingDoubleTreeMap lowGoalTargetFlywheelVeloMPS = new InterpolatingDoubleTreeMap();
     static {
-        lowGoalTargetFlywheelVeloMPS.put(Meters.of(1.415).in(Meters), MetersPerSecond.of(4.0).in(MetersPerSecond));
-        lowGoalTargetFlywheelVeloMPS.put(Meters.of(2.425).in(Meters), MetersPerSecond.of(5.5).in(MetersPerSecond));
-        lowGoalTargetFlywheelVeloMPS.put(Meters.of(4.312).in(Meters), MetersPerSecond.of(7.5).in(MetersPerSecond));
+        lowGoalTargetFlywheelVeloMPS.put(Meters.of(1.1717).in(Meters), MetersPerSecond.of(4.0).in(MetersPerSecond));
+        lowGoalTargetFlywheelVeloMPS.put(Meters.of(1.838).in(Meters), MetersPerSecond.of(6.0).in(MetersPerSecond));
+        lowGoalTargetFlywheelVeloMPS.put(Meters.of(1.838).in(Meters), MetersPerSecond.of(6.0).in(MetersPerSecond));
+        lowGoalTargetFlywheelVeloMPS.put(Meters.of(3.88).in(Meters), MetersPerSecond.of(7.5).in(MetersPerSecond));
     }
     public static final InterpolatingDoubleTreeMap lowGoalTargetPivotAltitudeRads = new InterpolatingDoubleTreeMap();
     static {
-        lowGoalTargetPivotAltitudeRads.put(Meters.of(1.415).in(Meters), Degrees.of(20).in(Radians));
-        lowGoalTargetPivotAltitudeRads.put(Meters.of(2.425).in(Meters), Degrees.of(20).in(Radians));
-        lowGoalTargetPivotAltitudeRads.put(Meters.of(4.312).in(Meters), Degrees.of(20).in(Radians));
+        lowGoalTargetPivotAltitudeRads.put(Meters.of(1.415).in(Meters), Degrees.of(15.0).in(Radians));
+        lowGoalTargetPivotAltitudeRads.put(Meters.of(1.838).in(Meters), Degrees.of(4.0).in(Radians));
+        lowGoalTargetPivotAltitudeRads.put(Meters.of(2.572).in(Meters), Degrees.of(9.0).in(Radians));
+        lowGoalTargetPivotAltitudeRads.put(Meters.of(3.88).in(Meters), Degrees.of(7.0).in(Radians));
     }
     public static final InterpolatingDoubleTreeMap lowGoalTargetDrivetrainOffsetRads = new InterpolatingDoubleTreeMap();
     static {

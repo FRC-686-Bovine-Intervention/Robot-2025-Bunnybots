@@ -298,7 +298,7 @@ public class Drive extends VirtualSubsystem {
 
     public static final LoggedTunable<TiltAccelerationLimits> normalTiltLimitTunable = LoggedTunable.from("Drive/Accel Limits/Tilt Limits/Normal", new TiltAccelerationLimits(500, 500, 500, 500));
     public static final LoggedTunable<TiltAccelerationLimits> extendedTiltLimitTunable = LoggedTunable.from("Drive/Accel Limits/Tilt Limits/Extended", new TiltAccelerationLimits(10, 12, 20, 20));
-    private TiltAccelerationLimits tiltLimits = new TiltAccelerationLimits(10, 10, 10, 10);
+    private TiltAccelerationLimits tiltLimits = normalTiltLimitTunable.get();
     public void setTiltLimits(TiltAccelerationLimits tiltLimits) {
         this.tiltLimits = tiltLimits;
     }

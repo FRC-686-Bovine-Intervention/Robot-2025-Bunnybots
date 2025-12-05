@@ -17,7 +17,7 @@ public class IntakeRollers extends SubsystemBase {
     private final IntakeRollersIOInputsAutoLogged inputs = new IntakeRollersIOInputsAutoLogged();
 
     private static final LoggedTunable<Voltage> idleVoltage = LoggedTunable.from("Intake/Rollers/Idle Volts", Volts::of, 0.0);
-    private static final LoggedTunable<Voltage> intakeVoltage = LoggedTunable.from("Intake/Rollers/Intake Volts", Volts::of, 6.0);
+    private static final LoggedTunable<Voltage> intakeVoltage = LoggedTunable.from("Intake/Rollers/Intake Volts", Volts::of, 4.5);
 
     public IntakeRollers(IntakeRollersIO io) {
         super("Intake/Rollers");

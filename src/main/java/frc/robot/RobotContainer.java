@@ -235,10 +235,14 @@ public class RobotContainer {
             new ApriltagPipeline(this.frontLeftCamera, 0, 1),
             new ApriltagPipeline(this.frontRightCamera, 0, 1)
         );
+        this.objectVision = new ObjectVision(
+            new ObjectPipeline(this.intakeCamera, 0)
+        );
 
         this.drive.structureRoot
             .addChild(this.frontLeftCamera.mount)
             .addChild(this.frontRightCamera.mount)
+            .addChild(this.intakeCamera.mount)
             .addChild(
                 this.intake.slam.primaryDriverMech
                     .addChild(
@@ -257,9 +261,7 @@ public class RobotContainer {
             this.intake.slam.secondaryFollowerMech,
             this.intake.slam.secondaryCouplerMech
         );
-        this.objectVision = new ObjectVision(
-            new ObjectPipeline(this.intakeCamera, 0)
-        );
+        
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();
 
@@ -380,7 +382,7 @@ public class RobotContainer {
             }
         });
 
-        this.driveController.leftStickButton().onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(
+        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(
             new Pose2d(
                 14.45,
                 5,
@@ -470,7 +472,7 @@ public class RobotContainer {
             )
         ));
 
-        this.driveController.y().whileTrue(this.intake.intake());
+        this.driveController.y().toggleOnTrue(this.intake.intake());
         
         this.driveController.x().whileTrue(this.rollers.kick());
         this.driveController.b().whileTrue(this.rollers.reverse());
