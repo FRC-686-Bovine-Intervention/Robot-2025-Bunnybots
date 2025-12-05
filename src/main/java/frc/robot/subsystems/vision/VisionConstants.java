@@ -60,7 +60,7 @@ public final class VisionConstants {
         ),
         GeomUtil.rotation3dBuilder()
             .yaw(Degrees.of(180))
-            .pitch(Degrees.of(-19))
+            .pitch(Degrees.of(+19))
             .yaw(Degrees.of(-9))
         .build()
     );
