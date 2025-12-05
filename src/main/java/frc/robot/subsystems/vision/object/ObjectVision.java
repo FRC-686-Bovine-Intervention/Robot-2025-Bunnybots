@@ -235,40 +235,44 @@ public class ObjectVision {
         }
 
         public static Optional<TrackedObject> from(CameraMount mount, CameraTarget target) {
-            var camPose = mount.getFieldRelative();
+            // var camPose = mount.getFieldRelative();
 
-            var rayOrigin = camPose.getTranslation();
-            var origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
-            var rayDir = origin.rotateBy(camPose.getRotation()).rotateBy(new Rotation3d(
-                Radians.zero(),
-                Radians.of(target.pitchRads),
-                Radians.of(-target.yawRads)
-            )).transformBy(new Transform3d(
-                new Translation3d(1, 0, 0),
-                Rotation3d.kZero
-            )).getTranslation();
+            // var rayOrigin = camPose.getTranslation();
+            // var origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
+            // var rayDir = origin.rotateBy(camPose.getRotation()).rotateBy(new Rotation3d(
+            //     Radians.zero(),
+            //     Radians.of(-target.pitchRads),
+            //     Radians.of(target.yawRads)
+            // )).transformBy(new Transform3d(
+            //     new Translation3d(1, 0, 0),
+            //     Rotation3d.kZero
+            // )).getTranslation();
             
-            var numerator = - (rayOrigin.toVector().dot(planeNormal.toVector()) + planeD);
-            var denominator = rayDir.toVector().dot(planeNormal.toVector());
-            var t = numerator / denominator;   
+            // var numerator = - (rayOrigin.toVector().dot(planeNormal.toVector()) + planeD);
+            // var denominator = rayDir.toVector().dot(planeNormal.toVector());
+            // var t = numerator / denominator;   
 
-            var intersectionPoint = rayOrigin.toVector().plus(rayDir.toVector().times(t));
+            // var intersectionPoint = rayOrigin.toVector().plus(rayDir.toVector().times(t));
 
-            var fieldPos = new Translation2d(
-                intersectionPoint.get(0),
-                intersectionPoint.get(1)
-            );
-            var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));/*var camPose = mount.getFieldRelative();
-            double h = (camPose.getZ() - FieldConstants.luniteDimensions.getZ() / 2) / Math.tan(target.pitchRads);
-            double x = h * Math.cos(target.yawRads);
-            double y = h * Math.sin(target.yawRads);
+            // var fieldPos = new Translation2d(
+            //     intersectionPoint.get(0),
+            //     intersectionPoint.get(1)
+            // );
+            // var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
+            // return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));/*var camPose = mount.getFieldRelative();
+            var camPose = mount.getFieldRelative();
+            
+            var tty = camPose.getRotation().getY() + -target.pitchRads;
+            var ttx = camPose.getRotation().getX() + target.yawRads;
 
-            var fieldPose = camPose.transformBy(new Transform3d(
-                new Translation3d(x, y, FieldConstants.luniteDimensions.getZ()),
-            Rotation3d.kZero));
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation().toTranslation2d(), target.objectConfidence));
-            */
+            var h = Math.tan(tty) * camPose.getTranslation().getZ() - FieldConstants.luniteDimensions.getZ() / 2.0;
+            var x = Math.cos(ttx) * h;
+            var y = Math.sin(ttx) * h;
+            var fieldPos = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(new Translation2d(
+                x,
+                y
+            ), Rotation2d.kZero)).getTranslation();
+            return Optional.of(new TrackedObject(target.objectClassID, fieldPos, target.objectConfidence));
 
             /*var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
             if (cameraToTargetVectorRobotRelative.getZ() >= 0) {
