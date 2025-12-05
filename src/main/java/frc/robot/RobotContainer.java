@@ -368,10 +368,10 @@ public class RobotContainer {
         //this.intake.slam.setDefaultCommand(this.intake.slam.deploy());
         this.intake.slam.setDefaultCommand(this.intake.slam.retract());
         this.intake.rollers.setDefaultCommand(this.intake.rollers.idle());
-        this.rollers.kicker.setDefaultCommand(this.rollers.kicker.idle());
-        this.rollers.indexer.setDefaultCommand(this.rollers.indexer.idle());
+        this.rollers.kicker.setDefaultCommand(this.rollers.kicker.stage());
+        this.rollers.indexer.setDefaultCommand(this.rollers.indexer.stage());
 
-        new Trigger(() -> DriverStation.isEnabled() && !this.rollers.stageBeamBroken()).whileTrue(this.rollers.stage());
+        new Trigger(() -> DriverStation.isEnabled() && this.rollers.stageBeamBroken()).whileTrue(this.rollers.idle());
 
         this.driveController.a().toggleOnTrue(Commands.parallel(
             this.shooter.aim(
@@ -447,8 +447,8 @@ public class RobotContainer {
 
         this.driveController.y().whileTrue(this.intake.intake());
         
-        this.driveController.rightBumper().whileTrue(this.rollers.kick());
-        this.driveController.leftBumper().whileTrue(this.rollers.reverse());
+        this.driveController.x().whileTrue(this.rollers.kick());
+        this.driveController.b().whileTrue(this.rollers.reverse());
 
         var aimJoystick = this.driveController.rightStick; 
         

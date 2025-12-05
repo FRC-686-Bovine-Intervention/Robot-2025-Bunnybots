@@ -28,7 +28,7 @@ public final class VisionConstants {
             Inches.of(+9.617869)
         ),
         GeomUtil.rotation3dBuilder()
-            .pitch(Math.toRadians(27.5))
+            .pitch(Degrees.of(-27.5))
         .build()
     );
     public static final Transform3d frontRightMount = new Transform3d(
@@ -38,7 +38,7 @@ public final class VisionConstants {
             Inches.of(+9.617869)
         ),
         GeomUtil.rotation3dBuilder()
-            .pitch(Math.toRadians(27.5))
+            .pitch(Degrees.of(-27.5))
         .build()
     );
 

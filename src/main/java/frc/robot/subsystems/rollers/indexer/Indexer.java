@@ -8,6 +8,7 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.util.LoggedTracer;
 import frc.util.loggerUtil.tunables.LoggedTunable;
@@ -37,7 +38,7 @@ public class Indexer extends SubsystemBase {
         LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem/Rollers Indexer/Process Inputs");
     }
     
-    private Command genVoltsCommand(String name, DoubleSupplier voltSupplier) {
+    private Command genVoltsCommand(String name, DoubleSupplier voltSupplier, InterruptionBehavior interruptionBehavior) {
         final var indexer = this;
         return new Command() {
             {
@@ -54,19 +55,24 @@ public class Indexer extends SubsystemBase {
             public void end(boolean interrupted) {
                 indexer.io.setVolts(0.0);
             }
+            
+            @Override
+            public InterruptionBehavior getInterruptionBehavior() {
+                return interruptionBehavior;
+            }
         };
     }
 
     public Command idle() {
-        return this.genVoltsCommand("Idle", () -> idleVoltage.get().in(Volts));
+        return this.genVoltsCommand("Idle", () -> idleVoltage.get().in(Volts), InterruptionBehavior.kCancelSelf);
     }
     public Command stage() {
-        return this.genVoltsCommand("Stage", () -> stageVoltage.get().in(Volts));
+        return this.genVoltsCommand("Stage", () -> stageVoltage.get().in(Volts), InterruptionBehavior.kCancelSelf);
     }
     public Command kick() {
-        return this.genVoltsCommand("Kick", () -> kickVoltage.get().in(Volts));
+        return this.genVoltsCommand("Kick", () -> kickVoltage.get().in(Volts), InterruptionBehavior.kCancelIncoming);
     }
     public Command reverse() {
-        return this.genVoltsCommand("Reverse", () -> reverseVoltage.get().in(Volts));
+        return this.genVoltsCommand("Reverse", () -> reverseVoltage.get().in(Volts), InterruptionBehavior.kCancelIncoming);
     }
 }

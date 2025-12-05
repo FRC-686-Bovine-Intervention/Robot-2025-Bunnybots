@@ -25,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.util.LoggedTracer;
 import frc.util.Perspective;
 import frc.util.VirtualSubsystem;
-import frc.util.robotStructure.Mechanism3d;
 
 public class Robot extends LoggedRobot {
     private final RobotContainer robotContainer;
@@ -135,7 +134,7 @@ public class Robot extends LoggedRobot {
 
             this.robotContainer.apriltagVision.periodic();
             
-            // this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
+            this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
             RobotState.getInstance().log();
             LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
 
@@ -154,6 +153,9 @@ public class Robot extends LoggedRobot {
 
             CommandScheduler.getInstance().getDefaultButtonLoop().poll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Triggers");
+
+            Logger.recordOutput("DEBUG/LEFT CAM POSE", this.robotContainer.frontLeftCamera.mount.getFieldRelative());
+            Logger.recordOutput("DEBUG/RIGHT CAM POSE", this.robotContainer.frontRightCamera.mount.getFieldRelative());
         });
         CommandScheduler.getInstance().setActiveButtonLoop(activeButtonLoop);
     }
