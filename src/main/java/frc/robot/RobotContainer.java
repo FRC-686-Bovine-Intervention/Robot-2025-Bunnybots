@@ -68,15 +68,17 @@ import frc.robot.subsystems.shooter.pivot.Pivot;
 import frc.robot.subsystems.shooter.pivot.PivotIO;
 import frc.robot.subsystems.shooter.pivot.PivotIOSim;
 import frc.robot.subsystems.shooter.pivot.PivotIOTalonFX;
-import frc.util.Cooldown;
-import frc.util.Perspective;
-import frc.util.controllers.Joystick;
 import frc.robot.subsystems.vision.VisionConstants;
 import frc.robot.subsystems.vision.apriltag.ApriltagPipeline;
 import frc.robot.subsystems.vision.apriltag.ApriltagVision;
 import frc.robot.subsystems.vision.cameras.Camera;
 import frc.robot.subsystems.vision.cameras.CameraIO;
 import frc.robot.subsystems.vision.cameras.CameraIOPhoton;
+import frc.robot.subsystems.vision.object.ObjectPipeline;
+import frc.robot.subsystems.vision.object.ObjectVision;
+import frc.util.Cooldown;
+import frc.util.Perspective;
+import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
 import frc.util.robotStructure.Mechanism3d;
 
@@ -86,11 +88,13 @@ public class RobotContainer {
     public final Shooter shooter;
     public final Rollers rollers;
     public final Intake intake;
-
+    
     // Vision
     public final Camera frontLeftCamera;
     public final Camera frontRightCamera;
+    public final Camera intakeCamera;
     public final ApriltagVision apriltagVision;
+    public final ObjectVision objectVision;
 
     // Event Loops
     public final EventLoop automationsLoop = new EventLoop();
@@ -138,6 +142,12 @@ public class RobotContainer {
                     VisionConstants.frontRightMount,
                     (f) -> {}
                 );
+                this.intakeCamera = new Camera(
+                    new CameraIOPhoton("Intake"),
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -171,6 +181,12 @@ public class RobotContainer {
                     "Front Right",
                     VisionConstants.frontRightMount,
                     (f) -> {}
+                );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
                 );
             }
             default -> {
@@ -207,6 +223,12 @@ public class RobotContainer {
                     VisionConstants.frontRightMount,
                     (f) -> {}
                 );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
         }
         this.apriltagVision = new ApriltagVision(
@@ -234,6 +256,9 @@ public class RobotContainer {
             this.intake.slam.primaryCouplerMech,
             this.intake.slam.secondaryFollowerMech,
             this.intake.slam.secondaryCouplerMech
+        );
+        this.objectVision = new ObjectVision(
+            new ObjectPipeline(this.intakeCamera, 0)
         );
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();

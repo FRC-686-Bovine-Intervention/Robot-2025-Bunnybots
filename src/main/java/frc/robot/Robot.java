@@ -137,6 +137,9 @@ public class Robot extends LoggedRobot {
             this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
             RobotState.getInstance().log();
             LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
+            
+            this.robotContainer.objectVision.periodic();
+            LoggedTracer.logEpoch("CommandScheduler Periodic/ObjectVision Periodic");
 
             //Mechanism3d.logAscopeComponents();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");

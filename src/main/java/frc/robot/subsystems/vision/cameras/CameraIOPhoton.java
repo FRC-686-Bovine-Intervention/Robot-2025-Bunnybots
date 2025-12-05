@@ -3,6 +3,7 @@ package frc.robot.subsystems.vision.cameras;
 import org.photonvision.PhotonCamera;
 
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 
 public class CameraIOPhoton implements CameraIO {
     private final PhotonCamera photonCam;
@@ -30,9 +31,9 @@ public class CameraIOPhoton implements CameraIO {
                             var tagID = target.getFiducialId();
                             var objectClassID = target.getDetectedObjectClassID();
                             var objectConfidence = target.getDetectedObjectConfidence();
-                            var yawRads = target.getYaw();
-                            var pitchRads = target.getPitch();
-                            var skewRads = target.getSkew();
+                            var yawRads = Units.degreesToRadians(target.getYaw());
+                            var pitchRads = Units.degreesToRadians(target.getPitch());
+                            var skewRads = Units.degreesToRadians(target.getSkew());
                             var bestCameraToTag = target.getBestCameraToTarget();
                             var altCameraToTag = target.getAlternateCameraToTarget();
                             var poseAmbiguity = target.getPoseAmbiguity();
