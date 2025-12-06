@@ -2,7 +2,6 @@ package frc.robot.subsystems.vision.object;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Radians;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -21,7 +20,6 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -260,19 +258,26 @@ public class ObjectVision {
             // );
             // var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
             // return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));/*var camPose = mount.getFieldRelative();
-            var camPose = mount.getFieldRelative();
+            var camRobotPose = mount.getRobotRelative();
+            var camFieldPose = mount.getFieldRelative();
             
-            var tty = camPose.getRotation().getY() + -target.pitchRads;
-            var ttx = camPose.getRotation().getX() + target.yawRads;
+            var tty = target.pitchRads + camRobotPose.getRotation().getY();
+            var ttx = -target.yawRads;
 
-            var h = Math.tan(tty) * camPose.getTranslation().getZ() - FieldConstants.luniteDimensions.getZ() / 2.0;
+            var height = FieldConstants.luniteDimensions.getZ() / 2.0 - camRobotPose.getTranslation().getZ();
+            var h = height / Math.tan(tty);
             var x = Math.cos(ttx) * h;
             var y = Math.sin(ttx) * h;
-            var fieldPos = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(new Translation2d(
-                x,
-                y
-            ), Rotation2d.kZero)).getTranslation();
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPos, target.objectConfidence));
+
+            var objectFieldPose = camFieldPose.toPose2d().transformBy(new Transform2d(
+                new Translation2d(
+                    x,
+                    y
+                ),
+                Rotation2d.kZero
+            ));
+            
+            return Optional.of(new TrackedObject(target.objectClassID, objectFieldPose.getTranslation(), target.objectConfidence));
 
             /*var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
             if (cameraToTargetVectorRobotRelative.getZ() >= 0) {

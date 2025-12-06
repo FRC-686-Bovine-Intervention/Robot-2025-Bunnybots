@@ -400,82 +400,82 @@ public class RobotContainer {
 
         new Trigger(() -> DriverStation.isEnabled() && this.rollers.stageBeamBroken()).whileTrue(this.rollers.idle());
 
-        this.driveController.a().toggleOnTrue(Commands.parallel(
-            this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
-                this.drive::getFieldMeasuredSpeeds,
-                () -> FieldConstants.Goals.rightHighGoal.getOurs()
-            ).repeatedly(),
-            new Command() {
-                private final PIDController pid = new PIDController(
-                    0.2  * DriveConstants.maxTurnRate.in(RadiansPerSecond),
-                    0.0,
-                    0.0
-                );
-                private final DoubleSupplier offsetStepper = Cooldown.incrementingStepper(
-                    "Aiming Cal/Azimuth",
-                    "Aiming Cal/Azimuth",
-                    Seconds.of(0.125),
-                    Degrees.of(0.0),
-                    Degrees.of(1.0),
-                    Radians,
-                    driveController.leftBumper(),
-                    driveController.rightBumper()
-                );
-                {
-                    this.setName("Custom");
-                    this.addRequirements(drive.rotationalSubsystem);
+        // this.driveController.a().toggleOnTrue(Commands.parallel(
+        //     this.shooter.aim(
+        //         RobotState.getInstance()::getEstimatedGlobalPose,
+        //         this.drive::getFieldMeasuredSpeeds,
+        //         () -> FieldConstants.Goals.rightHighGoal.getOurs()
+        //     ).repeatedly(),
+        //     new Command() {
+        //         private final PIDController pid = new PIDController(
+        //             0.2  * DriveConstants.maxTurnRate.in(RadiansPerSecond),
+        //             0.0,
+        //             0.0
+        //         );
+        //         private final DoubleSupplier offsetStepper = Cooldown.incrementingStepper(
+        //             "Aiming Cal/Azimuth",
+        //             "Aiming Cal/Azimuth",
+        //             Seconds.of(0.125),
+        //             Degrees.of(0.0),
+        //             Degrees.of(1.0),
+        //             Radians,
+        //             driveController.leftBumper(),
+        //             driveController.rightBumper()
+        //         );
+        //         {
+        //             this.setName("Custom");
+        //             this.addRequirements(drive.rotationalSubsystem);
 
-                    this.pid.enableContinuousInput(-Math.PI, Math.PI);
-                }
+        //             this.pid.enableContinuousInput(-Math.PI, Math.PI);
+        //         }
 
-                @Override
-                public void execute() {
-                    drive.rotationalSubsystem.driveVelocity(
-                        this.pid.calculate(
-                            RobotState.getInstance().getEstimatedGlobalPose().getRotation().getRadians(),
-                            MathUtil.angleModulus(shooter.getRawDriveHeadingRads() + this.offsetStepper.getAsDouble())
-                        )
-                    );
-                }
+        //         @Override
+        //         public void execute() {
+        //             drive.rotationalSubsystem.driveVelocity(
+        //                 this.pid.calculate(
+        //                     RobotState.getInstance().getEstimatedGlobalPose().getRotation().getRadians(),
+        //                     MathUtil.angleModulus(shooter.getRawDriveHeadingRads() + this.offsetStepper.getAsDouble())
+        //                 )
+        //             );
+        //         }
 
-                @Override
-                public void end(boolean interrupted) {
-                    drive.rotationalSubsystem.stop();
-                }
-            },
-            this.shooter.flywheel.genSurfaceVeloCommand(
-                "Custom",
-                Cooldown.incrementingStepper(
-                    "Aiming Cal/Flywheel",
-                    "Aiming Cal/Flywheel",
-                    Seconds.of(0.125),
-                    MetersPerSecond.of(20.0),
-                    MetersPerSecond.of(2.0),
-                    MetersPerSecond,
-                    this.driveController.povLeft(),
-                    this.driveController.povRight()
-                )
-            ),
-            this.shooter.pivot.genAngleCommand(
-                "Custom",
-                Cooldown.incrementingStepper(
-                    "Aiming Cal/Pivot",
-                    "Aiming Cal/Pivot",
-                    Seconds.of(0.125),
-                    Degrees.of(20.0),
-                    Degrees.of(1.0),
-                    Radians,
-                    this.driveController.povUp(),
-                    this.driveController.povDown()
-                )
-            )
-        ));
+        //         @Override
+        //         public void end(boolean interrupted) {
+        //             drive.rotationalSubsystem.stop();
+        //         }
+        //     },
+        //     this.shooter.flywheel.genSurfaceVeloCommand(
+        //         "Custom",
+        //         Cooldown.incrementingStepper(
+        //             "Aiming Cal/Flywheel",
+        //             "Aiming Cal/Flywheel",
+        //             Seconds.of(0.125),
+        //             MetersPerSecond.of(20.0),
+        //             MetersPerSecond.of(2.0),
+        //             MetersPerSecond,
+        //             this.driveController.povLeft(),
+        //             this.driveController.povRight()
+        //         )
+        //     ),
+        //     this.shooter.pivot.genAngleCommand(
+        //         "Custom",
+        //         Cooldown.incrementingStepper(
+        //             "Aiming Cal/Pivot",
+        //             "Aiming Cal/Pivot",
+        //             Seconds.of(0.125),
+        //             Degrees.of(20.0),
+        //             Degrees.of(1.0),
+        //             Radians,
+        //             this.driveController.povUp(),
+        //             this.driveController.povDown()
+        //         )
+        //     )
+        // ));
 
-        this.driveController.y().toggleOnTrue(this.intake.intake());
+        this.driveController.b().toggleOnTrue(this.intake.intake());
         
         this.driveController.x().whileTrue(this.rollers.kick());
-        this.driveController.b().whileTrue(this.rollers.reverse());
+        this.driveController.a().whileTrue(this.rollers.reverse());
 
         var aimJoystick = this.driveController.rightStick; 
         
