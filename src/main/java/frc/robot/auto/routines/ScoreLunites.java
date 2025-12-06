@@ -26,10 +26,11 @@ public class ScoreLunites extends AutoRoutine {
         private static final Map.Entry<String, AllianceFlipped<Pose2d>> startShutoff = Settings.option("Shutoff Goal", AutoConstants.startShutoffGoal);
         private static final Map.Entry<String, AllianceFlipped<Pose2d>> startPermanent = Settings.option("Permanent Goal", AutoConstants.startPermanentGoal);
         private static final Map.Entry<String, AllianceFlipped<Pose2d>> startOuterCorner = Settings.option("Outer Corner", AutoConstants.startOuterTaxiLineWallCorner);
+        private static final Map.Entry<String, AllianceFlipped<Pose2d>> startShutoffSide = Settings.option("Shutoff Side", AutoConstants.startShutoffGoalSide);
         
         @Override
         protected Settings<AllianceFlipped<Pose2d>> generateSettings() {
-            return Settings.from(startOuterCorner, startShutoff, startPermanent, startOuterCorner);
+            return Settings.from(startOuterCorner, startShutoff, startPermanent, startOuterCorner, startShutoffSide);
         }
     };
 

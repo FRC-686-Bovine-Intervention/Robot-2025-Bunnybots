@@ -55,4 +55,12 @@ public final class AutoConstants {
             Rotation2d.kZero
         )
     );
+    public static final AllianceFlipped<Pose2d> startShutoffGoalSide = AllianceFlipped.fromBlue(
+        new Pose2d(
+            FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureX().minus(RobotConstants.centerToSideBumper),
+            FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureY().plus(RobotConstants.centerToSideBumper),
+            Rotation2d.kCW_90deg
+        )
+    );
+    
 }
