@@ -195,7 +195,7 @@ public final class FieldConstants {
         ));
         public static final AllianceFlipped<Goal> permanentLowGoal = permanentAprilTag.map((tagID, alliance) -> new Goal(
             permanentLowAimPoint.get(alliance),
-            GoalType.High,
+            GoalType.Low,
             tagID
         ));
 
