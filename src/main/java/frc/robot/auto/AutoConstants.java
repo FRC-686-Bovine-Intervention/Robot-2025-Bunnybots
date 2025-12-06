@@ -19,7 +19,7 @@ public final class AutoConstants {
         Inches.of(88.25),
         Inches.of(559.75)
     );
-    public static final AllianceFlipped<Pose2d> startOuterGoal = new AllianceFlipped<Pose2d>(
+    public static final AllianceFlipped<Pose2d> startShutoffGoal = new AllianceFlipped<Pose2d>(
         new Pose2d(
             taxiLineX.getBlue().minus(RobotConstants.centerToFrontBumper),
             FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.center.getMeasureY(),
@@ -43,7 +43,7 @@ public final class AutoConstants {
             Rotation2d.kZero
         )
     );
-    public static final AllianceFlipped<Pose2d> startInnerGoal = new AllianceFlipped<Pose2d>(
+    public static final AllianceFlipped<Pose2d> startPermanentGoal = new AllianceFlipped<Pose2d>(
         new Pose2d(
             taxiLineX.getBlue().minus(RobotConstants.centerToFrontBumper),
             FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.center.getMeasureY(),

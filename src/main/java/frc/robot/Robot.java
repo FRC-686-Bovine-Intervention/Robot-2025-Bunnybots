@@ -186,7 +186,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
-        // this.robotContainer.autoManager.startAuto();
+        this.robotContainer.autoManager.startAuto();
     }
 
     @Override
@@ -194,7 +194,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousExit() {
-        // this.robotContainer.autoManager.endAuto();
+        this.robotContainer.autoManager.endAuto();
     }
 
     @Override

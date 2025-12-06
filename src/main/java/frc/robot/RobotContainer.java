@@ -4,23 +4,18 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.Arrays;
 import java.util.Set;
-import java.util.function.DoubleSupplier;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -28,6 +23,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.auto.AutoManager;
+import frc.robot.auto.AutoSelector;
+import frc.robot.auto.routines.ScoreLunites;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -75,7 +73,6 @@ import frc.robot.subsystems.vision.cameras.CameraIO;
 import frc.robot.subsystems.vision.cameras.CameraIOPhoton;
 import frc.robot.subsystems.vision.object.ObjectPipeline;
 import frc.robot.subsystems.vision.object.ObjectVision;
-import frc.util.Cooldown;
 import frc.util.Perspective;
 import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
@@ -94,6 +91,9 @@ public class RobotContainer {
     public final Camera intakeCamera;
     public final ApriltagVision apriltagVision;
     public final ObjectVision objectVision;
+
+    // Auto
+    public final AutoManager autoManager;
 
     // Event Loops
     public final EventLoop automationsLoop = new EventLoop();
@@ -267,6 +267,11 @@ public class RobotContainer {
         System.out.println("[Init RobotContainer] Configuring Notifications");
 
         System.out.println("[Init RobotContainer] Configuring Autonomous Modes");
+
+        var autoSelector = new AutoSelector("Auto Selector");
+        autoSelector.addDefaultRoutine(new ScoreLunites(this));
+
+        this.autoManager = new AutoManager(autoSelector);
 
         System.out.println("[Init RobotContainer] Configuring System Check");
         SmartDashboard.putData("System Check/Drive/Spin", 
@@ -509,7 +514,7 @@ public class RobotContainer {
         
         leftHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftHighGoal.getOurs()
             )
@@ -521,7 +526,7 @@ public class RobotContainer {
 
         rightHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(6).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightHighGoal.getOurs()
             )
@@ -533,7 +538,7 @@ public class RobotContainer {
 
         leftLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftLowGoal.getOurs()
             )
@@ -545,7 +550,7 @@ public class RobotContainer {
 
         rightLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(6).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightLowGoal.getOurs()
             )

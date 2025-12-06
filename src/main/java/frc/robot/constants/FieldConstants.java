@@ -19,11 +19,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.Filesystem;
 import frc.robot.constants.FieldConstants.LunarOutpost.CosmicConverter.Goal.GoalType;
-import frc.util.flipping.AllianceFlipUtil;
-import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
-import frc.util.flipping.AllianceFlippable;
 import frc.util.flipping.AllianceFlipped;
 import frc.util.geometry.GeomUtil;
 
@@ -159,37 +155,48 @@ public final class FieldConstants {
 
         private static final Distance goalCenterYOffset = Inches.of(35.500000).plus(Inches.of(5.500000)).div(2);
 
-        public static final AllianceFlipped<Goal> shutoffHighGoal = AllianceFlipped.fromBlue(new Goal(
-            new Translation3d(
-                Inches.of(4.000000),
-                goalCenterYOffset,
-                highGoalCenterHeight
-            ),
-            GoalType.High
+        private static final AllianceFlipped<Integer> shutoffAprilTag = new AllianceFlipped<>(7, 8);
+        private static final AllianceFlipped<Integer> permanentAprilTag = new AllianceFlipped<>(5, 6);
+
+        private static final AllianceFlipped<Translation3d> shutoffHighAimPoint = AllianceFlipped.fromBlue(new Translation3d(
+            Inches.of(4.000000),
+            goalCenterYOffset,
+            highGoalCenterHeight
         ));
-        public static final AllianceFlipped<Goal> permanentHighGoal = AllianceFlipped.fromBlue(new Goal(
-            new Translation3d(
-                Inches.of(4.000000),
-                goalCenterYOffset.plus(Inches.of(175.625000)),
-                highGoalCenterHeight
-            ),
-            GoalType.High
+        public static final AllianceFlipped<Goal> shutoffHighGoal = shutoffAprilTag.map((tagID, alliance) -> new Goal(
+            shutoffHighAimPoint.get(alliance),
+            GoalType.High,
+            tagID
         ));
-        public static final AllianceFlipped<Goal> shutoffLowGoal = AllianceFlipped.fromBlue(new Goal(
-            new Translation3d(
-                Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
-                goalCenterYOffset,
-                lowGoalCenterHeight
-            ),
-            GoalType.Low
+        private static final AllianceFlipped<Translation3d> permanentHighAimPoint = AllianceFlipped.fromBlue(new Translation3d(
+            Inches.of(4.000000),
+            goalCenterYOffset.plus(Inches.of(175.625000)),
+            highGoalCenterHeight
         ));
-        public static final AllianceFlipped<Goal> permanentLowGoal = AllianceFlipped.fromBlue(new Goal(
-            new Translation3d(
-                Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
-                goalCenterYOffset.plus(Inches.of(175.625000)),
-                lowGoalCenterHeight
-            ),
-            GoalType.Low
+        public static final AllianceFlipped<Goal> permanentHighGoal = permanentAprilTag.map((tagID, alliance) -> new Goal(
+            permanentHighAimPoint.get(alliance),
+            GoalType.High,
+            tagID
+        ));
+        private static final AllianceFlipped<Translation3d> shutoffLowAimPoint = AllianceFlipped.fromBlue(new Translation3d(
+            Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
+            goalCenterYOffset,
+            lowGoalCenterHeight
+        ));
+        public static final AllianceFlipped<Goal> shutoffLowGoal = shutoffAprilTag.map((tagID, alliance) -> new Goal(
+            shutoffLowAimPoint.get(alliance),
+            GoalType.Low,
+            tagID
+        ));
+        private static final AllianceFlipped<Translation3d> permanentLowAimPoint = AllianceFlipped.fromBlue(new Translation3d(
+            Inches.of(4.000000).plus(Inches.of(30.000000).div(2)),
+            goalCenterYOffset.plus(Inches.of(175.625000)),
+            lowGoalCenterHeight
+        ));
+        public static final AllianceFlipped<Goal> permanentLowGoal = permanentAprilTag.map((tagID, alliance) -> new Goal(
+            permanentLowAimPoint.get(alliance),
+            GoalType.High,
+            tagID
         ));
 
         public static final AllianceFlipped<Goal> leftHighGoal = new AllianceFlipped<>(permanentHighGoal.getBlue(), shutoffHighGoal.getRed());
@@ -208,21 +215,15 @@ public final class FieldConstants {
                 };
             }
         }
-        public static final class Goal implements AllianceFlippable<Goal> {
+        public static final class Goal {
             public final Translation3d centerPoint;
             public final GoalType type;
+            public final int apriltagID;
 
-            private Goal(Translation3d centerPoint, GoalType type) {
+            private Goal(Translation3d centerPoint, GoalType type, int apriltagID) {
                 this.centerPoint = centerPoint;
                 this.type = type;
-            }
-
-            @Override
-            public Goal flip(FieldFlipType flipType) {
-                return new Goal(
-                    AllianceFlipUtil.flip(this.centerPoint, flipType),
-                    this.type
-                );
+                this.apriltagID = apriltagID;
             }
         }
     }
