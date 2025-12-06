@@ -111,8 +111,8 @@ public class ScoreLunites extends AutoRoutine {
         commands.add(
             Commands.deadline(
                 Commands.sequence(
-                    Commands.waitSeconds(1.0),
-                    kickCommand.withTimeout(5.0)
+                    Commands.waitSeconds(2.0),
+                    kickCommand.withTimeout(4.0)
                 ),
                 aimCommand
             )

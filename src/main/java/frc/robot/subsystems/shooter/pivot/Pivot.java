@@ -43,8 +43,8 @@ public class Pivot extends SubsystemBase {
         RadiansPerSecond,
         RadiansPerSecondPerSecond,
         new TrapezoidProfile.Constraints(
-            720,
-            1440
+            720-180,
+            1440-360
         )
     );
     private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from(
