@@ -27,11 +27,11 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.AngleUnit;
-import edu.wpi.first.units.AngularAccelerationUnit;
-import edu.wpi.first.units.AngularVelocityUnit;
+import edu.wpi.first.units.measure.AngleUnit;
+import edu.wpi.first.units.measure.AngularAccelerationUnit;
+import edu.wpi.first.units.measure.AngularVelocityUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.VoltageUnit;
+import edu.wpi.first.units.measure.VoltageUnit;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.DriveConstants.ModuleConstants;
 import frc.robot.subsystems.drive.OdometryThread.DoubleBuffer;
@@ -143,11 +143,11 @@ public class ModuleIOFalcon550 implements ModuleIO {
     }
 
     @Override
-    public void setDriveVoltage(Measure<VoltageUnit> volts) {
+    public void setDriveVoltage(VoltageUnit volts) {
         this.driveMotor.setControl(this.driveVolts.withOutput(volts.in(Volts)));
     }
     @Override
-    public void setDriveVelocity(Measure<AngularVelocityUnit> velocity, Measure<AngularAccelerationUnit> acceleration, Measure<VoltageUnit> feedforward, boolean overrideWithBrakeMode) {
+    public void setDriveVelocity(AngularVelocityUnit velocity, AngularAccelerationUnit acceleration, VoltageUnit feedforward, boolean overrideWithBrakeMode) {
         this.driveMotor.setControl(this.driveVelocity
             .withVelocity(velocity.in(RotationsPerSecond))
             .withAcceleration(acceleration.in(RotationsPerSecondPerSecond))
@@ -160,11 +160,11 @@ public class ModuleIOFalcon550 implements ModuleIO {
         this.azimuthMotor.setVoltage(volts);
     }
     @Override
-    public void setAzimuthVoltage(Measure<VoltageUnit> volts) {
+    public void setAzimuthVoltage(VoltageUnit volts) {
         this.setAzimuthVolts(volts.in(Volts));
     }
     @Override
-    public void setAzimuthAngle(Measure<AngleUnit> angle) {
+    public void setAzimuthAngle(AngleUnit angle) {
         this.setAzimuthVolts(
             this.azimuthPID.calculate(
                 this.azimuthAbsoluteEncoder.getPosition(),

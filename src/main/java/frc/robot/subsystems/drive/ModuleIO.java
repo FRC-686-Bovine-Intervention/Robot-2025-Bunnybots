@@ -7,7 +7,6 @@ import org.littletonrobotics.junction.AutoLog;
 import edu.wpi.first.units.AngleUnit;
 import edu.wpi.first.units.AngularAccelerationUnit;
 import edu.wpi.first.units.AngularVelocityUnit;
-import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.VoltageUnit;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
@@ -35,12 +34,12 @@ public interface ModuleIO {
     public default void updateInputs(ModuleIOInputs inputs) {}
 
     /** Run the drive motor at the specified voltage. */
-    public default void setDriveVoltage(Measure<VoltageUnit> voltage) {}
-    public default void setDriveVelocity(Measure<AngularVelocityUnit> velocity, Measure<AngularAccelerationUnit> acceleration, Measure<VoltageUnit> feedforward, boolean overrideWithBrakeMode) {}
+    public default void setDriveVoltage(VoltageUnit voltage) {}
+    public default void setDriveVelocity(AngularVelocityUnit velocity, AngularAccelerationUnit acceleration, VoltageUnit feedforward, boolean overrideWithBrakeMode) {}
 
     /** Run the turn motor at the specified voltage. */
-    public default void setAzimuthVoltage(Measure<VoltageUnit> volts) {}
-    public default void setAzimuthAngle(Measure<AngleUnit> angle) {}
+    public default void setAzimuthVoltage(VoltageUnit volts) {}
+    public default void setAzimuthAngle(AngleUnit angle) {}
 
     public default void stopDrive(Optional<NeutralMode> neutralMode) {}
     public default void stopAzimuth(Optional<NeutralMode> neutralMode) {}

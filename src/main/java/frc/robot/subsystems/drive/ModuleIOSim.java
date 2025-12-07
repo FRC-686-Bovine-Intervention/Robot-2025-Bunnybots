@@ -8,9 +8,9 @@ import static edu.wpi.first.units.Units.Volts;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.units.AngleUnit;
+import edu.wpi.first.units.measure.AngleUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.MutVoltage;
+import edu.wpi.first.units.measure.measure.MutVoltage;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import frc.robot.constants.RobotConstants;
@@ -71,7 +71,7 @@ public class ModuleIOSim extends ModuleIOFalcon550 {
         this.azimuthAppliedVolts.mut_replace(MathUtil.clamp(volts, -12, 12), Volts);
     }
     @Override
-    public void setAzimuthAngle(Measure<AngleUnit> angle) {
+    public void setAzimuthAngle(AngleUnit angle) {
         this.setAzimuthVolts(
             this.azimuthPID.calculate(
                 this.azimuthSim.getAngularPosition().in(Rotations),

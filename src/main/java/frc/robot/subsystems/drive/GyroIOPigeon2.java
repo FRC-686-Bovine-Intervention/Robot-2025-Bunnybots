@@ -9,8 +9,7 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.geometry.Quaternion;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.units.AngleUnit;
-import edu.wpi.first.units.Measure;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.constants.HardwareDevices;
 import frc.robot.constants.RobotConstants;
@@ -103,7 +102,7 @@ public class GyroIOPigeon2 implements GyroIO {
     }
 
     @Override
-    public void resetYaw(Measure<AngleUnit> yaw) {
-        this.pigeon.setYaw(yaw.in(Degrees));
+    public void resetYawRads(double yawRads) {
+        this.pigeon.setYaw(Units.radiansToDegrees(yawRads));
     }
 }

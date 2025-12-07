@@ -31,14 +31,14 @@ public class WheelRadiusCalibration extends Command {
     private final MutAngle prevYaw = Radians.mutable(0);
     private final MutAngle totalYaw = Radians.mutable(0);
     private final Timer totalTimer = new Timer();
-    private final Measure<VoltageUnit> maxVoltage;
+    private final VoltageUnit maxVoltage;
     private final Measure<VelocityUnit<VoltageUnit>> voltageRampRate;
     private double[] initialPositionRads = new double[0];
 
     public static final LoggedTunable<Velocity<VoltageUnit>> VOLTAGE_RAMP_RATE = LoggedTunable.from("Drive/Wheel Calibration/Voltage Ramp Rate", Volts.per(Second)::of, 2);
     public static final LoggedTunable<Voltage> MAX_VOLTAGE = LoggedTunable.from("Drive/Wheel Calibration/Max Voltage", Volts::of, 6);
 
-    public WheelRadiusCalibration(Drive drive, Measure<VelocityUnit<VoltageUnit>> voltageRampRate, Measure<VoltageUnit> maxVoltage) {
+    public WheelRadiusCalibration(Drive drive, Measure<VelocityUnit<VoltageUnit>> voltageRampRate, VoltageUnit maxVoltage) {
         this.drive = drive;
         addRequirements(this.drive.translationSubsystem, this.drive.rotationalSubsystem);
         setName("Wheel Calibration");

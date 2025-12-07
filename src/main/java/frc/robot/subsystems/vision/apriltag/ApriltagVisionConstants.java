@@ -3,7 +3,7 @@ package frc.robot.subsystems.vision.apriltag;
 import static edu.wpi.first.units.Units.Inches;
 
 import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.units.measure.Distance;
+import edu.wpi.first.units.measure.measure.Distance;
 import frc.robot.constants.FieldConstants;
 import frc.util.PoseBoundingBoxUtil.BoundingBox;
 

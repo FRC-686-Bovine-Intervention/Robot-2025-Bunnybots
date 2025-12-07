@@ -6,7 +6,7 @@ import static edu.wpi.first.units.Units.Inches;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.measure.Angle;
 import frc.util.mechanismUtil.GearRatio;
 
 public class PivotConstants {

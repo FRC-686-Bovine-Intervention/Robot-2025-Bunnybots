@@ -1,11 +1,11 @@
 package frc.util.mechanismUtil;
 
-import edu.wpi.first.units.DistanceUnit;
+import edu.wpi.first.units.measure.DistanceUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.Unit;
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.units.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Unit;
+import edu.wpi.first.units.measure.measure.Angle;
+import edu.wpi.first.units.measure.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.measure.AngularVelocity;
 
 public class GearRatio {
     public static double planetaryReduction(int sunCount, int ringCount) {

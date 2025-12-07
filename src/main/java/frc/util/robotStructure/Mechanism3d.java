@@ -9,7 +9,7 @@ import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.Unit;
+import edu.wpi.first.units.measure.Unit;
 
 public abstract class Mechanism3d<U extends Unit> extends ChildBase {
     public static final String KEY = "Mechanism3d";

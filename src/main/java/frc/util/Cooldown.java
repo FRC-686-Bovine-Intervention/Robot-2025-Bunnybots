@@ -8,8 +8,8 @@ import java.util.function.DoubleSupplier;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.Unit;
-import edu.wpi.first.units.measure.Time;
+import edu.wpi.first.units.measure.Unit;
+import edu.wpi.first.units.measure.measure.Time;
 import edu.wpi.first.wpilibj.Timer;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 

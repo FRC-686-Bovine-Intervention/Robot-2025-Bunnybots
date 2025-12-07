@@ -14,7 +14,6 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.VoltageUnit;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.Alert;
@@ -200,7 +199,7 @@ public class Module {
      * Runs the module with the specified voltage
      * Must be called periodically.
      */
-    public void runVoltage(Measure<VoltageUnit> volts, Rotation2d moduleAngle) {
+    public void runVoltage(VoltageUnit volts, Rotation2d moduleAngle) {
         this.io.setAzimuthAngle(moduleAngle.minus(this.config.moduleForwardDirection).getMeasure());
         this.io.setDriveVoltage(volts);
     }

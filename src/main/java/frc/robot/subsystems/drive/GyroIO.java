@@ -5,8 +5,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import org.littletonrobotics.junction.AutoLog;
 
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.units.AngleUnit;
-import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 public interface GyroIO {
@@ -22,5 +20,6 @@ public interface GyroIO {
   }
 
   public default void updateInputs(GyroIOInputs inputs) {}
-  public default void resetYaw(Measure<AngleUnit> yaw) {}
+
+  public default void resetYawRads(double yawRads) {}
 }
