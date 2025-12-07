@@ -16,16 +16,9 @@ import java.util.stream.IntStream;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-import com.pathplanner.lib.path.PathPlannerPath;
-
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
-import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Nat;
-import edu.wpi.first.math.VecBuilder;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -35,12 +28,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.LinearAcceleration;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -52,15 +43,10 @@ import frc.robot.RobotState.OdometryObservation;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.commands.FollowTrajectoryCommand;
 import frc.util.Environment;
-import frc.util.LazyOptional;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
-import frc.util.Perspective;
 import frc.util.VirtualSubsystem;
-import frc.util.controllers.Joystick;
-import frc.util.flipping.AllianceFlipUtil;
-import frc.util.geometry.GeomUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
 import frc.util.robotStructure.Root;
@@ -75,11 +61,11 @@ public class Drive extends VirtualSubsystem {
     public final Module[] modules = new Module[DriveConstants.moduleConstants.length];
 
     private static final LoggedTunableNumber rotationCorrection = LoggedTunable.from("Drive/Rotation Correction", 0.125);
-    public static final DoubleSupplier maxDriveSpeedEnvCoef = Environment.switchVar(
+    public static final Supplier<DoubleSupplier> maxDriveSpeedEnvCoef = Environment.switchVar(
         () -> 1.0,
         new LoggedNetworkNumber("Demo Constraints/Max Translational Percentage", 0.25)::get
     );
-    public static final DoubleSupplier maxTurnRateEnvCoef = Environment.switchVar(
+    public static final Supplier<DoubleSupplier> maxTurnRateEnvCoef = Environment.switchVar(
         () -> 1.0,
         new LoggedNetworkNumber("Demo Constraints/Max Rotational Percentage", 0.5)::get
     );
@@ -563,67 +549,67 @@ public class Drive extends VirtualSubsystem {
             return Commands.runEnd(() -> driveVelocity(omega.getAsDouble()), this::stop, this);
         }
 
-        public Command defenseSpin(Joystick joystick) {
-            var subsystem = this;
-            return new Command() {
-                {
-                    this.addRequirements(subsystem);
-                    this.setName("Defense Spin");
-                }
-                private static final LoggedTunableNumber defenseSpinLinearThreshold = LoggedTunable.from("Drive/Defense Spin Linear Threshold", 0.125);
-                private static final Matrix<N2, N2> perpendicularMatrix = 
-                    MatBuilder.fill(
-                        Nat.N2(), Nat.N2(), 
-                        +0,-1,
-                        +1,+0
-                    )
-                ;
-                @Override
-                public void execute() {
-                    // Leds.getInstance().defenseSpin.setFlag(true);
-                    var joyVec = Perspective.getCurrent().toField(joystick.toVector());
-                    var desiredLinear = VecBuilder.fill(drive.desiredRobotSpeeds.vxMetersPerSecond, drive.desiredRobotSpeeds.vyMetersPerSecond);
-                    var fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(drive.desiredRobotSpeeds, RobotState.getInstance().getEstimatedGlobalPose().getRotation());
-                    var perpendicularLinear = new Vector<N2>(perpendicularMatrix.times(
-                        VecBuilder.fill(fieldRelativeSpeeds.vxMetersPerSecond, fieldRelativeSpeeds.vyMetersPerSecond)
-                    ));
-                    var dot = joystick.x().getAsDouble();
-                    if(desiredLinear.norm() > defenseSpinLinearThreshold.get()) {
-                        dot = -joyVec.dot(perpendicularLinear);
-                    }
-                    var omega = dot
-                        * DriveConstants.maxTurnRate.in(RadiansPerSecond)
-                        * maxTurnRateEnvCoef.getAsDouble() * 0.25
-                    ;
-                    driveVelocity(omega);
-                    if(desiredLinear.norm() <= defenseSpinLinearThreshold.get()) {
-                        drive.setCenterOfRotation(new Translation2d());
-                        return;
-                    }
-                    var rotateAround = GeomUtil.vectorFromRotation(
-                        GeomUtil.rotationFromVector(desiredLinear)
-                        // .plus(Rotation2d.fromDegrees(45 * Math.signum(velo)))
-                    );
-                    drive.setCenterOfRotation(
-                        Arrays.stream(DriveConstants.moduleTranslations)
-                        .map((t) -> new Translation2d(t.toVector().unit().times(RobotConstants.centerToBumperCorner.in(Meters))))
-                        .sorted((a, b) -> 
-                            (int) Math.signum(
-                                b.toVector().unit().dot(rotateAround) - a.toVector().unit().dot(rotateAround)
-                            )    
-                        )
-                        .findFirst()
-                        .orElse(new Translation2d())
-                    );
-                }
-                @Override
-                public void end(boolean interrupted) {
-                    stop();
-                    drive.setCenterOfRotation(new Translation2d());
-                    // Leds.getInstance().defenseSpin.setFlag(false);
-                }
-            };
-        }
+        // public Command defenseSpin(Joystick joystick) {
+        //     var subsystem = this;
+        //     return new Command() {
+        //         {
+        //             this.addRequirements(subsystem);
+        //             this.setName("Defense Spin");
+        //         }
+        //         private static final LoggedTunableNumber defenseSpinLinearThreshold = LoggedTunable.from("Drive/Defense Spin Linear Threshold", 0.125);
+        //         private static final Matrix<N2, N2> perpendicularMatrix = 
+        //             MatBuilder.fill(
+        //                 Nat.N2(), Nat.N2(), 
+        //                 +0,-1,
+        //                 +1,+0
+        //             )
+        //         ;
+        //         @Override
+        //         public void execute() {
+        //             // Leds.getInstance().defenseSpin.setFlag(true);
+        //             var joyVec = Perspective.getCurrent().toField(joystick.toVector());
+        //             var desiredLinear = VecBuilder.fill(drive.desiredRobotSpeeds.vxMetersPerSecond, drive.desiredRobotSpeeds.vyMetersPerSecond);
+        //             var fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(drive.desiredRobotSpeeds, RobotState.getInstance().getEstimatedGlobalPose().getRotation());
+        //             var perpendicularLinear = new Vector<N2>(perpendicularMatrix.times(
+        //                 VecBuilder.fill(fieldRelativeSpeeds.vxMetersPerSecond, fieldRelativeSpeeds.vyMetersPerSecond)
+        //             ));
+        //             var dot = joystick.x().getAsDouble();
+        //             if(desiredLinear.norm() > defenseSpinLinearThreshold.get()) {
+        //                 dot = -joyVec.dot(perpendicularLinear);
+        //             }
+        //             var omega = dot
+        //                 * DriveConstants.maxTurnRate.in(RadiansPerSecond)
+        //                 * maxTurnRateEnvCoef.getAsDouble() * 0.25
+        //             ;
+        //             driveVelocity(omega);
+        //             if(desiredLinear.norm() <= defenseSpinLinearThreshold.get()) {
+        //                 drive.setCenterOfRotation(new Translation2d());
+        //                 return;
+        //             }
+        //             var rotateAround = GeomUtil.vectorFromRotation(
+        //                 GeomUtil.rotationFromVector(desiredLinear)
+        //                 // .plus(Rotation2d.fromDegrees(45 * Math.signum(velo)))
+        //             );
+        //             drive.setCenterOfRotation(
+        //                 Arrays.stream(DriveConstants.moduleTranslations)
+        //                 .map((t) -> new Translation2d(t.toVector().unit().times(RobotConstants.centerToBumperCorner.in(Meters))))
+        //                 .sorted((a, b) -> 
+        //                     (int) Math.signum(
+        //                         b.toVector().unit().dot(rotateAround) - a.toVector().unit().dot(rotateAround)
+        //                     )    
+        //                 )
+        //                 .findFirst()
+        //                 .orElse(new Translation2d())
+        //             );
+        //         }
+        //         @Override
+        //         public void end(boolean interrupted) {
+        //             stop();
+        //             drive.setCenterOfRotation(new Translation2d());
+        //             // Leds.getInstance().defenseSpin.setFlag(false);
+        //         }
+        //     };
+        // }
 
         private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
             "Drive/Rotational/PID",
@@ -676,8 +662,8 @@ public class Drive extends VirtualSubsystem {
                     turnInput = this.headingPID.atSetpoint() ? 0 : turnInput + this.headingPID.getSetpoint().velocity;
                     turnInput = MathUtil.clamp(
                         turnInput, 
-                        -0.5 * maxTurnRateEnvCoef.getAsDouble(), 
-                        +0.5 * maxTurnRateEnvCoef.getAsDouble()
+                        -0.5 * maxTurnRateEnvCoef.get().getAsDouble(), 
+                        +0.5 * maxTurnRateEnvCoef.get().getAsDouble()
                     );
                     driveVelocity(turnInput * DriveConstants.maxTurnRate.in(RadiansPerSecond));
                 }
@@ -727,8 +713,8 @@ public class Drive extends VirtualSubsystem {
                     turnInput = this.headingPID.atSetpoint() ? 0 : turnInput + this.headingPID.getSetpoint().velocity;
                     turnInput = MathUtil.clamp(
                         turnInput, 
-                        -0.5 * maxTurnRateEnvCoef.getAsDouble(), 
-                        +0.5 * maxTurnRateEnvCoef.getAsDouble()
+                        -0.5 * maxTurnRateEnvCoef.get().getAsDouble(), 
+                        +0.5 * maxTurnRateEnvCoef.get().getAsDouble()
                     );
                     driveVelocity(turnInput * DriveConstants.maxTurnRate.in(RadiansPerSecond));
                 }
@@ -740,38 +726,38 @@ public class Drive extends VirtualSubsystem {
             };
         }
 
-        public Command headingFromJoystick(Joystick joystick, Rotation2d[] snapPoints, Supplier<Rotation2d> forwardDirectionSupplier) {
-            return pidControlledOptionalHeading(
-                new LazyOptional<Rotation2d>() {
-                    private final Timer preciseTurnTimer = new Timer();
-                    private final double preciseTurnTimeThreshold = 0.5;
-                    private Optional<Rotation2d> outputMap(Rotation2d i) {
-                        return Optional.of(i.minus(forwardDirectionSupplier.get()));
-                    }
-                    @Override
-                    public Optional<Rotation2d> get() {
-                        if(joystick.magnitude() == 0) {
-                            preciseTurnTimer.restart();
-                            return Optional.empty();
-                        }
-                        var joyHeading = GeomUtil.rotationFromVector(Perspective.getCurrent().toField(joystick.toVector()));
-                        if(preciseTurnTimer.hasElapsed(preciseTurnTimeThreshold)) {
-                            return outputMap(joyHeading);
-                        }
-                        int smallestDistanceIndex = 0;
-                        double smallestDistance = Double.MAX_VALUE;
-                        for(int i = 0; i < snapPoints.length; i++) {
-                            var dist = Math.abs(joyHeading.minus(AllianceFlipUtil.apply(snapPoints[i])).getRadians());
-                            if(dist < smallestDistance) {
-                                smallestDistance = dist;
-                                smallestDistanceIndex = i;
-                            }
-                        }
-                        return outputMap(AllianceFlipUtil.apply(snapPoints[smallestDistanceIndex]));
-                    }
-                }
-            );
-        }
+        // public Command headingFromJoystick(Joystick joystick, Rotation2d[] snapPoints, Supplier<Rotation2d> forwardDirectionSupplier) {
+        //     return pidControlledOptionalHeading(
+        //         new LazyOptional<Rotation2d>() {
+        //             private final Timer preciseTurnTimer = new Timer();
+        //             private final double preciseTurnTimeThreshold = 0.5;
+        //             private Optional<Rotation2d> outputMap(Rotation2d i) {
+        //                 return Optional.of(i.minus(forwardDirectionSupplier.get()));
+        //             }
+        //             @Override
+        //             public Optional<Rotation2d> get() {
+        //                 if(joystick.magnitude() == 0) {
+        //                     preciseTurnTimer.restart();
+        //                     return Optional.empty();
+        //                 }
+        //                 var joyHeading = GeomUtil.rotationFromVector(Perspective.getCurrent().toField(joystick.toVector()));
+        //                 if(preciseTurnTimer.hasElapsed(preciseTurnTimeThreshold)) {
+        //                     return outputMap(joyHeading);
+        //                 }
+        //                 int smallestDistanceIndex = 0;
+        //                 double smallestDistance = Double.MAX_VALUE;
+        //                 for(int i = 0; i < snapPoints.length; i++) {
+        //                     var dist = Math.abs(joyHeading.minus(AllianceFlipUtil.apply(snapPoints[i])).getRadians());
+        //                     if(dist < smallestDistance) {
+        //                         smallestDistance = dist;
+        //                         smallestDistanceIndex = i;
+        //                     }
+        //                 }
+        //                 return outputMap(AllianceFlipUtil.apply(snapPoints[smallestDistanceIndex]));
+        //             }
+        //         }
+        //     );
+        // }
 
         public Command pointTo(Supplier<Optional<Translation2d>> posToPointTo, Supplier<Rotation2d> forward) {
             return pidControlledOptionalHeading(

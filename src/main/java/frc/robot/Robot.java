@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.util.Environment;
 import frc.util.LoggedTracer;
 import frc.util.Perspective;
 import frc.util.VirtualSubsystem;
@@ -128,6 +129,12 @@ public class Robot extends LoggedRobot {
 
             GameState.getInstance().periodic();
             LoggedTracer.logEpoch("CommandScheduler Periodic/GameState Periodic");
+
+            Environment.periodic();
+            LoggedTracer.logEpoch("CommandScheduler Periodic/Environment Periodic");
+
+            Perspective.periodic();
+            LoggedTracer.logEpoch("CommandScheduler Periodic/Perspective Periodic");
 
             VirtualSubsystem.periodicAll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/VirtualSubsystem Periodic");

@@ -1,13 +1,25 @@
 package frc.util;
 
-import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.littletonrobotics.junction.LogTable;
+import org.littletonrobotics.junction.Logger;
+import org.littletonrobotics.junction.inputs.LoggableInputs;
+import org.littletonrobotics.junction.networktables.LoggedNetworkInput;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import edu.wpi.first.math.Matrix;
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N2;
-import frc.util.flipping.AllianceFlipUtil;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.PubSubOption;
+import edu.wpi.first.networktables.StringArrayPublisher;
+import edu.wpi.first.networktables.StringEntry;
+import edu.wpi.first.networktables.StringPublisher;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.util.flipping.AllianceFlipped;
 
 public class Perspective {
     protected Rotation2d forwardDirection;
@@ -24,12 +36,12 @@ public class Perspective {
         return this.forwardDirection;
     }
 
-    public Vector<N2> toField(Vector<N2> perspectiveVector) {
-        return (Vector<N2>) this.perspectiveToField.times(perspectiveVector);
+    public Matrix<N2, N2> getPerspectiveToField() {
+        return this.perspectiveToField;
     }
 
-    public Vector<N2> toPerspective(Vector<N2> fieldVector) {
-        return (Vector<N2>) this.fieldToPerspective.times(fieldVector);
+    public Matrix<N2, N2> getFieldToPerspective() {
+        return this.fieldToPerspective;
     }
 
     private static final Perspective posX = new Perspective(Rotation2d.kZero);
@@ -60,36 +72,99 @@ public class Perspective {
             this.updateIfChanged();
             return super.getForwardDirection();
         }
+    };
 
+    private static final String key = "Perspective/Chooser";
+    private static final StringPublisher namePublisher;
+    private static final StringPublisher typePublisher;
+    private static final StringArrayPublisher optionsPublisher;
+    private static final StringPublisher defaultPublisher;
+    private static final StringPublisher activePublisher;
+    private static final StringEntry selectedEntry;
+    private static String[] ntArray;
+    private static final LoggableInputs inputs = new LoggableInputs() {
         @Override
-        public Vector<N2> toField(Vector<N2> vector) {
-            this.updateIfChanged();
-            return super.toField(vector);
+        public void toLog(LogTable table) {
+            table.put(key, ntArray);
         }
 
         @Override
-        public Vector<N2> toPerspective(Vector<N2> fieldVector) {
-            this.updateIfChanged();
-            return super.toPerspective(fieldVector);
+        public void fromLog(LogTable table) {
+            ntArray = table.get(key, ntArray);
         }
     };
 
-    private static final LoggedDashboardChooser<Perspective> chooser;
+    private static final AllianceFlipped<String> alliancePerspectiveName;
+    private static final Map<String, Perspective> map;
+    private static int selectionPriority;
+    private static String selectedName;
+    private static Perspective selectedValue;
+
+    private static final Alert compNotAllianceAlert = new Alert("Competition Environment detected, but selected Perspective does not match the Alliance", AlertType.kWarning);
 
     static {
-        chooser = new LoggedDashboardChooser<>("Perspective/Chooser");
-        chooser.addOption("Blue Alliance (+X)", posX);
-        chooser.addOption("Red Alliance (-X)", negX);
-        chooser.addDefaultOption("Blue Left (+Y)", posY);
-        chooser.addOption("Red Left (-Y)", negY);
-        chooser.addOption("Custom", custom);
+        var posXName = "Blue Alliance (+X)";
+        var negXName = "Red Alliance (-X)";
+        var posYName = "Blue Left (+Y)";
+        var negYName = "Red Left (-Y)";
+        var customName = "Custom";
+
+        alliancePerspectiveName = new AllianceFlipped<>(posXName, negXName);
+
+        map = new HashMap<>(5);
+        map.put(posXName, posX);
+        map.put(negXName, negX);
+        map.put(posYName, posY);
+        map.put(negYName, negY);
+        map.put(customName, custom);
+
+        selectedName = posYName;
+        
+        var table = NetworkTableInstance.getDefault().getTable("SmartDashboard").getSubTable(key);
+        namePublisher = table.getStringTopic(".name").publish();
+        typePublisher = table.getStringTopic(".type").publish();
+        optionsPublisher = table.getStringArrayTopic("options").publish();
+        defaultPublisher = table.getStringTopic("default").publish();
+        activePublisher = table.getStringTopic("active").publish();
+        selectedEntry = table.getStringTopic("selected").getEntry(selectedName, PubSubOption.excludeSelf(true));
+
+        namePublisher.set(key);
+        typePublisher.set("String Chooser");
+
+        optionsPublisher.set(new String[] {
+            posXName,
+            negXName,
+            posYName,
+            negYName,
+            customName
+        });
+        
+        defaultPublisher.set(selectedName);
+        activePublisher.set(selectedName);
+        selectedEntry.set(selectedName);
+
+        selectionPriority = 0;
     }
 
-    public static Perspective getAlliance() {
-        return AllianceFlipUtil.shouldFlip() ? negX : posX;
+    public static void periodic() {
+        ntArray = selectedEntry.readQueueValues();
+        Logger.processInputs(LoggedNetworkInput.prefix, inputs);
+        for (var selected : ntArray) {
+            selectedName = selected;
+            selectionPriority = 2;
+        }
+        if (Environment.isCompetition() && selectionPriority <= 1 && !alliancePerspectiveName.getOurs().equals(selectedName)) {
+            selectedName = alliancePerspectiveName.getOurs();
+            selectedEntry.set(selectedName);
+            selectionPriority = 1;
+        }
+        selectedValue = map.get(selectedName);
+        activePublisher.set(selectedName);
+
+        compNotAllianceAlert.set(Environment.isCompetition() && !alliancePerspectiveName.getOurs().equals(selectedName));
     }
 
     public static Perspective getCurrent() {
-        return chooser.get();
+        return selectedValue;
     }
 }
