@@ -59,6 +59,7 @@ public class ObjectVision {
     private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
+    private ChassisSpeeds desiredRobotRelativeSpeeds;
 
     public ObjectVision(ObjectPipeline... pipelines) {
         System.out.println("[Init ObjectVision] Instantiating ObjectVision");
@@ -124,6 +125,7 @@ public class ObjectVision {
                 }
                 if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
                     var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
+                    var chassisSpeedsAngle = Math.atan2(desiredRobotRelativeSpeeds.vyMetersPerSecond, desiredRobotRelativeSpeeds.vxMetersPerSecond);
                 
                     optIntakeTarget = frameTargets.stream()
                         .filter(target -> target.confidence > acquireConfidenceThreshold.get())
@@ -132,8 +134,20 @@ public class ObjectVision {
                             var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
                 
                             double distA = Math.hypot(relA.getX(), 2 * relA.getY());
+                            double angleA = Math.atan2(relA.getY(), relA.getX());
                             double distB = Math.hypot(relB.getX(), 2 * relB.getY());
-                            return Double.compare(distA, distB);
+                            double angleB = Math.atan2(relB.getY(), relB.getX());
+
+                            double scoreA = 0;
+                            double scoreB = 0;
+
+                            if (Math.abs(angleA - chassisSpeedsAngle) < Math.PI / 2 && (angleA > Math.PI/2 || angleA < -Math.PI/2)) {
+                                scoreA = (1 / distA) * a.confidence;
+                            }
+                            if (Math.abs(angleB - chassisSpeedsAngle) < Math.PI / 2 && (angleB > Math.PI/2 || angleB < -Math.PI/2)) {
+                                scoreB = (1 / distB) * b.confidence;
+                            }
+                            return Double.compare(scoreA, scoreB);
                         })
                         .findFirst();
                 }                
@@ -190,6 +204,10 @@ public class ObjectVision {
         optIntakeTarget = Optional.empty();
     }
 
+    public void updateDesiredChassisSpeeds(ChassisSpeeds speeds) {
+        this.desiredRobotRelativeSpeeds = speeds;
+    }
+
     public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noObject, Drive drive) {
         return 
             Commands.runOnce(() -> intakeTargetLocked = true)
@@ -202,7 +220,7 @@ public class ObjectVision {
         ;
     }
 
-    public double getIntakeOffsetSpeedFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
+    public double getVyMPSFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
         if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
             return 0.0;
         }
