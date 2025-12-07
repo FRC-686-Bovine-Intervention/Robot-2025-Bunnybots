@@ -43,19 +43,26 @@ public class HardwareDevices {
 
     // Shooter
     // | Pivot
-    public static final CANDevice pivotMotorID = canivore.id(5);
+    public static final CANDevice pivotMotorID = canivore.id(7);
     // | Flywheel
-    public static final CANDevice flywheelLeftMotorID = canivore.id(11);
-    public static final CANDevice flywheelRightMotorID = canivore.id(12);
+    public static final CANDevice flywheelLeftMotorID = canivore.id(5);
+    public static final CANDevice flywheelRightMotorID = canivore.id(6);
     // | CANDi
     public static final CANDevice candiID = canivore.id(0);
 
     // Intake
     // | Slam
-    public static final CANDevice intakeSlamMotorID = rio.id(6);
-    public static final CANDevice intakeSlamEncoderID = rio.id(6);
+    public static final CANDevice intakeSlamMotorID = canivore.id(8);
+    public static final CANDevice intakeSlamEncoderID = canivore.id(8);
     // | Rollers
-    public static final CANDevice intakeMotorID = rio.id(9);
+    public static final CANDevice intakeRollerMotorID = canivore.id(9);
+
+    // Rollers
+    // | Kicker
+    public static final CANDevice kickerMotorID = canivore.id(10);
+    // | Indexer
+    public static final CANDevice indexerLeftMotorID = rio.id(5);
+    public static final CANDevice indexerRightMotorID = rio.id(6);
 
     // RIO
     public static final PWMPort ledPort = PWMPort.port(0);

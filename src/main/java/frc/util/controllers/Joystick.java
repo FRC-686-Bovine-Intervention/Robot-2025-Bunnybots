@@ -131,7 +131,7 @@ public class Joystick {
     //     return fromAngleMagnitude(() -> previousAngle, () -> slewRateLimiter.calculate(magnitude()));
     // }
 
-    private DoubleUnaryOperator sensitivityFunction(double sensitivityVal) {
+    private static DoubleUnaryOperator sensitivityFunction(double sensitivityVal) {
         return (x) -> sensitivityVal * x * x * x - sensitivityVal * x + x;
     }
 
@@ -186,6 +186,10 @@ public class Joystick {
 
         public Axis abs() {
             return new Axis(() -> Math.abs(getAsDouble()));
+        }
+
+        public Axis sensitivity(double sensitivityVal) {
+            return new Axis(() -> sensitivityFunction(sensitivityVal).applyAsDouble(getAsDouble()));
         }
 
         public Trigger aboveThreshold(double threshold) {

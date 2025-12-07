@@ -11,9 +11,11 @@ import java.util.Arrays;
 import java.util.Set;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -21,6 +23,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.auto.AutoManager;
+import frc.robot.auto.AutoSelector;
+import frc.robot.auto.routines.ScoreLunites;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
@@ -34,6 +39,23 @@ import frc.robot.subsystems.drive.OdometryTimestampIO;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOOdometryThread;
 import frc.robot.subsystems.drive.OdometryTimestampIO.OdometryTimestampIOSim;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.rollers.IntakeRollers;
+import frc.robot.subsystems.intake.rollers.IntakeRollersIO;
+import frc.robot.subsystems.intake.rollers.IntakeRollersIOTalonFX;
+import frc.robot.subsystems.intake.slam.IntakeSlam;
+import frc.robot.subsystems.intake.slam.IntakeSlamIO;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
+import frc.robot.subsystems.intake.slam.IntakeSlamIOTalonFX;
+import frc.robot.subsystems.rollers.RollerSensorsIO;
+import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
+import frc.robot.subsystems.rollers.Rollers;
+import frc.robot.subsystems.rollers.indexer.Indexer;
+import frc.robot.subsystems.rollers.indexer.IndexerIO;
+import frc.robot.subsystems.rollers.indexer.IndexerIOVictorSPX;
+import frc.robot.subsystems.rollers.kicker.Kicker;
+import frc.robot.subsystems.rollers.kicker.KickerIO;
+import frc.robot.subsystems.rollers.kicker.KickerIOTalonFX;
 import frc.robot.subsystems.shooter.Shooter;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIO;
@@ -43,16 +65,35 @@ import frc.robot.subsystems.shooter.pivot.Pivot;
 import frc.robot.subsystems.shooter.pivot.PivotIO;
 import frc.robot.subsystems.shooter.pivot.PivotIOSim;
 import frc.robot.subsystems.shooter.pivot.PivotIOTalonFX;
+import frc.robot.subsystems.vision.VisionConstants;
+import frc.robot.subsystems.vision.apriltag.ApriltagPipeline;
+import frc.robot.subsystems.vision.apriltag.ApriltagVision;
+import frc.robot.subsystems.vision.cameras.Camera;
+import frc.robot.subsystems.vision.cameras.CameraIO;
+import frc.robot.subsystems.vision.cameras.CameraIOPhoton;
+import frc.robot.subsystems.vision.object.ObjectPipeline;
+import frc.robot.subsystems.vision.object.ObjectVision;
 import frc.util.Perspective;
 import frc.util.controllers.Joystick;
 import frc.util.controllers.XboxController;
+import frc.util.robotStructure.Mechanism3d;
 
 public class RobotContainer {
     // Subsystems
     public final Drive drive;
     public final Shooter shooter;
-
+    public final Rollers rollers;
+    public final Intake intake;
+    
     // Vision
+    public final Camera frontLeftCamera;
+    public final Camera frontRightCamera;
+    public final Camera intakeCamera;
+    public final ApriltagVision apriltagVision;
+    public final ObjectVision objectVision;
+
+    // Auto
+    public final AutoManager autoManager;
 
     // Event Loops
     public final EventLoop automationsLoop = new EventLoop();
@@ -79,6 +120,33 @@ public class RobotContainer {
                     new Pivot(new PivotIOTalonFX()),
                     new Flywheel(new FlywheelIOTalonFX())
                 );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIOTalonFX()),
+                    new Indexer(new IndexerIOVictorSPX()),
+                    new RollerSensorsIOCANDi()
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOTalonFX()),
+                    new IntakeRollers(new IntakeRollersIOTalonFX())
+                );
+                this.frontLeftCamera = new Camera(
+                    new CameraIOPhoton("Front Left"),
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIOPhoton("Front Right"),
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
+                );
+                this.intakeCamera = new Camera(
+                    new CameraIOPhoton("Intake"),
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
             case SIM -> {
                 this.drive = new Drive(
@@ -91,6 +159,33 @@ public class RobotContainer {
                 this.shooter = new Shooter(
                     new Pivot(new PivotIOSim()),
                     new Flywheel(new FlywheelIOSim())
+                );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIO() {}),
+                    new Indexer(new IndexerIO() {}),
+                    new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIOSim()),
+                    new IntakeRollers(new IntakeRollersIO() {})
+                );
+                this.frontLeftCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
+                );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
                 );
             }
             default -> {
@@ -106,15 +201,77 @@ public class RobotContainer {
                     new Pivot(new PivotIO() {}),
                     new Flywheel(new FlywheelIO() {})
                 );
+                this.rollers = new Rollers(
+                    new Kicker(new KickerIO() {}),
+                    new Indexer(new IndexerIO() {}),
+                    new RollerSensorsIO() {}
+                );
+                this.intake = new Intake(
+                    new IntakeSlam(new IntakeSlamIO() {}),
+                    new IntakeRollers(new IntakeRollersIO() {})
+                );
+                this.frontLeftCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Left",
+                    VisionConstants.frontLeftMount,
+                    (f) -> {}
+                );
+                this.frontRightCamera = new Camera(
+                    new CameraIO() {},
+                    "Front Right",
+                    VisionConstants.frontRightMount,
+                    (f) -> {}
+                );
+                this.intakeCamera = new Camera(
+                    new CameraIO() {},
+                    "Intake",
+                    VisionConstants.intakeMount,
+                    (isConnected) -> {}
+                );
             }
         }
+        this.apriltagVision = new ApriltagVision(
+            new ApriltagPipeline(this.frontLeftCamera, 0, 1),
+            new ApriltagPipeline(this.frontRightCamera, 0, 1)
+        );
+        this.objectVision = new ObjectVision(
+            new ObjectPipeline(this.intakeCamera, 0)
+        );
 
+        this.drive.structureRoot
+            .addChild(this.frontLeftCamera.mount)
+            .addChild(this.frontRightCamera.mount)
+            .addChild(this.intakeCamera.mount)
+            .addChild(
+                this.intake.slam.primaryDriverMech
+                    .addChild(
+                        this.intake.slam.primaryCouplerMech
+                            .addChild(this.intake.slam.secondaryCouplerMech)
+                    )
+                    .addChild(this.intake.slam.secondaryFollowerMech)
+            )
+            .addChild(this.intake.slam.primaryFollowerMech)
+        ;
+
+        Mechanism3d.registerMechs(
+            this.intake.slam.primaryDriverMech,
+            this.intake.slam.primaryFollowerMech,
+            this.intake.slam.primaryCouplerMech,
+            this.intake.slam.secondaryFollowerMech,
+            this.intake.slam.secondaryCouplerMech
+        );
+        
         System.out.println("[Init RobotContainer] Configuring Commands");
         this.configureCommands();
 
         System.out.println("[Init RobotContainer] Configuring Notifications");
 
         System.out.println("[Init RobotContainer] Configuring Autonomous Modes");
+
+        var autoSelector = new AutoSelector("Auto Selector");
+        autoSelector.addDefaultRoutine(new ScoreLunites(this));
+
+        this.autoManager = new AutoManager(autoSelector);
 
         System.out.println("[Init RobotContainer] Configuring System Check");
         SmartDashboard.putData("System Check/Drive/Spin", 
@@ -187,7 +344,7 @@ public class RobotContainer {
                 this.setName("Driver Controlled");
                 this.addRequirements(drive.translationSubsystem);
             }
-            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05);
+            private final Joystick driveJoystick = driveController.leftStick.smoothRadialDeadband(0.05).radialSensitivity(0.5);
             @Override
             public void execute() {
                 var joyX = +driveJoystick.y().getAsDouble();
@@ -216,7 +373,7 @@ public class RobotContainer {
                 this.setName("Drive Controlled");
                 this.addRequirements(drive.rotationalSubsystem);
             }
-            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05);
+            private final Joystick.Axis axis = driveController.leftTrigger.add(driveController.rightTrigger.invert()).smoothDeadband(0.05).sensitivity(0.5);
             @Override
             public void execute() {
                 var omega = this.axis.getAsDouble() * DriveConstants.maxTurnRate.in(RadiansPerSecond);
@@ -229,86 +386,179 @@ public class RobotContainer {
             }
         });
 
-        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(Pose2d.kZero)));
+        this.driveController.leftStickButton().and(this.driveController.rightStickButton()).onTrue(Commands.runOnce(() -> RobotState.getInstance().resetPose(
+            new Pose2d(
+                14.45,
+                5,
+                Rotation2d.kZero
+            )
+        )));
+
+        this.shooter.pivot.setDefaultCommand(this.shooter.pivot.idle());
+        this.shooter.flywheel.setDefaultCommand(this.shooter.flywheel.idle());
+        //this.intake.slam.setDefaultCommand(this.intake.slam.deploy());
+        this.intake.slam.setDefaultCommand(this.intake.slam.retract());
+        this.intake.rollers.setDefaultCommand(this.intake.rollers.idle());
+        this.rollers.kicker.setDefaultCommand(this.rollers.kicker.stage());
+        this.rollers.indexer.setDefaultCommand(this.rollers.indexer.stage());
+
+        new Trigger(() -> DriverStation.isEnabled() && this.rollers.stageBeamBroken()).whileTrue(this.rollers.idle());
+
+        // this.driveController.a().toggleOnTrue(Commands.parallel(
+        //     this.shooter.aim(
+        //         RobotState.getInstance()::getEstimatedGlobalPose,
+        //         this.drive::getFieldMeasuredSpeeds,
+        //         () -> FieldConstants.Goals.rightHighGoal.getOurs()
+        //     ).repeatedly(),
+        //     new Command() {
+        //         private final PIDController pid = new PIDController(
+        //             0.2  * DriveConstants.maxTurnRate.in(RadiansPerSecond),
+        //             0.0,
+        //             0.0
+        //         );
+        //         private final DoubleSupplier offsetStepper = Cooldown.incrementingStepper(
+        //             "Aiming Cal/Azimuth",
+        //             "Aiming Cal/Azimuth",
+        //             Seconds.of(0.125),
+        //             Degrees.of(0.0),
+        //             Degrees.of(1.0),
+        //             Radians,
+        //             driveController.leftBumper(),
+        //             driveController.rightBumper()
+        //         );
+        //         {
+        //             this.setName("Custom");
+        //             this.addRequirements(drive.rotationalSubsystem);
+
+        //             this.pid.enableContinuousInput(-Math.PI, Math.PI);
+        //         }
+
+        //         @Override
+        //         public void execute() {
+        //             drive.rotationalSubsystem.driveVelocity(
+        //                 this.pid.calculate(
+        //                     RobotState.getInstance().getEstimatedGlobalPose().getRotation().getRadians(),
+        //                     MathUtil.angleModulus(shooter.getRawDriveHeadingRads() + this.offsetStepper.getAsDouble())
+        //                 )
+        //             );
+        //         }
+
+        //         @Override
+        //         public void end(boolean interrupted) {
+        //             drive.rotationalSubsystem.stop();
+        //         }
+        //     },
+        //     this.shooter.flywheel.genSurfaceVeloCommand(
+        //         "Custom",
+        //         Cooldown.incrementingStepper(
+        //             "Aiming Cal/Flywheel",
+        //             "Aiming Cal/Flywheel",
+        //             Seconds.of(0.125),
+        //             MetersPerSecond.of(20.0),
+        //             MetersPerSecond.of(2.0),
+        //             MetersPerSecond,
+        //             this.driveController.povLeft(),
+        //             this.driveController.povRight()
+        //         )
+        //     ),
+        //     this.shooter.pivot.genAngleCommand(
+        //         "Custom",
+        //         Cooldown.incrementingStepper(
+        //             "Aiming Cal/Pivot",
+        //             "Aiming Cal/Pivot",
+        //             Seconds.of(0.125),
+        //             Degrees.of(20.0),
+        //             Degrees.of(1.0),
+        //             Radians,
+        //             this.driveController.povUp(),
+        //             this.driveController.povDown()
+        //         )
+        //     )
+        // ));
+
+        this.driveController.b().toggleOnTrue(this.intake.intake());
         
-        // Set aim to be locked
-        var aimJoystick = this.driveController.rightStick
-            .roughRadialDeadband(0.5) // Intentional to make pass selection less error-prone
-        ; 
+        this.driveController.x().whileTrue(this.rollers.kick());
+        this.driveController.a().whileTrue(this.rollers.reverse());
+
+        var aimJoystick = this.driveController.rightStick; 
         
         var leftHigh = new Trigger(() -> {
-            if (aimJoystick.magnitude() <= 0.0) {
+            if (aimJoystick.magnitude() <= 0.5) {
                 return false;
             }
             var aimPos = aimJoystick.radsFromPosYCCW();
             return aimPos >= 0 && aimPos <= Math.PI / 2.0;
         });
         var leftLow = new Trigger(() -> {
-            if (aimJoystick.magnitude() <= 0.0) {
+            if (aimJoystick.magnitude() <= 0.5) {
                 return false;
             }
             var aimPos = aimJoystick.radsFromPosYCCW();
             return aimPos > Math.PI / 2.0;
         });
         var rightHigh = new Trigger(() -> {
-            if (aimJoystick.magnitude() <= 0.0) {
+            if (aimJoystick.magnitude() <= 0.5) {
                 return false;
             }
             var aimPos = aimJoystick.radsFromPosYCCW();
             return aimPos < 0 && aimPos >= -Math.PI / 2.0;
         });
         var rightLow = new Trigger(() -> {
-            if (aimJoystick.magnitude() <= 0.0) {
+            if (aimJoystick.magnitude() <= 0.5) {
                 return false;
             }
             var aimPos = aimJoystick.radsFromPosYCCW();
             return aimPos < -Math.PI / 2.0;
         });
-        var pass = driveController.rightStickButton();
         
         leftHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftHighGoal.getOurs()
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
-        ));
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth(this.drive.rotationalSubsystem)
+        ).withName("Aim Left High"));
 
         rightHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightHighGoal.getOurs()
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
-        ));
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth(this.drive.rotationalSubsystem)
+        ).withName("Aim Right High"));
 
         leftLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftLowGoal.getOurs()
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
-        ));
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth(this.drive.rotationalSubsystem)
+        ).withName("Aim Left Low"));
 
         rightLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                RobotState.getInstance()::getEstimatedGlobalPose,
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightLowGoal.getOurs()
             )
             .repeatedly(),
             this.shooter.aimPivot(),
-            this.shooter.aimFlywheel()
-        ));
+            this.shooter.aimFlywheel(),
+            this.shooter.aimAzimuth(this.drive.rotationalSubsystem)
+        ).withName("Aim Right Low"));
 
         // pass.onTrue(Commands.runOnce(() -> {
         //     if (RobotState.getInstance().getSelectedShootTarget() != ShootTarget.PASS) {

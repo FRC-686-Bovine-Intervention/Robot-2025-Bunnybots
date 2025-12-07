@@ -25,6 +25,7 @@ public interface PivotIO {
     public default void stop(Optional<NeutralMode> neutralMode) {}
 
     public default void configPID(PIDConstants pidConstants) {}
+    public default void resetMotorPositionRads(double positionRads) {}
 
     public default void clearMotorStickyFaults(long bitmask) {}
     public default void clearEncoderStickyFaults(long bitmask) {}

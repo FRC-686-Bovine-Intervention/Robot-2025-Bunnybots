@@ -2,7 +2,6 @@ package frc.robot.subsystems.shooter.flywheel;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
@@ -13,7 +12,6 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.util.Cooldown;
 import frc.util.FFConstants;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
@@ -26,8 +24,6 @@ public class Flywheel extends SubsystemBase {
     private final FlywheelIOInputsAutoLogged inputs = new FlywheelIOInputsAutoLogged();
 
     private static final LoggedTunable<LinearVelocity> preemptiveTargetSpeed = LoggedTunable.from("Shooter/Flywheel/Pre-emptive/Target Speed", MetersPerSecond::of, 17);
-    private static final LoggedTunable<LinearVelocity> customTargetSpeed = LoggedTunable.from("Shooter/Flywheel/Custom/Target Speed", MetersPerSecond::of, 15);
-    private static final LoggedTunable<LinearVelocity> customIncrement = LoggedTunable.from("Shooter/Flywheel/Custom/Increment", MetersPerSecond::of, 0.5);
     
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from("Shooter/Flywheel/PID",
         new PIDConstants(
@@ -40,7 +36,7 @@ public class Flywheel extends SubsystemBase {
         new FFConstants(
             0.0,
             0.0,
-            0.0,
+            0.02,
             0.0
         )
     );
@@ -140,39 +136,5 @@ public class Flywheel extends SubsystemBase {
                 flywheel.io.stop(NeutralMode.DEFAULT);
             }
         };
-    }
-
-    public Command custom() {
-        return genSurfaceVeloCommand(
-            "Custom",
-            () -> customTargetSpeed.get().in(MetersPerSecond)
-        );
-    }
-    public Command customIncrement(BooleanSupplier increase, BooleanSupplier decrease) {
-        DoubleSupplier speed = new DoubleSupplier() {
-            private double speed = customTargetSpeed.get().in(MetersPerSecond);
-            private final Cooldown cooldown = new Cooldown();
-            @Override
-            public double getAsDouble() {
-                Logger.recordOutput("Custom Shoot/Shooter Speed", speed);
-                if(!cooldown.hasExpired()) {
-                    return speed;
-                }
-                if(increase.getAsBoolean()) {
-                    cooldown.reset(0.25);
-                    speed += customIncrement.get().in(MetersPerSecond);
-                }
-                if(decrease.getAsBoolean()) {
-                    cooldown.reset(0.25);
-                    speed -= customIncrement.get().in(MetersPerSecond);
-                }
-
-                return speed;
-            }
-        };
-        return genSurfaceVeloCommand(
-            "Custom Increment",
-            speed
-        );
     }
 }

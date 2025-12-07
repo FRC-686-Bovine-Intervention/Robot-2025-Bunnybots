@@ -3,6 +3,7 @@ package frc.util.loggerUtil.inputs;
 import java.nio.ByteBuffer;
 
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -126,6 +127,14 @@ public class LoggedMotor implements StructSerializable {
         this.setSupplyCurrentAmps(talonSRX.getSupplyCurrent());
         this.setTorqueCurrentAmps(0.0);
         this.setDeviceTempCel(talonSRX.getTemperature());
+    }
+    
+    public void updateFrom(VictorSPX victorSPX) {
+        this.setAppliedVolts(victorSPX.getMotorOutputVoltage());
+        this.setStatorCurrentAmps(0.0);
+        this.setSupplyCurrentAmps(0.0);
+        this.setTorqueCurrentAmps(0.0);
+        this.setDeviceTempCel(victorSPX.getTemperature());
     }
 
     public void updateFrom(SparkMax spark) {

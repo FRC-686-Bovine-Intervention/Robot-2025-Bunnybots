@@ -10,8 +10,8 @@ import edu.wpi.first.units.measure.Angle;
 import frc.util.mechanismUtil.GearRatio;
 
 public class PivotConstants {
-    public static final Angle minAngle = Degrees.of(20);
-    public static final Angle maxAngle = Degrees.of(80);
+    public static final Angle minAngle = Degrees.of(0);
+    public static final Angle maxAngle = Degrees.of(41);
 
     public static final GearRatio motorToMechanism = new GearRatio()
         .planetary(5)

@@ -25,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.util.LoggedTracer;
 import frc.util.Perspective;
 import frc.util.VirtualSubsystem;
-import frc.util.robotStructure.Mechanism3d;
 
 public class Robot extends LoggedRobot {
     private final RobotContainer robotContainer;
@@ -133,16 +132,19 @@ public class Robot extends LoggedRobot {
             VirtualSubsystem.periodicAll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/VirtualSubsystem Periodic");
 
-            // this.robotContainer.apriltagVision.periodic();
+            this.robotContainer.apriltagVision.periodic();
             
-            // this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
+            this.robotContainer.drive.structureRoot.setPose(RobotState.getInstance().getEstimatedGlobalPose());
             RobotState.getInstance().log();
             LoggedTracer.logEpoch("CommandScheduler Periodic/RobotState Log");
+            
+            this.robotContainer.objectVision.periodic();
+            LoggedTracer.logEpoch("CommandScheduler Periodic/ObjectVision Periodic");
 
-            Mechanism3d.logAscopeComponents();
+            //Mechanism3d.logAscopeComponents();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
 
-            Mechanism3d.logAscopeAxes();
+            //Mechanism3d.logAscopeAxes();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
             
             // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Coral", this.robotContainer.intake.hasCoral());
@@ -154,6 +156,9 @@ public class Robot extends LoggedRobot {
 
             CommandScheduler.getInstance().getDefaultButtonLoop().poll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Triggers");
+
+            Logger.recordOutput("DEBUG/LEFT CAM POSE", this.robotContainer.frontLeftCamera.mount.getFieldRelative());
+            Logger.recordOutput("DEBUG/RIGHT CAM POSE", this.robotContainer.frontRightCamera.mount.getFieldRelative());
         });
         CommandScheduler.getInstance().setActiveButtonLoop(activeButtonLoop);
     }
@@ -181,7 +186,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
-        // this.robotContainer.autoManager.startAuto();
+        this.robotContainer.autoManager.startAuto();
     }
 
     @Override
@@ -189,7 +194,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousExit() {
-        // this.robotContainer.autoManager.endAuto();
+        this.robotContainer.autoManager.endAuto();
     }
 
     @Override

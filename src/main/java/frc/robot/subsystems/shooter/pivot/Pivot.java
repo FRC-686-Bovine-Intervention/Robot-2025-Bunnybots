@@ -33,7 +33,8 @@ public class Pivot extends SubsystemBase {
     private final PivotIO io;
     private final PivotIOInputsAutoLogged inputs = new PivotIOInputsAutoLogged();
 
-    protected static final LoggedTunable<Angle> idleAngle = LoggedTunable.from("Shooter/Pivot/Idle Angle", Degrees::of, PivotConstants.minAngle.in(Degrees));
+    private static final LoggedTunable<Angle> idleAngle = LoggedTunable.from("Shooter/Pivot/Idle Angle", Degrees::of, PivotConstants.minAngle.in(Degrees));
+    private static final LoggedTunable<Angle> rezeroThreshold = LoggedTunable.from("Shooter/Pivot/Rezero Threshold", Degrees::of, 2.0);
     
     private static final LoggedTunable<TrapezoidProfile.Constraints> profileConsts = LoggedTunable.fromDashboardUnits(
         "Shooter/Pivot/Profile",
@@ -42,8 +43,8 @@ public class Pivot extends SubsystemBase {
         RadiansPerSecond,
         RadiansPerSecondPerSecond,
         new TrapezoidProfile.Constraints(
-            0.0,
-            0.0
+            720-180,
+            1440-360
         )
     );
     private static final LoggedTunable<FFConstants> ffConsts = LoggedTunable.from(
@@ -51,14 +52,14 @@ public class Pivot extends SubsystemBase {
         new FFConstants(
             0.0,
             0.0,
-            0.0,
+            2.4,
             0.0
         )
     );
     private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
         "Shooter/Pivot/PID",
         new PIDConstants(
-            0.0,
+            1.5,
             0.0,
             0.0
         )
@@ -69,7 +70,7 @@ public class Pivot extends SubsystemBase {
     private final State setpointState = new State();
     private final State goalState = new State();
     private boolean motionProfiling = false;
-    private final ArmFeedforward feedforward = new ArmFeedforward(0,0,0,0);
+    private final ArmFeedforward feedforward = new ArmFeedforward(ffConsts.get().kS(), ffConsts.get().kG(), ffConsts.get().kV(), ffConsts.get().kA());
     
     private double angleRads = 0.0;
     private double velocityRadsPerSec = 0.0;
@@ -106,8 +107,12 @@ public class Pivot extends SubsystemBase {
 
         this.limitSwitchEdgeDetector.update(this.inputs.limitSwitch);
         if (this.limitSwitchEdgeDetector.risingEdge()) {
-            this.calibrated = true;
             this.resetInternalAngleRads(PivotConstants.minAngle.in(Radians));
+            if (!this.calibrated || Math.abs(this.motorOffsetRads) >= rezeroThreshold.get().in(Radians)) {
+                this.io.resetMotorPositionRads(PivotConstants.motorToMechanism.inverse().applyUnsigned(this.angleRads));
+                this.motorOffsetRads = 0.0;
+            }
+            this.calibrated = true;
         }
 
         this.angleRads = PivotConstants.motorToMechanism.applyUnsigned(this.inputs.motor.encoder.getPositionRads()) + this.motorOffsetRads;
@@ -182,7 +187,7 @@ public class Pivot extends SubsystemBase {
         this.setpointState.position = newSetpointState.position;
         this.setpointState.velocity = newSetpointState.velocity;
         this.io.setPositionRads(
-            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.position) - this.motorOffsetRads,
+            PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.position - this.motorOffsetRads),
             PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.velocity),
             ffout
         );

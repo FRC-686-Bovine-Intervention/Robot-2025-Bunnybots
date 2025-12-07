@@ -46,7 +46,7 @@ public class PivotIOTalonFX implements PivotIO {
         var motorConfig = new TalonFXConfiguration();
 
         motorConfig.MotorOutput
-            .withInverted(InvertedValue.CounterClockwise_Positive)
+            .withInverted(InvertedValue.Clockwise_Positive)
             .withNeutralMode(NeutralModeValue.Brake)
         ;
         motorConfig.SoftwareLimitSwitch
@@ -91,8 +91,8 @@ public class PivotIOTalonFX implements PivotIO {
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.motorStatusSignalCache.encoder().getStatusSignals());
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency, this.limitSwitchStatusSignal);
         BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.rioUpdateFrequency.div(2), this.motorStatusSignalCache.motor().getStatusSignals());
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
-        BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getFaultStatusSignals(this.motor));
+        // BaseStatusSignal.setUpdateFrequencyForAll(RobotConstants.deviceFaultUpdateFrequency, FaultType.getStickyFaultStatusSignals(this.motor));
         this.motor.optimizeBusUtilization();
     }
 
@@ -132,6 +132,11 @@ public class PivotIOTalonFX implements PivotIO {
         this.motor.getConfigurator().refresh(config);
         pidConstants.update(config);
         this.motor.getConfigurator().apply(config);
+    }
+
+    @Override
+    public void resetMotorPositionRads(double positionRads) {
+        this.motor.setPosition(Units.radiansToRotations(positionRads));
     }
 
     @Override

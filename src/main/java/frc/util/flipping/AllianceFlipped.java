@@ -1,5 +1,6 @@
 package frc.util.flipping;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -10,6 +11,7 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.util.flipping.AllianceFlipUtil.FieldFlipType;
 
@@ -50,8 +52,8 @@ public class AllianceFlipped<T> {
         }
     }
 
-    public <U> AllianceFlipped<U> map(Function<T, U> mappingFunction) {
-        return new AllianceFlipped<U>(mappingFunction.apply(this.blue), mappingFunction.apply(this.red));
+    public <U> AllianceFlipped<U> map(BiFunction<T, Alliance, U> mappingFunction) {
+        return new AllianceFlipped<U>(mappingFunction.apply(this.blue, Alliance.Blue), mappingFunction.apply(this.red, Alliance.Red));
     }
     public AllianceFlipped<T> invert() {
         return new AllianceFlipped<>(this.red, this.blue);
@@ -176,5 +178,18 @@ public class AllianceFlipped<T> {
     }
     public static AllianceFlipped<Transform3d> fromRed(Transform3d red, FieldFlipType flipType) {
         return new AllianceFlipped<Transform3d>(AllianceFlipUtil.flip(red, flipType), red);
+    }
+
+    public static AllianceFlipped<ChassisSpeeds> fromBlue(ChassisSpeeds blue) {
+        return fromBlue(blue, AllianceFlipUtil.defaultFlipType);
+    }
+    public static AllianceFlipped<ChassisSpeeds> fromBlue(ChassisSpeeds blue, FieldFlipType flipType) {
+        return new AllianceFlipped<ChassisSpeeds>(blue, AllianceFlipUtil.flipFieldRelative(blue, flipType));
+    }
+    public static AllianceFlipped<ChassisSpeeds> fromRed(ChassisSpeeds red) {
+        return fromRed(red, AllianceFlipUtil.defaultFlipType);
+    }
+    public static AllianceFlipped<ChassisSpeeds> fromRed(ChassisSpeeds red, FieldFlipType flipType) {
+        return new AllianceFlipped<ChassisSpeeds>(AllianceFlipUtil.flipFieldRelative(red, flipType), red);
     }
 }

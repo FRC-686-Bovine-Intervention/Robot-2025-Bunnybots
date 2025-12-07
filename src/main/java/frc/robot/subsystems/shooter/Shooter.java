@@ -1,6 +1,7 @@
 package frc.robot.subsystems.shooter;
 
 import static edu.wpi.first.units.Units.Centimeters;
+import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.function.Supplier;
@@ -13,11 +14,13 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.constants.FieldConstants.Goals.Goal;
+import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.pivot.Pivot;
 import frc.util.loggerUtil.tunables.LoggedTunable;
@@ -30,6 +33,7 @@ public class Shooter {
     private static final LoggedTunable<Time> lookaheadTime = LoggedTunable.from("Shooter/Aiming/Lookahead Seconds", Seconds::of, 0.035);
     private static final LoggedTunable<Distance> azimuthTolerance = LoggedTunable.from("Shooter/Aiming/Tolerance/Azimuth", Centimeters::of, 100);
     private static final LoggedTunable<Distance> altitudeDegsTolerance = LoggedTunable.from("Shooter/Aiming/Tolerance/Altitude", Centimeters::of, 46);
+    private static final LoggedTunable<Angle> customAzimuthOffset = LoggedTunable.from("Shooter/Aiming/Custom Azimuth Offset", Radians::of, 0.0);
 
     public Shooter(Pivot pivot, Flywheel flywheel) {
         this.pivot = pivot;
@@ -44,7 +48,14 @@ public class Shooter {
     private double targetPivotAltitudeRads;
     private double targetFlywheelVeloMPS;
     private double targetDriveHeadingRads;
+    private double rawTargetDriveHeadingRads;
     // private double minimumShooterSpeedMPS;
+    public double getRawDriveHeadingRads() {
+        return this.rawTargetDriveHeadingRads;
+    }
+    public double getTargetDriveHeadingRads() {
+        return this.targetDriveHeadingRads;
+    }
 
     public Command aim(Pose2d robotPose, ChassisSpeeds fieldSpeeds, Goal target) {
         return this.aim(() -> robotPose, () -> fieldSpeeds, () -> target);
@@ -81,6 +92,11 @@ public class Shooter {
             () -> this.targetFlywheelVeloMPS
         );
     }
+    public Command aimAzimuth(Drive.Rotational rotationalSubsystem) {
+        return rotationalSubsystem.pidControlledHeading(
+            () -> new Rotation2d(this.targetDriveHeadingRads)
+        ).withName("Aim Azimuth");
+    }
 
     private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Goal goal) {
         this.calculate(
@@ -88,10 +104,11 @@ public class Shooter {
             fieldRelativeSpeeds,
             goal.centerPoint,
             goal.type.select(ShooterConstants.highGoalTargetPivotAltitudeRads, ShooterConstants.lowGoalTargetPivotAltitudeRads),
-            goal.type.select(ShooterConstants.highGoalTargetFlywheelVeloMPS, ShooterConstants.lowGoalTargetFlywheelVeloMPS)
+            goal.type.select(ShooterConstants.highGoalTargetFlywheelVeloMPS, ShooterConstants.lowGoalTargetFlywheelVeloMPS),
+            goal.type.select(ShooterConstants.highGoalTargetDrivetrainOffsetRads, ShooterConstants.lowGoalTargetDrivetrainOffsetRads)
         );
     }
-    private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Translation3d aimPoint, InterpolatingDoubleTreeMap pivotAltitudeMap, InterpolatingDoubleTreeMap flywheelVeloMap) {
+    private void calculate(Translation2d robotPos, ChassisSpeeds fieldRelativeSpeeds, Translation3d aimPoint, InterpolatingDoubleTreeMap pivotAltitudeMap, InterpolatingDoubleTreeMap flywheelVeloMap, InterpolatingDoubleTreeMap driveAzimuthMap) {
         this.aimPoint = aimPoint;
 
         var predictedX = robotPos.getX() + fieldRelativeSpeeds.vxMetersPerSecond * lookaheadTime.get().in(Seconds);
@@ -100,8 +117,10 @@ public class Shooter {
         var predictedToTargetX = this.aimPoint.getX() - predictedX;
         var predictedToTargetY = this.aimPoint.getY() - predictedY;
 
-        this.targetDriveHeadingRads = Math.atan2(predictedToTargetY, predictedToTargetX);
+        this.rawTargetDriveHeadingRads = Math.atan2(predictedToTargetY, predictedToTargetX);
+        this.targetDriveHeadingRads = rawTargetDriveHeadingRads + driveAzimuthMap.get(this.effectiveDistanceMeters);
         this.effectiveDistanceMeters = Math.hypot(predictedToTargetX, predictedToTargetY);
+        Logger.recordOutput("Shooter/Aiming/Effective Distance", this.effectiveDistanceMeters);
 
         this.targetPivotAltitudeRads = pivotAltitudeMap.get(this.effectiveDistanceMeters);
         this.targetFlywheelVeloMPS = flywheelVeloMap.get(this.effectiveDistanceMeters);
