@@ -1,6 +1,5 @@
 package frc.robot.subsystems.drive;
 
-import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Hertz;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
@@ -11,7 +10,6 @@ import static edu.wpi.first.units.Units.Rotations;
 import java.util.Arrays;
 
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.pathplanner.lib.config.RobotConfig;
 
 import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -132,18 +130,4 @@ public final class DriveConstants {
 
     public static final LinearVelocity maxDriveSpeed = MetersPerSecond.of(6);
     public static final AngularVelocity maxTurnRate = RadiansPerSecond.of(maxDriveSpeed.in(MetersPerSecond) / driveBaseRadius.in(Meters));
-
-    public static final RobotConfig robotConfig = new RobotConfig(
-        RobotConstants.robotWeight,
-        RobotConstants.robotMOI,
-        new com.pathplanner.lib.config.ModuleConfig(
-            DriveConstants.wheel.effectiveRadius(),
-            DriveConstants.maxDriveSpeed,
-            1.0,
-            DCMotor.getFalcon500(1).withReduction(driveMotorToWheelRatio.reductionUnsigned()),
-            Amps.of(80),
-            1
-        ),
-        DriveConstants.moduleTranslations
-    );
 }

@@ -16,12 +16,10 @@ import java.util.stream.IntStream;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.FollowPathCommand;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathPlannerPath;
-import com.pathplanner.lib.util.DriveFeedforwards;
 
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MatBuilder;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
@@ -52,6 +50,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.RobotState;
 import frc.robot.RobotState.OdometryObservation;
 import frc.robot.constants.RobotConstants;
+import frc.robot.subsystems.drive.commands.FollowTrajectoryCommand;
 import frc.util.Environment;
 import frc.util.LazyOptional;
 import frc.util.LoggedTracer;
@@ -123,17 +122,6 @@ public class Drive extends VirtualSubsystem {
 
         this.translationSubsystem = new Translational(this);
         this.rotationalSubsystem = new Rotational(this);
-        AutoBuilder.configure(
-            RobotState.getInstance()::getEstimatedGlobalPose,
-            RobotState.getInstance()::resetPose,
-            this::getRobotMeasuredSpeeds,
-            this::runRobotSpeeds,
-            autoConfig(),
-            DriveConstants.robotConfig,
-            AllianceFlipUtil::shouldFlip,
-            this.translationSubsystem,
-            this.rotationalSubsystem
-        );
 
         var routine = new SysIdRoutine(
             new SysIdRoutine.Config(
@@ -391,34 +379,11 @@ public class Drive extends VirtualSubsystem {
         };
     }
 
-    public Command followBluePath(PathPlannerPath path) {
-        return new FollowPathCommand(
-            path,
-            RobotState.getInstance()::getEstimatedGlobalPose,
-            this::getRobotMeasuredSpeeds,
-            this::drivePPVelocity,
-            autoConfig(),
-            DriveConstants.robotConfig,
-            AllianceFlipUtil::shouldFlip,
-            this.translationSubsystem, this.rotationalSubsystem
-        );
+    public Command followBlueTrajectory(Trajectory<SwerveSample> trajectory) {
+        return new FollowTrajectoryCommand(trajectory);
     }
-    public Command followExactPath(PathPlannerPath path) {
-        return new FollowPathCommand(
-            path,
-            RobotState.getInstance()::getEstimatedGlobalPose,
-            this::getRobotMeasuredSpeeds,
-            this::drivePPVelocity,
-            autoConfig(),
-            DriveConstants.robotConfig,
-            () -> false,
-            this.translationSubsystem, this.rotationalSubsystem
-        );
-    }
-
-    public void drivePPVelocity(ChassisSpeeds speeds, DriveFeedforwards ff) {
-        //TODO: Actually do something with PP ff
-        this.runRobotSpeeds(speeds);
+    public Command followExactTrajectory(Trajectory<SwerveSample> trajectory) {
+        return new FollowTrajectoryCommand(trajectory);
     }
 
     public void setCenterOfRotation(Translation2d cor) {
@@ -493,20 +458,6 @@ public class Drive extends VirtualSubsystem {
             0.0
         )
     );
-    public static PPHolonomicDriveController autoConfig() {
-        return new PPHolonomicDriveController(
-            new com.pathplanner.lib.config.PIDConstants(
-                autoTranslationalPIDConsts.get().kP(),
-                autoTranslationalPIDConsts.get().kI(),
-                autoTranslationalPIDConsts.get().kD()
-            ),
-            new com.pathplanner.lib.config.PIDConstants(
-                autoRotationalPIDConsts.get().kP(),
-                autoRotationalPIDConsts.get().kI(),
-                autoRotationalPIDConsts.get().kD()
-            )
-        );
-    }
 
     public final Command simplePIDTo(Supplier<Pose2d> target) {
         return Commands.parallel(this.translationSubsystem.simplePIDTo(() -> target.get().getTranslation()), this.rotationalSubsystem.pidControlledOptionalHeading(() -> Optional.of(target.get().getRotation())));
