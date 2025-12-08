@@ -1,4 +1,4 @@
-package frc.util.led.strips.software;
+package frc.util.led.strips.adapters;
 
 import edu.wpi.first.wpilibj.util.Color;
 import frc.util.led.strips.LEDStrip;
@@ -12,16 +12,16 @@ public class ReversedStrip implements LEDStrip {
 
     @Override
     public LEDStrip reverse() {
-        return strip;
+        return this.strip;
     }
 
     @Override
     public int getLength() {
-        return strip.getLength();
+        return this.strip.getLength();
     }
 
     @Override
     public void setLED(int ledIndex, Color color) {
-        strip.setLED(getLength() - ledIndex - 1, color);
+        this.strip.setLED(getLength() - ledIndex - 1, color);
     }
 }

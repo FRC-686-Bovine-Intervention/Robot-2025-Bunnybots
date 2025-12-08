@@ -1,4 +1,4 @@
-package frc.util.led.strips.software;
+package frc.util.led.strips.adapters;
 
 import java.util.Arrays;
 import java.util.stream.IntStream;
@@ -25,13 +25,13 @@ public class ConcatenatedStrip implements LEDStrip {
 
     @Override
     public int getLength() {
-        return length;
+        return this.length;
     }
 
     @Override
     public void setLED(int ledIndex, Color color) {
         int accumLength = 0;
-        for (LEDStrip strip : strips) {
+        for (LEDStrip strip : this.strips) {
             int stripLength = strip.getLength();
             accumLength += stripLength;
             if (accumLength > ledIndex) {

@@ -23,17 +23,17 @@ public class CANdleStrip implements HardwareStrip {
 
     @Override
     public int getLength() {
-        return length;
+        return this.length;
     }
 
     @Override
     public void setLED(int ledIndex, Color color) {
-        var curColor = ledBuffer[ledIndex];
+        var curColor = this.ledBuffer[ledIndex];
         var color8bit = new Color8Bit(color);
-        if(!color.equals(curColor)) {
-            diffBuffer[ledIndex] = color8bit;
+        if(!color8bit.equals(curColor)) {
+            this.diffBuffer[ledIndex] = color8bit;
         } else {
-            diffBuffer[ledIndex] = null;
+            this.diffBuffer[ledIndex] = null;
         }
     }
 
@@ -41,12 +41,12 @@ public class CANdleStrip implements HardwareStrip {
     public void refresh() {
         // CANdles can only update a certain amount of LEDs per frame, so this will only update that many and continue next frame
         for(int i = 0, updatesThisFrame = 0; updatesThisFrame < LEDsPerFrame && i < length; i++, bufferPos = ++bufferPos % length) {
-            var color = diffBuffer[bufferPos];
+            var color = this.diffBuffer[bufferPos];
             if(color == null) continue;
             updatesThisFrame++;
-            candle.setLEDs(color.red, color.green, color.blue, 0, bufferPos, 1);
-            ledBuffer[bufferPos] = color;
-            diffBuffer[bufferPos] = null;
+            this.candle.setLEDs(color.red, color.green, color.blue, 0, bufferPos, 1);
+            this.ledBuffer[bufferPos] = color;
+            this.diffBuffer[bufferPos] = null;
         }
     }
 
