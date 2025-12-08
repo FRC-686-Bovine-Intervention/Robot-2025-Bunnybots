@@ -21,10 +21,10 @@ public class BarAnimation extends LEDAnimation {
 
     @Override
     public void apply() {
-        strip.foreach((i) -> {
-            var pixelPos = (double) i/strip.getLength();
+        this.strip.foreach((i) -> {
+            var pixelPos = (double) i / this.strip.getLength();
             if (pixelPos <= barPos) {
-                strip.setLED(i, gradient.apply(pixelPos));
+                this.strip.setLED(i, this.gradient.apply(pixelPos));
             }
         });
     }

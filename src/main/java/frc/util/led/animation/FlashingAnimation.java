@@ -20,6 +20,6 @@ public class FlashingAnimation extends LEDAnimation {
 
     @Override
     public void apply() {
-        strip.apply(gradient.apply(tilingFunction.applyAsDouble(Timer.getTimestamp())));
+        this.strip.apply(this.gradient.apply(this.tilingFunction.applyAsDouble(Timer.getTimestamp())));
     }
 }

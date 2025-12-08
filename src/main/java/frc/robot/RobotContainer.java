@@ -47,6 +47,7 @@ import frc.robot.subsystems.intake.slam.IntakeSlam;
 import frc.robot.subsystems.intake.slam.IntakeSlamIO;
 import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
 import frc.robot.subsystems.intake.slam.IntakeSlamIOTalonFX;
+import frc.robot.subsystems.leds.Leds;
 import frc.robot.subsystems.rollers.RollerSensorsIO;
 import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
 import frc.robot.subsystems.rollers.Rollers;
@@ -133,19 +134,19 @@ public class RobotContainer {
                     new CameraIOPhoton("Front Left"),
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIOPhoton("Front Right"),
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIOPhoton("Intake"),
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
             case SIM -> {
@@ -173,19 +174,19 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
             default -> {
@@ -214,19 +215,19 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
         }
