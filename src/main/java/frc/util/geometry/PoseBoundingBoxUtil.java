@@ -1,4 +1,4 @@
-package frc.util;
+package frc.util.geometry;
 
 import static edu.wpi.first.units.Units.Meters;
 
