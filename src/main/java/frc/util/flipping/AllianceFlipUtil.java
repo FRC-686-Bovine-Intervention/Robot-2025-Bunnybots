@@ -3,7 +3,6 @@ package frc.util.flipping;
 import static edu.wpi.first.units.Units.Meters;
 
 import java.util.ArrayList;
-import java.util.Optional;
 
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
@@ -22,6 +21,14 @@ import frc.robot.constants.FieldConstants;
 import frc.util.geometry.GeomUtil;
 
 public class AllianceFlipUtil {
+    public static Alliance getAlliance() {
+        return DriverStation.getAlliance().orElse(Alliance.Blue);
+    }
+
+    public static boolean shouldFlip() {
+        return getAlliance() == Alliance.Red;
+    }
+
     public static enum FieldFlipType {
         CenterPointRotation,
         CenterLineMirror,
@@ -270,9 +277,5 @@ public class AllianceFlipUtil {
             flippedSamples.add(flip(sample, flipType));
         }
         return new Trajectory<>(trajectory.name(), flippedSamples, trajectory.splits(), trajectory.events());
-    }
-
-    public static boolean shouldFlip() {
-        return DriverStation.getAlliance().equals(Optional.of(Alliance.Red));
     }
 }

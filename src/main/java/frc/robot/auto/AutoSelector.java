@@ -11,12 +11,12 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.util.SwitchableChooser;
 import frc.util.VirtualSubsystem;
+import frc.util.flipping.AllianceFlipUtil;
 
 public class AutoSelector extends VirtualSubsystem {
     private final LoggedDashboardChooser<AutoRoutine> routineChooser;
@@ -78,12 +78,12 @@ public class AutoSelector extends VirtualSubsystem {
         doThingy(
             selectedRoutine,
             selectedRoutine.name != lastConfiguration.routine()
-            || DriverStation.getAlliance().orElse(Alliance.Blue) != lastConfiguration.alliance()
+            || AllianceFlipUtil.getAlliance() != lastConfiguration.alliance()
         );
     }
 
     private void doThingy(AutoRoutine routine, boolean configurationChanged) {
-        var alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
+        var alliance = AllianceFlipUtil.getAlliance();
         var config = new AutoConfiguration(alliance, routine.name, initialDelaySubscriber.get());
 
         var questions = routine.questions;

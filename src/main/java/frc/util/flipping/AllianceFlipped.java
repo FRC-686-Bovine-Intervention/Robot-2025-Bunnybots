@@ -27,30 +27,30 @@ public class AllianceFlipped<T> {
     }
 
     public T getBlue() {
-        return blue;
+        return this.blue;
     }
     public T getRed() {
-        return red;
+        return this.red;
     }
     public T get(Alliance alliance) {
         return switch (alliance) {
-            case Blue -> getBlue();
-            case Red -> getRed();
+            case Blue -> this.getBlue();
+            case Red -> this.getRed();
         };
     }
 
     public T getOurs() {
         if (AllianceFlipUtil.shouldFlip()) {
-            return getRed();
+            return this.getRed();
         } else {
-            return getBlue();
+            return this.getBlue();
         }
     }
     public T getTheirs() {
-        if (!AllianceFlipUtil.shouldFlip()) {
-            return getRed();
+        if (AllianceFlipUtil.shouldFlip()) {
+            return this.getBlue();
         } else {
-            return getBlue();
+            return this.getRed();
         }
     }
 
