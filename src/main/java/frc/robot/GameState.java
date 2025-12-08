@@ -12,7 +12,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
-import frc.util.SuppliedEdgeDetector;
+import frc.util.EdgeDetector;
 
 public class GameState {
     private static GameState instance;
@@ -41,14 +41,14 @@ public class GameState {
     public final Timestamp AUTONOMOUS_COMMAND_FINISH = new Timestamp();
     public final Timestamp AUTONOMOUS_ALLOTTED_TIMESTAMP = new Timestamp();
     
-    public final SuppliedEdgeDetector enabled = new SuppliedEdgeDetector(DriverStation::isEnabled);
+    public final EdgeDetector enabled = new EdgeDetector(false);
     public Optional<EnabledMode> currentEnabledMode = Optional.empty();
     public EnabledMode lastEnabledMode = EnabledMode.TELEOP;
 
     public void periodic() {
         currentEnabledMode = EnabledMode.getSelectedMode().filter((m) -> DriverStation.isEnabled());
         currentEnabledMode.ifPresent((m) -> lastEnabledMode = m);
-        enabled.update();
+        enabled.update(DriverStation.isEnabled());
 
         if(enabled.risingEdge()) {
             BEGIN_ENABLE.set();
