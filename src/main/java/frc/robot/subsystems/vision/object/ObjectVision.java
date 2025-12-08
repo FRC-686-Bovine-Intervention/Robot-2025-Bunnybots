@@ -38,7 +38,6 @@ import frc.util.loggerUtil.LoggerUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
 import frc.util.robotStructure.CameraMount;
-import frc.util.rust.iter.Iterator;
 
 public class ObjectVision {
     private final ObjectPipeline[] pipelines;
@@ -73,12 +72,12 @@ public class ObjectVision {
             var loggingKey = "Vision/Objects/Results/" + pipeline.pipelineIndex + "/";
             var tracingKey = "CommandScheduler Periodic/Objects/Process Results/" + pipeline.pipelineIndex + "/";
             for (var frame : frames) {
-                var frameTargets = Iterator.of(frame.targets)
-                    .map((target) -> TrackedObject.from(pipeline.camera.mount, target))
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .collect_arraylist()
-                ;
+                // var frameTargets = Iterator.of(frame.targets)
+                //     .map((target) -> TrackedObject.from(pipeline.camera.mount, target))
+                //     .filter(Optional::isPresent)
+                //     .map(Optional::get)
+                //     .collect_arraylist()
+                // ;
                 /*var connections = new ArrayList<TargetMemoryConnection>(objectMemories.size() * frameTargets.size());
                 objectMemories.forEach(
                     (memory) -> frameTargets.forEach(
@@ -113,30 +112,30 @@ public class ObjectVision {
                 objectMemories.removeIf((memory) -> Double.isNaN(memory.fieldPos.getX()) || Double.isNaN(memory.fieldPos.getY()));
                 objectMemories.removeIf((memory) -> RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) <= 0.07);
                 */
-                if (
-                    optIntakeTarget.isPresent()
-                    && (
-                        optIntakeTarget.get().confidence < detargetConfidenceThreshold.get()
-                        || !frameTargets.contains(optIntakeTarget.get())
-                    )
-                ) {
-                    optIntakeTarget = Optional.empty();
-                }
-                if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
-                    var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
+                // if (
+                //     optIntakeTarget.isPresent()
+                //     && (
+                //         optIntakeTarget.get().confidence < detargetConfidenceThreshold.get()
+                //         || !frameTargets.contains(optIntakeTarget.get())
+                //     )
+                // ) {
+                //     optIntakeTarget = Optional.empty();
+                // }
+                // if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
+                //     var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
                 
-                    optIntakeTarget = frameTargets.stream()
-                        .filter(target -> target.confidence > acquireConfidenceThreshold.get())
-                        .sorted((a, b) -> {
-                            var relA = new Pose2d(a.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
-                            var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
+                //     optIntakeTarget = frameTargets.stream()
+                //         .filter(target -> target.confidence > acquireConfidenceThreshold.get())
+                //         .sorted((a, b) -> {
+                //             var relA = new Pose2d(a.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
+                //             var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
                 
-                            double distA = Math.hypot(relA.getX(), 2 * relA.getY());
-                            double distB = Math.hypot(relB.getX(), 2 * relB.getY());
-                            return Double.compare(distA, distB);
-                        })
-                        .findFirst();
-                }                
+                //             double distA = Math.hypot(relA.getX(), 2 * relA.getY());
+                //             double distB = Math.hypot(relB.getX(), 2 * relB.getY());
+                //             return Double.compare(distA, distB);
+                //         })
+                //         .findFirst();
+                // }
 
                 //Logger.recordOutput(loggingKey + "Object Memories", objectMemories.stream().map(TrackedObject::toASPose).toArray(Pose3d[]::new));
                 //Logger.recordOutput(loggingKey + "Object Confidence", objectMemories.stream().mapToDouble((object) -> object.confidence).toArray());

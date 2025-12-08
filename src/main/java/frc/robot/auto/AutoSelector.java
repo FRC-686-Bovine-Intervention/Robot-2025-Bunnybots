@@ -17,7 +17,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.util.SwitchableChooser;
 import frc.util.VirtualSubsystem;
-import frc.util.rust.iter.Iterator;
 
 public class AutoSelector extends VirtualSubsystem {
     private final LoggedDashboardChooser<AutoRoutine> routineChooser;
@@ -101,7 +100,14 @@ public class AutoSelector extends VirtualSubsystem {
                     var defaultOption = settings.defaultOption().getKey();
                     responseChooser.setOptions(settings.getOptionNames());
                     responseChooser.setDefault(defaultOption);
-                    if (Iterator.of(settings.getOptionNames()).all((option) -> responseChooser.getSelected() != option)) {
+                    var all = true;
+                    for (var option : settings.getOptionNames()) {
+                        if (responseChooser.getSelected() == option) {
+                            all = false;
+                            break;
+                        }
+                    }
+                    if (all) {
                         responseChooser.setSelected(defaultOption);
                     }
                 } else {
