@@ -96,7 +96,7 @@ public class ScoreLunites extends AutoRoutine {
         
         var aimCommand = Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(targetGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(targetGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> targetGoal.getOurs()
             )

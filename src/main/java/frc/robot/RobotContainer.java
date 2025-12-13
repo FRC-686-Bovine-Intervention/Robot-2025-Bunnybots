@@ -515,7 +515,7 @@ public class RobotContainer {
         
         leftHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftHighGoal.getOurs()
             )
@@ -527,7 +527,7 @@ public class RobotContainer {
 
         rightHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightHighGoal.getOurs()
             )
@@ -539,7 +539,7 @@ public class RobotContainer {
 
         leftLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftLowGoal.getOurs()
             )
@@ -551,7 +551,7 @@ public class RobotContainer {
 
         rightLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightLowGoal.getOurs()
             )
