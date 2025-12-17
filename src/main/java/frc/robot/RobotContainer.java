@@ -47,6 +47,7 @@ import frc.robot.subsystems.intake.slam.IntakeSlam;
 import frc.robot.subsystems.intake.slam.IntakeSlamIO;
 import frc.robot.subsystems.intake.slam.IntakeSlamIOSim;
 import frc.robot.subsystems.intake.slam.IntakeSlamIOTalonFX;
+import frc.robot.subsystems.leds.Leds;
 import frc.robot.subsystems.rollers.RollerSensorsIO;
 import frc.robot.subsystems.rollers.RollerSensorsIOCANDi;
 import frc.robot.subsystems.rollers.Rollers;
@@ -133,19 +134,19 @@ public class RobotContainer {
                     new CameraIOPhoton("Front Left"),
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIOPhoton("Front Right"),
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIOPhoton("Intake"),
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
             case SIM -> {
@@ -173,19 +174,19 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
             default -> {
@@ -214,19 +215,19 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Left",
                     VisionConstants.frontLeftMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.frontRightCamera = new Camera(
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (f) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {}
+                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
                 );
             }
         }
@@ -514,7 +515,7 @@ public class RobotContainer {
         
         leftHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftHighGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftHighGoal.getOurs()
             )
@@ -526,7 +527,7 @@ public class RobotContainer {
 
         rightHigh.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightHighGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightHighGoal.getOurs()
             )
@@ -538,7 +539,7 @@ public class RobotContainer {
 
         leftLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.leftLowGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.leftLowGoal.getOurs()
             )
@@ -550,7 +551,7 @@ public class RobotContainer {
 
         rightLow.toggleOnTrue(Commands.parallel(
             this.shooter.aim(
-                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltagID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
+                () -> RobotState.getInstance().getRobotPoseFromTag(FieldConstants.Goals.rightLowGoal.getOurs().apriltag.ID).orElse(RobotState.getInstance().getEstimatedGlobalPose()),
                 this.drive::getFieldMeasuredSpeeds,
                 () -> FieldConstants.Goals.rightLowGoal.getOurs()
             )

@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+import frc.robot.subsystems.leds.Leds;
 import frc.util.Environment;
 import frc.util.LoggedTracer;
 import frc.util.Perspective;
@@ -31,7 +32,8 @@ public class Robot extends LoggedRobot {
     private final RobotContainer robotContainer;
 
     public Robot() {
-        // Leds.getInstance();
+        Leds.getInstance();
+        
         System.out.println("[Init Robot] Recording AdvantageKit Metadata");
         Logger.recordMetadata("Robot", RobotType.getRobot().name());
         Logger.recordMetadata("Mode", RobotType.getMode().name());
@@ -127,9 +129,6 @@ public class Robot extends LoggedRobot {
         activeButtonLoop.bind(() -> {
             LoggedTracer.logEpoch("CommandScheduler Periodic/Subsystem");
 
-            GameState.getInstance().periodic();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/GameState Periodic");
-
             Environment.periodic();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Environment Periodic");
 
@@ -193,6 +192,7 @@ public class Robot extends LoggedRobot {
 
     @Override
     public void autonomousInit() {
+        this.robotContainer.autoManager.endAuto();
         this.robotContainer.autoManager.startAuto();
     }
 
@@ -200,12 +200,12 @@ public class Robot extends LoggedRobot {
     public void autonomousPeriodic() {}
 
     @Override
-    public void autonomousExit() {
-        this.robotContainer.autoManager.endAuto();
-    }
+    public void autonomousExit() {}
 
     @Override
-    public void teleopInit() {}
+    public void teleopInit() {
+        this.robotContainer.autoManager.endAuto();
+    }
 
     @Override
     public void teleopPeriodic() {}

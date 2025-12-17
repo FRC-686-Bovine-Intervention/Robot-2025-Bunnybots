@@ -24,22 +24,22 @@ public class SimulatedStrip implements HardwareStrip {
 
     @Override
     public int getLength() {
-        return buffer.getLength();
+        return this.buffer.getLength();
     }
 
     @Override
     public void setLED(int ledIndex, Color color) {
-        buffer.setLED(ledIndex, color);
+        this.buffer.setLED(ledIndex, color);
         var color8Bit = new Color8Bit(color);
-        data[ledIndex * 4] = (byte) color8Bit.blue;
-        data[(ledIndex * 4) + 1] = (byte) color8Bit.green;
-        data[(ledIndex * 4) + 2] = (byte) color8Bit.red;
-        data[(ledIndex * 4) + 3] = 0;
+        this.data[ledIndex * 4] = (byte) color8Bit.blue;
+        this.data[(ledIndex * 4) + 1] = (byte) color8Bit.green;
+        this.data[(ledIndex * 4) + 2] = (byte) color8Bit.red;
+        this.data[(ledIndex * 4) + 3] = 0;
     }
 
     @Override
     public void refresh() {
-        strip.setData(buffer);
-        sim.setData(data);
+        this.strip.setData(this.buffer);
+        this.sim.setData(this.data);
     }
 }

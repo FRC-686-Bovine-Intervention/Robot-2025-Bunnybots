@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.Time;
 import frc.robot.constants.FieldConstants;
@@ -15,50 +16,41 @@ public final class AutoConstants {
     public static final Time allottedAutoTime = Seconds.of(15.3);
     public static final Time disabledTime = Seconds.of(3);
 
-    public static final AllianceFlipped<Distance> taxiLineX = new AllianceFlipped<Distance>(
-        Inches.of(88.25),
-        Inches.of(559.75)
-    );
-    public static final AllianceFlipped<Pose2d> startShutoffGoal = new AllianceFlipped<Pose2d>(
+    public static final Distance blueTaxiLineX = Inches.of(88.25);
+    
+    public static final AllianceFlipped<Pose2d> startShutoffGoal = AllianceFlipped.fromBlue(
         new Pose2d(
-            taxiLineX.getBlue().minus(RobotConstants.centerToFrontBumper),
-            FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.center.getMeasureY(),
+            new Translation2d(
+                blueTaxiLineX.minus(RobotConstants.centerToFrontBumper),
+                FieldConstants.LunarOutpost.lunarOutposts.getBlue().outerGoal.center.getMeasureY()
+            ),
             Rotation2d.k180deg
-        ),
-        new Pose2d(
-            taxiLineX.getRed().plus(RobotConstants.centerToFrontBumper),
-            FieldConstants.LunarOutpost.lunarOutposts.getRed().outerGoal.center.getMeasureY(),
-            Rotation2d.kZero
         )
     );
-    public static final AllianceFlipped<Pose2d> startOuterTaxiLineWallCorner = new AllianceFlipped<Pose2d>(
+    public static final AllianceFlipped<Pose2d> startOuterTaxiLineWallCorner = AllianceFlipped.fromBlue(
         new Pose2d(
-            taxiLineX.getBlue().minus(RobotConstants.centerToFrontBumper),
-            RobotConstants.centerToSideBumper,
+            new Translation2d(
+                blueTaxiLineX.minus(RobotConstants.centerToFrontBumper),
+                RobotConstants.centerToSideBumper
+            ),
             Rotation2d.k180deg
-        ),
-        new Pose2d(
-            taxiLineX.getRed().plus(RobotConstants.centerToFrontBumper),
-            RobotConstants.centerToSideBumper,
-            Rotation2d.kZero
         )
     );
-    public static final AllianceFlipped<Pose2d> startPermanentGoal = new AllianceFlipped<Pose2d>(
+    public static final AllianceFlipped<Pose2d> startPermanentGoal = AllianceFlipped.fromBlue(
         new Pose2d(
-            taxiLineX.getBlue().minus(RobotConstants.centerToFrontBumper),
-            FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.center.getMeasureY(),
+            new Translation2d(
+                blueTaxiLineX.minus(RobotConstants.centerToFrontBumper),
+                FieldConstants.LunarOutpost.lunarOutposts.getBlue().innerGoal.center.getMeasureY()
+            ),
             Rotation2d.k180deg
-        ),
-        new Pose2d(
-            taxiLineX.getRed().plus(RobotConstants.centerToFrontBumper),
-            FieldConstants.LunarOutpost.lunarOutposts.getRed().innerGoal.center.getMeasureY(),
-            Rotation2d.kZero
         )
     );
     public static final AllianceFlipped<Pose2d> startShutoffGoalSide = AllianceFlipped.fromBlue(
         new Pose2d(
-            FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureX().minus(RobotConstants.centerToSideBumper),
-            FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureY().plus(RobotConstants.centerToSideBumper),
+            new Translation2d(
+                FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureX().minus(RobotConstants.centerToSideBumper),
+                FieldConstants.LunarOutpost.CosmicConverter.dimensions.getMeasureY().plus(RobotConstants.centerToSideBumper)
+            ),
             Rotation2d.kCW_90deg
         )
     );

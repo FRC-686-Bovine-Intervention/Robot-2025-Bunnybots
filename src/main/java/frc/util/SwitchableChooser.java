@@ -9,7 +9,6 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkString;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringArrayPublisher;
 import edu.wpi.first.networktables.StringPublisher;
-import frc.util.rust.iter.Iterator;
 
 /** A string chooser for the dashboard where the options can be changed on-the-fly. */
 public class SwitchableChooser extends LoggedNetworkInput {
@@ -101,6 +100,11 @@ public class SwitchableChooser extends LoggedNetworkInput {
     }
 
     private String getOption(String optiona) {
-        return Iterator.of(this.options).find((option) -> Objects.equals(optiona, option)).unwrap_or(this.defaultValue);
+        for (var innerOption : this.options) {
+            if (Objects.equals(optiona, innerOption)) {
+                return innerOption;
+            }
+        }
+        return this.defaultValue;
     }
 }

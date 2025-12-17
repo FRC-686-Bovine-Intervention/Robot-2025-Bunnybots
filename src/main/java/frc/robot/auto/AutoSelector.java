@@ -11,13 +11,12 @@ import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StringPublisher;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.util.SwitchableChooser;
 import frc.util.VirtualSubsystem;
-import frc.util.rust.iter.Iterator;
+import frc.util.flipping.AllianceFlipUtil;
 
 public class AutoSelector extends VirtualSubsystem {
     private final LoggedDashboardChooser<AutoRoutine> routineChooser;
@@ -29,7 +28,7 @@ public class AutoSelector extends VirtualSubsystem {
     
     private static final AutoRoutine idleRoutine = new AutoRoutine("Do Nothing", List.of()) {
         public Command generateCommand() {
-            return Commands.idle();
+            return Commands.none();
         }
     };
     private final String questionPlaceHolder = "NA";
@@ -39,58 +38,58 @@ public class AutoSelector extends VirtualSubsystem {
 
     public AutoSelector(String key) {
         this.key = key;
-        this.routineChooser = new LoggedDashboardChooser<>(key + "/Routine");
+        this.routineChooser = new LoggedDashboardChooser<>(this.key + "/Routine");
         this.questionPublishers = new ArrayList<>();
         this.responseChoosers = new ArrayList<>();
-        this.configPublisher = NetworkTableInstance.getDefault().getTable("SmartDashboard").getSubTable(key).getStringTopic("Configuration").publish();
-        this.initialDelaySubscriber = new LoggedNetworkNumber("SmartDashboard/" + key + "/Initial Delay", 0);
-        addDefaultRoutine(idleRoutine);
+        this.configPublisher = NetworkTableInstance.getDefault().getTable("SmartDashboard").getSubTable(this.key).getStringTopic("Configuration").publish();
+        this.initialDelaySubscriber = new LoggedNetworkNumber("SmartDashboard/" + this.key + "/Initial Delay", 0);
+        this.addDefaultRoutine(idleRoutine);
     }
 
     private void populateQuestions(AutoRoutine routine) {
-        for (int i = questionPublishers.size(); i < routine.questions.size(); i++) {
+        for (int i = this.questionPublishers.size(); i < routine.questions.size(); i++) {
             var questionPublisher = NetworkTableInstance.getDefault()
-                .getStringTopic("/SmartDashboard/" + key + "/Question #" + Integer.toString(i + 1))
+                .getStringTopic("/SmartDashboard/" + this.key + "/Question #" + Integer.toString(i + 1))
                 .publish()
             ;
-            questionPublisher.set(questionPlaceHolder);
-            questionPublishers.add(questionPublisher);
-            responseChoosers.add(new SwitchableChooser(key + "/Question #" + Integer.toString(i + 1) + " Chooser"));
+            questionPublisher.set(this.questionPlaceHolder);
+            this.questionPublishers.add(questionPublisher);
+            this.responseChoosers.add(new SwitchableChooser(this.key + "/Question #" + Integer.toString(i + 1) + " Chooser"));
         }
     }
 
     public void addRoutine(AutoRoutine routine) {
-        populateQuestions(routine);
-        routineChooser.addOption(routine.name, routine);
+        this.populateQuestions(routine);
+        this.routineChooser.addOption(routine.name, routine);
     }
 
     public void addDefaultRoutine(AutoRoutine routine) {
-        populateQuestions(routine);
-        routineChooser.addDefaultOption(routine.name, routine);
+        this.populateQuestions(routine);
+        this.routineChooser.addDefaultOption(routine.name, routine);
 
-        doThingy(routine, true);
+        this.doThingy(routine, true);
     }
 
     @Override
     public void periodic() {
-        var selectedRoutine = routineChooser.get();
-        if(selectedRoutine == null) return;
+        var selectedRoutine = this.routineChooser.get();
+        if (selectedRoutine == null) return;
 
-        doThingy(
+        this.doThingy(
             selectedRoutine,
-            selectedRoutine.name != lastConfiguration.routine()
-            || DriverStation.getAlliance().orElse(Alliance.Blue) != lastConfiguration.alliance()
+            selectedRoutine.name != this.lastConfiguration.routine()
+            || AllianceFlipUtil.getAlliance() != this.lastConfiguration.alliance()
         );
     }
 
     private void doThingy(AutoRoutine routine, boolean configurationChanged) {
-        var alliance = DriverStation.getAlliance().orElse(Alliance.Blue);
-        var config = new AutoConfiguration(alliance, routine.name, initialDelaySubscriber.get());
+        var alliance = AllianceFlipUtil.getAlliance();
+        var config = new AutoConfiguration(alliance, routine.name, this.initialDelaySubscriber.get());
 
         var questions = routine.questions;
-        for (int i = 0; i < responseChoosers.size(); i++) {
-            var questionPublisher = questionPublishers.get(i);
-            var responseChooser = responseChoosers.get(i);
+        for (int i = 0; i < this.responseChoosers.size(); i++) {
+            var questionPublisher = this.questionPublishers.get(i);
+            var responseChooser = this.responseChoosers.get(i);
 
             if (i < questions.size()) {
                 var question = questions.get(i);
@@ -101,7 +100,14 @@ public class AutoSelector extends VirtualSubsystem {
                     var defaultOption = settings.defaultOption().getKey();
                     responseChooser.setOptions(settings.getOptionNames());
                     responseChooser.setDefault(defaultOption);
-                    if (Iterator.of(settings.getOptionNames()).all((option) -> responseChooser.getSelected() != option)) {
+                    var all = true;
+                    for (var option : settings.getOptionNames()) {
+                        if (responseChooser.getSelected() == option) {
+                            all = false;
+                            break;
+                        }
+                    }
+                    if (all) {
                         responseChooser.setSelected(defaultOption);
                     }
                 } else {
@@ -116,21 +122,21 @@ public class AutoSelector extends VirtualSubsystem {
             } else {
                 questionPublisher.set("");
                 responseChooser.setOptions();
-                responseChooser.setDefault(questionPlaceHolder);
-                responseChooser.setSelected(questionPlaceHolder);
-                responseChooser.setActive(questionPlaceHolder);
+                responseChooser.setDefault(this.questionPlaceHolder);
+                responseChooser.setSelected(this.questionPlaceHolder);
+                responseChooser.setActive(this.questionPlaceHolder);
             }
         }
         if (configurationChanged) {
             System.out.println("[AutoSelector] Generating new command\n" + config);
-            lastCommand = AutoManager.generateAutoCommand(routine, config.initialDelaySeconds());
+            this.lastCommand = AutoManager.generateAutoCommand(routine, config.initialDelaySeconds());
         }
         lastConfiguration = config;
-        configPublisher.set(lastConfiguration.toString());
+        this.configPublisher.set(lastConfiguration.toString());
     }
 
     public Command getSelectedAutoCommand() {
-        return lastCommand;
+        return this.lastCommand;
     }
 
     public static record AutoConfiguration (
@@ -143,16 +149,16 @@ public class AutoSelector extends VirtualSubsystem {
             this(alliance, routine, initialDelaySeconds, new LinkedHashMap<>());
         }
         public void addQuestion(String question, String response) {
-            questions.put(question, response);
+            this.questions.put(question, response);
         }
 
         public String toString() {
             var builder = new StringBuilder()
-                .append("\t").append("Alliance: ").append(alliance).append("\n")
-                .append("\t").append("Routine: ").append(routine)
-                .append("\t").append("Delay: ").append(initialDelaySeconds)
+                .append("\t").append("Alliance: ").append(this.alliance).append("\n")
+                .append("\t").append("Routine: ").append(this.routine)
+                .append("\t").append("Delay: ").append(this.initialDelaySeconds)
             ;
-            for (var entry : questions.entrySet()) {
+            for (var entry : this.questions.entrySet()) {
                 builder.append("\n\t").append(entry.getKey()).append(": ").append(entry.getValue());
             }
             return builder.toString();

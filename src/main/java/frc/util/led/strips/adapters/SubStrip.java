@@ -1,4 +1,4 @@
-package frc.util.led.strips.software;
+package frc.util.led.strips.adapters;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.util.Color;
@@ -17,12 +17,14 @@ public class SubStrip implements LEDStrip {
         this.endIndex = Math.min(endIndex, strip.getLength());
         this.strip = strip;
     }
+
     @Override
     public int getLength() {
-        return endIndex - startIndex;
+        return this.endIndex - this.startIndex;
     }
+    
     @Override
     public void setLED(int ledIndex, Color color) {
-        strip.setLED(MathUtil.clamp(ledIndex, 0, getLength() - 1) + startIndex, color);
+        this.strip.setLED(MathUtil.clamp(ledIndex, 0, getLength() - 1) + this.startIndex, color);
     }
 }
