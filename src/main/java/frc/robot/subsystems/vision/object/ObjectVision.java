@@ -59,6 +59,7 @@ public class ObjectVision {
     private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
+    private ChassisSpeeds desiredRobotRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(0.0, 0.0, 0.0, Rotation2d.kZero);
 
     public ObjectVision(ObjectPipeline... pipelines) {
         System.out.println("[Init ObjectVision] Instantiating ObjectVision");
@@ -132,8 +133,21 @@ public class ObjectVision {
                             var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
                 
                             double distA = Math.hypot(relA.getX(), 2 * relA.getY());
+                            double angleA = Math.atan2(relA.getY(), relA.getX());
                             double distB = Math.hypot(relB.getX(), 2 * relB.getY());
-                            return Double.compare(distA, distB);
+                            double angleB = Math.atan2(relB.getY(), relB.getX());
+
+                            double scoreA = 0;
+                            double scoreB = 0;
+
+                            var chassisSpeedsAngle = Math.atan2(desiredRobotRelativeSpeeds.vxMetersPerSecond, desiredRobotRelativeSpeeds.vyMetersPerSecond);
+                            if (Math.abs(angleA - chassisSpeedsAngle) < Math.PI / 2 && (angleA > Math.PI/2 || angleA < -Math.PI/2)) {
+                                scoreA = (1 / distA) * a.confidence;
+                            }
+                            if (Math.abs(angleB - chassisSpeedsAngle) < Math.PI / 2 && (angleB > Math.PI/2 || angleB < -Math.PI/2)) {
+                                scoreB = (1 / distB) * b.confidence;
+                            }
+                            return Double.compare(scoreA, scoreB);
                         })
                         .findFirst();
                 }                
@@ -141,8 +155,8 @@ public class ObjectVision {
                 //Logger.recordOutput(loggingKey + "Object Memories", objectMemories.stream().map(TrackedObject::toASPose).toArray(Pose3d[]::new));
                 //Logger.recordOutput(loggingKey + "Object Confidence", objectMemories.stream().mapToDouble((object) -> object.confidence).toArray());
                 //Logger.recordOutput(loggingKey + "Object Priority", objectMemories.stream().mapToDouble(TrackedObject::getPriority).toArray());
-                Logger.recordOutput(loggingKey + "Target", LoggerUtil.toArray(optIntakeTarget.map(TrackedObject::toASPose), Pose3d[]::new));
-                Logger.recordOutput(loggingKey + "Locked Target", LoggerUtil.toArray(optIntakeTarget.filter((a) -> intakeTargetLocked).map(TrackedObject::toASPose).map(Pose3d::getTranslation), Translation3d[]::new));
+                Logger.recordOutput(loggingKey + "Targets", Iterator.of(frameTargets).map((target) -> target.toASPose()).collect_array(Pose3d[]::new));
+                Logger.recordOutput(loggingKey + "Locked Target", optIntakeTarget.map(TrackedObject::toASPose).orElse(null));
             }
         }
     }
