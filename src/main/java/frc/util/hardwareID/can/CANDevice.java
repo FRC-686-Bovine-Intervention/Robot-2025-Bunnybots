@@ -10,7 +10,6 @@ import com.ctre.phoenix6.hardware.TalonFXS;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 
-import au.grapplerobotics.LaserCan;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import frc.util.hardwareID.PnuematicsControl;
 
@@ -62,9 +61,9 @@ public class CANDevice {
         return pnuematicsControl(PneumaticsModuleType.REVPH);
     }
     // Grapple
-    public LaserCan laserCan() {
-        return new LaserCan(id);
-    }
+    // public LaserCan laserCan() {
+    //     return new LaserCan(id);
+    // }
 
     public PnuematicsControl pnuematicsControl(PneumaticsModuleType type) {
         return new PnuematicsControl(this, type);

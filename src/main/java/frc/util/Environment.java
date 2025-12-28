@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 import org.littletonrobotics.junction.LogTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
-import org.littletonrobotics.junction.networktables.LoggedNetworkInput;
 
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.PubSubOption;
@@ -90,7 +89,7 @@ public enum Environment {
 
     public static void periodic() {
         ntArray = selectedEntry.readQueueValues();
-        Logger.processInputs(LoggedNetworkInput.prefix, inputs);
+        Logger.processInputs("NetworkInputs", inputs);
         for (var selected : ntArray) {
             selectedName = selected;
             selectionPriority = 2;

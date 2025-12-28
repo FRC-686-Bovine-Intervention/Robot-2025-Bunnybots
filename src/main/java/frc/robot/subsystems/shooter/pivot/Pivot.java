@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Optional;
 import java.util.function.DoubleSupplier;
@@ -15,7 +16,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.units.measure.measure.Angle;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -123,8 +124,8 @@ public class Pivot extends SubsystemBase {
 
         this.mech.setRads(this.getAngleRads());
 
-        Logger.recordOutput("Shooter/Pivot/Angle/Measured", this.getAngleRads());
-        Logger.recordOutput("Shooter/Pivot/Velocity/Measured", this.getVelocityRadsPerSec());
+        Logger.recordOutput("Shooter/Pivot/Angle/Measured", this.getAngleRads(), Radians);
+        Logger.recordOutput("Shooter/Pivot/Velocity/Measured", this.getVelocityRadsPerSec(), RadiansPerSecond);
 
         if (profileConsts.hasChanged(hashCode())) {
             this.motionProfile = new TrapezoidProfile(profileConsts.get());
@@ -191,11 +192,11 @@ public class Pivot extends SubsystemBase {
             PivotConstants.motorToMechanism.inverse().applyUnsigned(this.setpointState.velocity),
             ffout
         );
-        Logger.recordOutput("Shooter/Pivot/FF/FF Out", ffout);
-        Logger.recordOutput("Shooter/Pivot/Angle/Setpoint", this.setpointState.position);
-        Logger.recordOutput("Shooter/Pivot/Velocity/Setpoint", this.setpointState.velocity);
-        Logger.recordOutput("Shooter/Pivot/Angle/Goal", this.goalState.position);
-        Logger.recordOutput("Shooter/Pivot/Velocity/Goal", this.goalState.velocity);
+        Logger.recordOutput("Shooter/Pivot/FF/FF Out", ffout, Volts);
+        Logger.recordOutput("Shooter/Pivot/Angle/Setpoint", this.setpointState.position, Radians);
+        Logger.recordOutput("Shooter/Pivot/Velocity/Setpoint", this.setpointState.velocity, RadiansPerSecond);
+        Logger.recordOutput("Shooter/Pivot/Angle/Goal", this.goalState.position, Radians);
+        Logger.recordOutput("Shooter/Pivot/Velocity/Goal", this.goalState.velocity, RadiansPerSecond);
     }
 
     public Command coast() {

@@ -1,19 +1,19 @@
 package frc.util.mechanismUtil;
 
-import edu.wpi.first.units.measure.DistanceUnit;
+import edu.wpi.first.units.DistanceUnit;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.Unit;
-import edu.wpi.first.units.measure.measure.Angle;
-import edu.wpi.first.units.measure.measure.AngularAcceleration;
-import edu.wpi.first.units.measure.measure.AngularVelocity;
+import edu.wpi.first.units.Unit;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularAcceleration;
+import edu.wpi.first.units.measure.AngularVelocity;
 
 public class GearRatio {
     public static double planetaryReduction(int sunCount, int ringCount) {
         return (double)(sunCount + ringCount) / sunCount;
     }
-    public static final double ULTRAPLANETARY_3_1 = planetaryReduction(29, 55);
-    public static final double ULTRAPLANETARY_4_1 = planetaryReduction(21, 55);
-    public static final double ULTRAPLANETARY_5_1 = planetaryReduction(13, 55);
+    public static final double ULTRAPLANETARY_3_1 = GearRatio.planetaryReduction(29, 55);
+    public static final double ULTRAPLANETARY_4_1 = GearRatio.planetaryReduction(21, 55);
+    public static final double ULTRAPLANETARY_5_1 = GearRatio.planetaryReduction(13, 55);
     
     private final double reduction;
     private final GearRatio inverse;
@@ -27,7 +27,7 @@ public class GearRatio {
         this.inverse = new GearRatio(1.0 / reduction, this);
     }
     public GearRatio() {
-        this(1);
+        this(1.0);
     }
 
     public double reductionSigned() {
@@ -53,11 +53,11 @@ public class GearRatio {
         return new GearRatio(this.reductionSigned() * other.reductionSigned());
     }
     public GearRatio unsigned() {
-        return new GearRatio(Math.abs(this.reductionSigned()));
+        return new GearRatio(this.reductionUnsigned());
     }
 
-    public double applySigned(double a) {
-        return a * this.inverse().reductionSigned();
+    public double applySigned(double x) {
+        return x * this.inverse().reductionSigned();
     }
     public <U extends Unit> Measure<U> applySigned(Measure<U> angle) {
         return angle.times(this.inverse().reductionSigned());
@@ -72,8 +72,8 @@ public class GearRatio {
         return angle.times(this.inverse().reductionSigned());
     }
 
-    public double applyUnsigned(double a) {
-        return a * this.inverse().reductionUnsigned();
+    public double applyUnsigned(double x) {
+        return x * this.inverse().reductionUnsigned();
     }
     public <U extends Unit> Measure<U> applyUnsigned(Measure<U> angle) {
         return angle.times(this.inverse().reductionUnsigned());
@@ -98,7 +98,7 @@ public class GearRatio {
         }
 
         public GearRatio axle() {
-            return axle;
+            return this.axle;
         }
 
         public Gear gear(double teeth) {
@@ -115,7 +115,7 @@ public class GearRatio {
         }
 
         public GearRatio axle() {
-            return axle;
+            return this.axle;
         }
 
         public GearRatio sprocket(double teeth) {
@@ -123,7 +123,7 @@ public class GearRatio {
         }
 
         public LinearRelation chain(Measure<DistanceUnit> linkSize) {
-            return LinearRelation.wheelCircumference(linkSize.times(teeth));
+            return LinearRelation.wheelCircumference(linkSize.times(this.teeth));
         }
     }
 }

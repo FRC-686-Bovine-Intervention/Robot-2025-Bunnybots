@@ -3,11 +3,12 @@ package frc.robot.subsystems.intake.slam;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.measure.Angle;
+import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -107,8 +108,8 @@ public class IntakeSlam extends SubsystemBase {
         this.secondaryFollowerMech.setRads(this.secondaryLinkage.getFollowerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - Units.degreesToRadians(-144.10743));
         this.secondaryCouplerMech.setRads(this.secondaryLinkage.getCouplerAngleRads() + IntakeSlamConstants.secondaryFrameNormalAngle.in(Radians) - this.secondaryLinkage.getDriverAngleRads() - Units.degreesToRadians(-180));
 
-        Logger.recordOutput("Intake/Slam/Angle/Measured", this.getAngleRads());
-        Logger.recordOutput("Intake/Slam/Velocity/Measured", this.getVelocityRadsPerSec());
+        Logger.recordOutput("Intake/Slam/Angle/Measured", this.getAngleRads(), Radians);
+        Logger.recordOutput("Intake/Slam/Velocity/Measured", this.getVelocityRadsPerSec(), RadiansPerSecond);
 
         if (pidConsts.hasChanged(this.hashCode())) {
             this.io.configPID(pidConsts.get());

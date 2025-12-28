@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -16,11 +17,9 @@ import java.util.stream.IntStream;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
-import choreo.trajectory.SwerveSample;
-import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
@@ -41,7 +40,13 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.RobotState;
 import frc.robot.RobotState.OdometryObservation;
 import frc.robot.constants.RobotConstants;
-import frc.robot.subsystems.drive.commands.FollowTrajectoryCommand;
+import frc.robot.subsystems.drive.gyro.GyroIO;
+import frc.robot.subsystems.drive.gyro.GyroIOInputsAutoLogged;
+import frc.robot.subsystems.drive.modules.Module;
+import frc.robot.subsystems.drive.modules.ModuleIO;
+import frc.robot.subsystems.drive.odometry.OdometryThread;
+import frc.robot.subsystems.drive.odometry.OdometryTimestampIO;
+import frc.robot.subsystems.drive.odometry.OdometryTimestampIOInputsAutoLogged;
 import frc.util.Environment;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
@@ -120,7 +125,7 @@ public class Drive extends VirtualSubsystem {
             ),
             new SysIdRoutine.Mechanism(
                 (volts) -> {
-                    Arrays.stream(this.modules).forEach((module) -> module.runVoltage(volts, Rotation2d.kZero));
+                    Arrays.stream(this.modules).forEach((module) -> module.runVolts(volts.in(Volts), Rotation2d.kZero));
                 },
                 (log) -> {
                     Arrays.stream(this.modules).forEach((module) -> {
@@ -201,7 +206,7 @@ public class Drive extends VirtualSubsystem {
 
         this.robotMeasuredSpeeds = DriveConstants.kinematics.toChassisSpeeds(this.measuredStates);
         if (this.gyroInputs.connected) {
-            this.robotMeasuredSpeeds.omegaRadiansPerSecond = this.gyroInputs.yawVelocity.in(RadiansPerSecond);
+            this.robotMeasuredSpeeds.omegaRadiansPerSecond = this.gyroInputs.yawVelocityRadsPerSec;
         }
 
         Logger.recordOutput("Drive/Chassis Speeds/Measured", this.robotMeasuredSpeeds);
@@ -345,18 +350,23 @@ public class Drive extends VirtualSubsystem {
 
 
     public Command coast() {
+        final var drive = this;
         return new Command() {
             {
-                addRequirements(translationSubsystem, rotationalSubsystem);
-                setName("Coast");
+                this.addRequirements(drive.translationSubsystem, drive.rotationalSubsystem);
+                this.setName("Coast");
             }
             @Override
             public void initialize() {
-                Arrays.stream(modules).forEach((module) -> module.stopDrive(NeutralMode.COAST));
+                for (var module : drive.modules) {
+                    module.stopDrive(NeutralMode.COAST);
+                }
             }
             @Override
             public void end(boolean interrupted) {
-                Arrays.stream(modules).forEach((module) -> module.stopDrive(NeutralMode.BRAKE));
+                for (var module : drive.modules) {
+                    module.stopDrive(NeutralMode.DEFAULT);
+                }
             }
             @Override
             public boolean runsWhenDisabled() {
@@ -365,12 +375,12 @@ public class Drive extends VirtualSubsystem {
         };
     }
 
-    public Command followBlueTrajectory(Trajectory<SwerveSample> trajectory) {
-        return new FollowTrajectoryCommand(trajectory);
-    }
-    public Command followExactTrajectory(Trajectory<SwerveSample> trajectory) {
-        return new FollowTrajectoryCommand(trajectory);
-    }
+    // public Command followBlueTrajectory(Trajectory<SwerveSample> trajectory) {
+    //     return new FollowTrajectoryCommand(trajectory);
+    // }
+    // public Command followExactTrajectory(Trajectory<SwerveSample> trajectory) {
+    //     return new FollowTrajectoryCommand(trajectory);
+    // }
 
     public void setCenterOfRotation(Translation2d cor) {
         this.centerOfRotation = cor;
@@ -379,10 +389,10 @@ public class Drive extends VirtualSubsystem {
 
     /** Stops the drive. */
     public void stop() {
-        Arrays.stream(this.modules).forEach((module) -> {
-            module.stopDrive(Optional.empty());
-            module.stopTurn(Optional.empty());
-        });
+        for (var module : this.modules) {
+            module.stopDrive(NeutralMode.DEFAULT);
+            module.stopTurn(NeutralMode.DEFAULT);
+        }
     }
 
     /**
@@ -392,6 +402,10 @@ public class Drive extends VirtualSubsystem {
      * requested.
      */
     public void stopWithX() {
+        for (var module : this.modules) {
+            module.stopDrive(NeutralMode.DEFAULT);
+            // module.config.moduleTranslation;
+        }
         IntStream.range(0, DriveConstants.moduleConstants.length).forEach((i) -> {
             this.setpointStates[i] = new SwerveModuleState(
                 0,
@@ -401,18 +415,18 @@ public class Drive extends VirtualSubsystem {
     }
 
     /** Returns the current pitch velocity (Y rotation) in radians per second. */
-    public AngularVelocity getYawVelocity() {
-        return this.gyroInputs.yawVelocity;
+    public double getYawVelocityRadsPerSec() {
+        return this.gyroInputs.yawVelocityRadsPerSec;
     }
 
     /** Returns the current pitch velocity (Y rotation) in radians per second. */
-    public AngularVelocity getPitchVelocity() {
-        return this.gyroInputs.pitchVelocity;
+    public double getPitchVelocityRadsPerSec() {
+        return this.gyroInputs.pitchVelocityRadsPerSec;
     }
 
     /** Returns the current roll velocity (X rotation) in radians per second. */
-    public AngularVelocity getRollVelocity() {
-        return this.gyroInputs.rollVelocity;
+    public double getRollVelocityRadsPerSec() {
+        return this.gyroInputs.rollVelocityRadsPerSec;
     }
 
     /** Returns an array of module positions. */
@@ -426,27 +440,6 @@ public class Drive extends VirtualSubsystem {
 
     public ChassisSpeeds getFieldMeasuredSpeeds() {
         return this.fieldMeasuredSpeeds;
-    }
-
-    private static final LoggedTunable<PIDConstants> autoTranslationalPIDConsts = LoggedTunable.from(
-        "Drive/Autonomous PID/Translational",
-        new PIDConstants(
-            1.0,
-            0.0,
-            0.0
-        )
-    );
-    private static final LoggedTunable<PIDConstants> autoRotationalPIDConsts = LoggedTunable.from(
-        "Drive/Autonomous PID/Rotational",
-        new PIDConstants(
-            1.5,
-            0.0,
-            0.0
-        )
-    );
-
-    public final Command simplePIDTo(Supplier<Pose2d> target) {
-        return Commands.parallel(this.translationSubsystem.simplePIDTo(() -> target.get().getTranslation()), this.rotationalSubsystem.pidControlledOptionalHeading(() -> Optional.of(target.get().getRotation())));
     }
 
     public final Translational translationSubsystem;
@@ -470,55 +463,69 @@ public class Drive extends VirtualSubsystem {
 
         public void stop() {
             this.needsPostProcessing = false;
-            this.driveVelocity(0,0);
+            this.driveVelocity(0.0, 0.0);
         }
 
         public Command fieldRelative(Supplier<ChassisSpeeds> speeds) {
-            var subsystem = this;
+            final var translational = this;
             return new Command() {
                 {
-                    this.addRequirements(subsystem);
+                    this.addRequirements(translational);
                     this.setName("Field Relative");
                 }
                 @Override
                 public void execute() {
-                    driveVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), RobotState.getInstance().getEstimatedGlobalPose().getRotation()));
+                    translational.driveVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(speeds.get(), RobotState.getInstance().getEstimatedGlobalPose().getRotation()));
                 }
                 @Override
                 public void end(boolean interrupted) {
-                    stop();
+                    translational.stop();
                 }
             };
         }
         
         public Command simplePIDTo(Supplier<Translation2d> target) {
-            var subsystem = this;
+            final var translational = this;
             return new Command() {
-                private static final LoggedTunableNumber driveKP = LoggedTunable.from("Drivetest/P", 3);
+                private static final LoggedTunable<PIDConstants> pidConsts = LoggedTunable.from(
+                    "Drive/Translational/Simple PID",
+                    new PIDConstants(
+                        3.0,
+                        0.0,
+                        0.0
+                    )
+                );
+                private final PIDController pid = new PIDController(pidConsts.get().kP(), pidConsts.get().kI(), pidConsts.get().kD());
+
                 {
-                    this.addRequirements(subsystem);
+                    this.addRequirements(translational);
                     this.setName("Simple PID To");
                 }
+
                 @Override
                 public void execute() {
                     var targetPose = target.get();
-                    var distTo = RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(targetPose);
-                    var vec = targetPose.minus(RobotState.getInstance().getEstimatedGlobalPose().getTranslation());
-                    var norm = vec.div(vec.getNorm());
-                    var pterm = distTo * driveKP.getAsDouble();
-                    var out = norm.times(pterm);
-                    driveVelocity(ChassisSpeeds.fromFieldRelativeSpeeds(
-                        new ChassisSpeeds(
-                            out.getX(),
-                            out.getY(),
-                            0
-                        ),
-                        RobotState.getInstance().getEstimatedGlobalPose().getRotation()
-                    ));
+                    var errX = targetPose.getX() - RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getX();
+                    var errY = targetPose.getY() - RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getY();
+
+                    var errDist = Math.hypot(errX, errY);
+
+                    var pidOut = -this.pid.calculate(errDist, 0.0);
+
+                    var pidX = errX / errDist * pidOut;
+                    var pidY = errY / errDist * pidOut;
+
+                    var fieldRotation = RobotState.getInstance().getEstimatedGlobalPose().getRotation();
+
+                    var pidRobotX = pidX * +fieldRotation.getCos() + pidY * +fieldRotation.getSin();
+                    var pidRobotY = pidX * -fieldRotation.getSin() + pidY * +fieldRotation.getCos();
+
+                    translational.driveVelocity(pidRobotX, pidRobotY);
                 }
+
                 @Override
                 public void end(boolean interrupted) {
-                    stop();
+                    translational.stop();
                 }
             };
         }

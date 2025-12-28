@@ -141,8 +141,8 @@ public final class FieldConstants {
 
         private static final Distance goalCenterYOffset = Inches.of(35.500000).plus(Inches.of(5.500000)).div(2);
 
-        private static final AllianceFlipped<AprilTag> shutoffAprilTag = new AllianceFlipped<>(7, 8).map((id) -> apriltagLayout.getTags().get(id));
-        private static final AllianceFlipped<AprilTag> permanentAprilTag = new AllianceFlipped<>(5, 6).map((id) -> apriltagLayout.getTags().get(id));
+        private static final AllianceFlipped<AprilTag> shutoffAprilTag = new AllianceFlipped<>(7, 8).map((id) -> apriltags.get(id - 1));
+        private static final AllianceFlipped<AprilTag> permanentAprilTag = new AllianceFlipped<>(5, 6).map((id) -> apriltags.get(id - 1));
 
         private static final AllianceFlipped<Translation3d> shutoffHighAimPoint = AllianceFlipped.fromBlue(new Translation3d(
             Inches.of(4.000000),

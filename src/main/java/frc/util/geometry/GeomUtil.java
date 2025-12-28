@@ -20,10 +20,8 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.units.measure.AngleUnit;
-import edu.wpi.first.units.measure.DistanceUnit;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.measure.Angle;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
 
 public class GeomUtil {
     public static final Transform2d rotate180Transform2d = new Transform2d(Translation2d.kZero, Rotation2d.k180deg);
@@ -66,19 +64,19 @@ public class GeomUtil {
     public static boolean isNear(Pose2d expected, Pose2d actual, double linearTolerance, double angularTolerance) {
         return isNear(expected.getTranslation(), actual.getTranslation(), linearTolerance) && isNear(expected.getRotation(), actual.getRotation(), angularTolerance);
     }
-    public static boolean isNear(Pose2d expected, Pose2d actual, DistanceUnit linearTolerance, AngleUnit angularTolerance) {
+    public static boolean isNear(Pose2d expected, Pose2d actual, Distance linearTolerance, Angle angularTolerance) {
         return isNear(expected.getTranslation(), actual.getTranslation(), linearTolerance) && isNear(expected.getRotation(), actual.getRotation(), angularTolerance);
     }
     public static boolean isNear(Translation2d expected, Translation2d actual, double tolerance) {
         return actual.getDistance(expected) <= tolerance;
     }
-    public static boolean isNear(Translation2d expected, Translation2d actual, DistanceUnit tolerance) {
+    public static boolean isNear(Translation2d expected, Translation2d actual, Distance tolerance) {
         return isNear(expected, actual, tolerance.in(Meters));
     }
     public static boolean isNear(Rotation2d expected, Rotation2d actual, double tolerance) {
         return Math.abs(actual.minus(expected).getRadians()) <= tolerance;
     }
-    public static boolean isNear(Rotation2d expected, Rotation2d actual, AngleUnit tolerance) {
+    public static boolean isNear(Rotation2d expected, Rotation2d actual, Angle tolerance) {
         return isNear(expected, actual, tolerance.in(Radians));
     }
     public static boolean isNear(ChassisSpeeds expected, ChassisSpeeds actual, double linearTolerance, double angularTolerance) {

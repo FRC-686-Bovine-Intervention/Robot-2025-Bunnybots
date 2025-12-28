@@ -1,4 +1,4 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.modules;
 
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -8,12 +8,12 @@ import static edu.wpi.first.units.Units.Volts;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.units.measure.AngleUnit;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.measure.MutVoltage;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.MutVoltage;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import frc.robot.constants.RobotConstants;
+import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.drive.DriveConstants.ModuleConstants;
 
 public class ModuleIOSim extends ModuleIOFalcon550 {
@@ -71,11 +71,11 @@ public class ModuleIOSim extends ModuleIOFalcon550 {
         this.azimuthAppliedVolts.mut_replace(MathUtil.clamp(volts, -12, 12), Volts);
     }
     @Override
-    public void setAzimuthAngle(AngleUnit angle) {
+    public void setAzimuthAngleRads(double angleRads) {
         this.setAzimuthVolts(
             this.azimuthPID.calculate(
                 this.azimuthSim.getAngularPosition().in(Rotations),
-                angle.in(Rotations)
+                Units.radiansToRotations(angleRads)
             )
         );
     }

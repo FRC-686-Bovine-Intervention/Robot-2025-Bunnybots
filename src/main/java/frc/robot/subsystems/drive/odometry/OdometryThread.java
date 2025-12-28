@@ -1,4 +1,4 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.odometry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +14,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 
 import edu.wpi.first.wpilibj.Timer;
+import frc.robot.subsystems.drive.DriveConstants;
 
 public class OdometryThread extends Thread {
     private static OdometryThread instance;

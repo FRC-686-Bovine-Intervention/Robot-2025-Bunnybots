@@ -6,7 +6,6 @@ import java.util.Map;
 import org.littletonrobotics.junction.LogTable;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.inputs.LoggableInputs;
-import org.littletonrobotics.junction.networktables.LoggedNetworkInput;
 import org.littletonrobotics.junction.networktables.LoggedNetworkNumber;
 
 import edu.wpi.first.math.Matrix;
@@ -148,7 +147,7 @@ public class Perspective {
 
     public static void periodic() {
         ntArray = selectedEntry.readQueueValues();
-        Logger.processInputs(LoggedNetworkInput.prefix, inputs);
+        Logger.processInputs("NetworkInputs", inputs);
         for (var selected : ntArray) {
             selectedName = selected;
             selectionPriority = 2;

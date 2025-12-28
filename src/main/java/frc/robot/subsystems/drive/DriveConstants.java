@@ -11,11 +11,9 @@ import java.util.Arrays;
 
 import com.ctre.phoenix6.signals.InvertedValue;
 
-import edu.wpi.first.math.Vector;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.numbers.N2;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
@@ -24,7 +22,6 @@ import edu.wpi.first.units.measure.Frequency;
 import edu.wpi.first.units.measure.LinearVelocity;
 import frc.robot.constants.HardwareDevices;
 import frc.robot.constants.RobotConstants;
-import frc.util.geometry.GeomUtil;
 import frc.util.hardwareID.can.CANDevice;
 import frc.util.mechanismUtil.GearRatio;
 import frc.util.mechanismUtil.LinearRelation;
@@ -46,7 +43,7 @@ public final class DriveConstants {
         public final Rotation2d moduleForwardDirection;
         public final Angle encoderZeroOffset;
         public final Translation2d moduleTranslation;
-        public final Vector<N2> positiveRotVec;
+        public final Rotation2d positiveRotVec;
         ModuleConstants(String name, CANDevice driveMotorID, CANDevice turnMotorID, InvertedValue driveInverted, Rotation2d moduleForwardDirection, Angle encoderZeroOffset, Translation2d moduleTranslation) {
             this.name = name;
             this.driveMotorID = driveMotorID;
@@ -55,7 +52,7 @@ public final class DriveConstants {
             this.moduleForwardDirection = moduleForwardDirection;
             this.encoderZeroOffset = encoderZeroOffset;
             this.moduleTranslation = moduleTranslation;
-            this.positiveRotVec = GeomUtil.vectorFromRotation(this.moduleTranslation.getAngle().plus(Rotation2d.fromDegrees(90)));
+            this.positiveRotVec = this.moduleTranslation.getAngle().plus(Rotation2d.kCCW_90deg);
         }
     }
 

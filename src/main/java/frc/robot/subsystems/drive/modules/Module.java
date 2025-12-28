@@ -1,10 +1,7 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.modules;
 
 import static edu.wpi.first.units.Units.InchesPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
-import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Optional;
 
@@ -14,11 +11,12 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.units.VoltageUnit;
 import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.drive.DriveConstants.ModuleConstants;
+import frc.robot.subsystems.drive.odometry.OdometryThread;
 import frc.util.FFConstants;
 import frc.util.LoggedTracer;
 import frc.util.NeutralMode;
@@ -182,7 +180,7 @@ public class Module {
         setpoint.optimize(this.getAngle());
         
         var turnSetpoint = setpoint.angle;
-        this.io.setAzimuthAngle(turnSetpoint.minus(this.config.moduleForwardDirection).getMeasure());
+        this.io.setAzimuthAngleRads(turnSetpoint.minus(this.config.moduleForwardDirection).getRadians());
 
         setpoint.speedMetersPerSecond *= turnSetpoint.minus(this.getAngle()).getCos();
 
@@ -192,16 +190,16 @@ public class Module {
 
         var belowBrakeModeThreshold = Math.abs(setpoint.speedMetersPerSecond) < brakeModeThreshold.get().in(MetersPerSecond);
 
-        this.io.setDriveVelocity(RadiansPerSecond.of(velocityRadPerSec), RadiansPerSecondPerSecond.zero(), Volts.of(ffout), belowBrakeModeThreshold);
+        this.io.setDriveVelocityRadPerSec(velocityRadPerSec, 0.0, ffout, belowBrakeModeThreshold);
     }
 
     /**
      * Runs the module with the specified voltage
      * Must be called periodically.
      */
-    public void runVoltage(VoltageUnit volts, Rotation2d moduleAngle) {
-        this.io.setAzimuthAngle(moduleAngle.minus(this.config.moduleForwardDirection).getMeasure());
-        this.io.setDriveVoltage(volts);
+    public void runVolts(double volts, Rotation2d moduleAngle) {
+        this.io.setAzimuthAngleRads(moduleAngle.minus(this.config.moduleForwardDirection).getRadians());
+        this.io.setDriveVolts(volts);
     }
 
     public void stopDrive(Optional<NeutralMode> neutralMode) {

@@ -1,13 +1,9 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.modules;
 
 import java.util.Optional;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import edu.wpi.first.units.AngleUnit;
-import edu.wpi.first.units.AngularAccelerationUnit;
-import edu.wpi.first.units.AngularVelocityUnit;
-import edu.wpi.first.units.VoltageUnit;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.loggerUtil.inputs.LoggedEncodedMotor;
@@ -34,12 +30,12 @@ public interface ModuleIO {
     public default void updateInputs(ModuleIOInputs inputs) {}
 
     /** Run the drive motor at the specified voltage. */
-    public default void setDriveVoltage(VoltageUnit voltage) {}
-    public default void setDriveVelocity(AngularVelocityUnit velocity, AngularAccelerationUnit acceleration, VoltageUnit feedforward, boolean overrideWithBrakeMode) {}
+    public default void setDriveVolts(double volts) {}
+    public default void setDriveVelocityRadPerSec(double velocityRadPerSec, double accelerationRadPerSec2, double feedforwardVolts, boolean overrideWithBrakeMode) {}
 
     /** Run the turn motor at the specified voltage. */
-    public default void setAzimuthVoltage(VoltageUnit volts) {}
-    public default void setAzimuthAngle(AngleUnit angle) {}
+    public default void setAzimuthVolts(double volts) {}
+    public default void setAzimuthAngleRads(double angleRads) {}
 
     public default void stopDrive(Optional<NeutralMode> neutralMode) {}
     public default void stopAzimuth(Optional<NeutralMode> neutralMode) {}

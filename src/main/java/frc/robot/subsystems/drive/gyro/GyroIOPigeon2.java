@@ -1,4 +1,4 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.gyro;
 
 import static edu.wpi.first.units.Units.Degrees;
 
@@ -13,7 +13,9 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.AngularVelocity;
 import frc.robot.constants.HardwareDevices;
 import frc.robot.constants.RobotConstants;
-import frc.robot.subsystems.drive.OdometryThread.Buffer;
+import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.drive.odometry.OdometryThread;
+import frc.robot.subsystems.drive.odometry.OdometryThread.Buffer;
 
 /** IO implementation for Pigeon2 */
 public class GyroIOPigeon2 implements GyroIO {
@@ -96,9 +98,9 @@ public class GyroIOPigeon2 implements GyroIO {
 
         inputs.odometryGyroRotation = this.quatBuffer.popAll();
 
-        inputs.yawVelocity = this.yawVelocitySignal.getValue();   // ccw+
-        inputs.pitchVelocity = this.pitchVelocitySignal.getValue().unaryMinus();   // up+
-        inputs.rollVelocity = this.rollVelocitySignal.getValue().unaryMinus();   // ccw+
+        inputs.yawVelocityRadsPerSec = this.yawVelocitySignal.getValueAsDouble();
+        inputs.pitchVelocityRadsPerSec = this.pitchVelocitySignal.getValueAsDouble();
+        inputs.rollVelocityRadsPerSec = this.rollVelocitySignal.getValueAsDouble();
     }
 
     @Override

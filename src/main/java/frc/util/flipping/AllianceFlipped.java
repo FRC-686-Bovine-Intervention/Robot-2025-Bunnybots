@@ -2,8 +2,6 @@ package frc.util.flipping;
 
 import java.util.function.Function;
 
-import choreo.trajectory.SwerveSample;
-import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -192,29 +190,29 @@ public class AllianceFlipped<T> {
         return new AllianceFlipped<>(AllianceFlipUtil.flipFieldRelative(red, flipType), red);
     }
 
-    public static AllianceFlipped<SwerveSample> fromBlue(SwerveSample blue) {
-        return AllianceFlipped.fromBlue(blue, AllianceFlipUtil.defaultFlipType);
-    }
-    public static AllianceFlipped<SwerveSample> fromBlue(SwerveSample blue, FieldFlipType flipType) {
-        return new AllianceFlipped<>(blue, AllianceFlipUtil.flip(blue, flipType));
-    }
-    public static AllianceFlipped<SwerveSample> fromRed(SwerveSample red) {
-        return AllianceFlipped.fromRed(red, AllianceFlipUtil.defaultFlipType);
-    }
-    public static AllianceFlipped<SwerveSample> fromRed(SwerveSample red, FieldFlipType flipType) {
-        return new AllianceFlipped<>(AllianceFlipUtil.flip(red, flipType), red);
-    }
+    // public static AllianceFlipped<SwerveSample> fromBlue(SwerveSample blue) {
+    //     return AllianceFlipped.fromBlue(blue, AllianceFlipUtil.defaultFlipType);
+    // }
+    // public static AllianceFlipped<SwerveSample> fromBlue(SwerveSample blue, FieldFlipType flipType) {
+    //     return new AllianceFlipped<>(blue, AllianceFlipUtil.flip(blue, flipType));
+    // }
+    // public static AllianceFlipped<SwerveSample> fromRed(SwerveSample red) {
+    //     return AllianceFlipped.fromRed(red, AllianceFlipUtil.defaultFlipType);
+    // }
+    // public static AllianceFlipped<SwerveSample> fromRed(SwerveSample red, FieldFlipType flipType) {
+    //     return new AllianceFlipped<>(AllianceFlipUtil.flip(red, flipType), red);
+    // }
 
-    public static AllianceFlipped<Trajectory<SwerveSample>> fromBlue(Trajectory<SwerveSample> blue) {
-        return AllianceFlipped.fromBlue(blue, AllianceFlipUtil.defaultFlipType);
-    }
-    public static AllianceFlipped<Trajectory<SwerveSample>> fromBlue(Trajectory<SwerveSample> blue, FieldFlipType flipType) {
-        return new AllianceFlipped<>(blue, AllianceFlipUtil.flip(blue, flipType));
-    }
-    public static AllianceFlipped<Trajectory<SwerveSample>> fromRed(Trajectory<SwerveSample> red) {
-        return AllianceFlipped.fromRed(red, AllianceFlipUtil.defaultFlipType);
-    }
-    public static AllianceFlipped<Trajectory<SwerveSample>> fromRed(Trajectory<SwerveSample> red, FieldFlipType flipType) {
-        return new AllianceFlipped<>(AllianceFlipUtil.flip(red, flipType), red);
-    }
+    // public static AllianceFlipped<Trajectory<SwerveSample>> fromBlue(Trajectory<SwerveSample> blue) {
+    //     return AllianceFlipped.fromBlue(blue, AllianceFlipUtil.defaultFlipType);
+    // }
+    // public static AllianceFlipped<Trajectory<SwerveSample>> fromBlue(Trajectory<SwerveSample> blue, FieldFlipType flipType) {
+    //     return new AllianceFlipped<>(blue, AllianceFlipUtil.flip(blue, flipType));
+    // }
+    // public static AllianceFlipped<Trajectory<SwerveSample>> fromRed(Trajectory<SwerveSample> red) {
+    //     return AllianceFlipped.fromRed(red, AllianceFlipUtil.defaultFlipType);
+    // }
+    // public static AllianceFlipped<Trajectory<SwerveSample>> fromRed(Trajectory<SwerveSample> red, FieldFlipType flipType) {
+    //     return new AllianceFlipped<>(AllianceFlipUtil.flip(red, flipType), red);
+    // }
 }

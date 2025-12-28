@@ -1,18 +1,17 @@
-package frc.robot.subsystems.drive;
+package frc.robot.subsystems.drive.modules;
 
 import static edu.wpi.first.units.Units.Milliseconds;
 import static edu.wpi.first.units.Units.Rotations;
-import static edu.wpi.first.units.Units.RotationsPerSecond;
-import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
-import static edu.wpi.first.units.Units.Volts;
 
 import java.util.Optional;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.controls.NeutralOut;
+import com.ctre.phoenix6.controls.StaticBrake;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -27,14 +26,11 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.units.measure.AngleUnit;
-import edu.wpi.first.units.measure.AngularAccelerationUnit;
-import edu.wpi.first.units.measure.AngularVelocityUnit;
-import edu.wpi.first.units.Measure;
-import edu.wpi.first.units.measure.VoltageUnit;
 import frc.robot.constants.RobotConstants;
+import frc.robot.subsystems.drive.DriveConstants;
 import frc.robot.subsystems.drive.DriveConstants.ModuleConstants;
-import frc.robot.subsystems.drive.OdometryThread.DoubleBuffer;
+import frc.robot.subsystems.drive.odometry.OdometryThread;
+import frc.robot.subsystems.drive.odometry.OdometryThread.DoubleBuffer;
 import frc.util.NeutralMode;
 import frc.util.PIDConstants;
 import frc.util.faults.DeviceFaults;
@@ -53,6 +49,9 @@ public class ModuleIOFalcon550 implements ModuleIO {
 
     private final VoltageOut driveVolts = new VoltageOut(0);
     private final VelocityVoltage driveVelocity = new VelocityVoltage(0);
+    private final NeutralOut neutralOutRequest = new NeutralOut();
+    private final CoastOut coastOutRequest = new CoastOut();
+    private final StaticBrake staticBrakeRequest = new StaticBrake();
 
     protected final PIDController azimuthPID = new PIDController(0, 0, 0);
 
@@ -143,39 +142,37 @@ public class ModuleIOFalcon550 implements ModuleIO {
     }
 
     @Override
-    public void setDriveVoltage(VoltageUnit volts) {
-        this.driveMotor.setControl(this.driveVolts.withOutput(volts.in(Volts)));
+    public void setDriveVolts(double volts) {
+        this.driveMotor.setControl(this.driveVolts.withOutput(volts));
     }
     @Override
-    public void setDriveVelocity(AngularVelocityUnit velocity, AngularAccelerationUnit acceleration, VoltageUnit feedforward, boolean overrideWithBrakeMode) {
+    public void setDriveVelocityRadPerSec(double velocityRadPerSec, double accelerationRadPerSec2, double feedforwardVolts, boolean overrideWithBrakeMode) {
         this.driveMotor.setControl(this.driveVelocity
-            .withVelocity(velocity.in(RotationsPerSecond))
-            .withAcceleration(acceleration.in(RotationsPerSecondPerSecond))
-            .withFeedForward(feedforward.in(Volts))
+            .withVelocity(Units.radiansToRotations(velocityRadPerSec))
+            .withAcceleration(Units.radiansToRotations(accelerationRadPerSec2))
+            .withFeedForward(feedforwardVolts)
             .withOverrideBrakeDurNeutral(overrideWithBrakeMode)
         );
     }
 
-    protected void setAzimuthVolts(double volts) {
+    @Override
+    public void setAzimuthVolts(double volts) {
         this.azimuthMotor.setVoltage(volts);
     }
     @Override
-    public void setAzimuthVoltage(VoltageUnit volts) {
-        this.setAzimuthVolts(volts.in(Volts));
-    }
-    @Override
-    public void setAzimuthAngle(AngleUnit angle) {
+    public void setAzimuthAngleRads(double angleRads) {
         this.setAzimuthVolts(
             this.azimuthPID.calculate(
                 this.azimuthAbsoluteEncoder.getPosition(),
-                angle.in(Rotations)
+                Units.radiansToRotations(angleRads)
             )
         );
     }
     
     @Override
     public void stopDrive(Optional<NeutralMode> neutralMode) {
-        this.driveMotor.setControl(neutralMode.map(NeutralMode::getPhoenix6ControlRequest).orElseGet(NeutralOut::new));
+        var controlRequest = NeutralMode.selectControlRequest(neutralMode, this.neutralOutRequest, this.coastOutRequest, this.staticBrakeRequest);
+        this.driveMotor.setControl(controlRequest);
     }
     @Override
     public void stopAzimuth(Optional<NeutralMode> neutralMode) {

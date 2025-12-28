@@ -9,8 +9,8 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.units.measure.measure.Angle;
-import edu.wpi.first.units.measure.measure.Distance;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.Distance;
 import frc.util.geometry.GeomUtil;
 import frc.util.mechanismUtil.GearRatio;
 

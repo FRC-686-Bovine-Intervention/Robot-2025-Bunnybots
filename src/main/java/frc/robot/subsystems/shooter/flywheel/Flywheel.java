@@ -1,13 +1,14 @@
 package frc.robot.subsystems.shooter.flywheel;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
-import edu.wpi.first.units.measure.measure.LinearVelocity;
+import edu.wpi.first.units.measure.LinearVelocity;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -70,7 +71,7 @@ public class Flywheel extends SubsystemBase {
 
         this.averageSurfaceVeloMPS = FlywheelConstants.flywheel.radiansToMeters(MathExtraUtil.average(this.inputs.leftMotor.encoder.getVelocityRadsPerSec(), this.inputs.rightMotor.encoder.getVelocityRadsPerSec()));
 
-        Logger.recordOutput("Shooter/Flywheel/Average MPS", this.getAverageSurfaceVeloMPS());
+        Logger.recordOutput("Shooter/Flywheel/Average MPS", this.getAverageSurfaceVeloMPS(), MetersPerSecond);
 
         if (pidConsts.hasChanged(this.hashCode())) {
             this.io.configPID(pidConsts.get());
@@ -94,7 +95,7 @@ public class Flywheel extends SubsystemBase {
 
     private void applySurfaceVeloMPS(double surfaceVeloMPS) {
         var motorSpeed = FlywheelConstants.motorToMechanism.inverse().applyUnsigned(FlywheelConstants.flywheel.metersToRadians(surfaceVeloMPS));
-        Logger.recordOutput("Shooter/Flywheel/Goal Speed", motorSpeed);
+        Logger.recordOutput("Shooter/Flywheel/Goal Speed", motorSpeed, RadiansPerSecond);
         this.io.setVelocity(motorSpeed, this.ff.calculate(motorSpeed));
     }
 

@@ -147,24 +147,17 @@ public class Robot extends LoggedRobot {
             this.robotContainer.objectVision.periodic();
             LoggedTracer.logEpoch("CommandScheduler Periodic/ObjectVision Periodic");
 
-            //Mechanism3d.logAscopeComponents();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
+            // Mechanism3d.logAscopeComponents();
+            // LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeComponents");
 
-            //Mechanism3d.logAscopeAxes();
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
+            // Mechanism3d.logAscopeAxes();
+            // LoggedTracer.logEpoch("CommandScheduler Periodic/Mechanism3d LogAscopeAxes");
             
-            // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Coral", this.robotContainer.intake.hasCoral());
-            // this.robotContainer.intake.coralPose.logAscopePose("Gamepiece/Algae", this.robotContainer.intake.hasAlgae());
-            LoggedTracer.logEpoch("CommandScheduler Periodic/Log Intake Gamepieces");
-
             this.robotContainer.automationsLoop.poll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Automations");
 
             CommandScheduler.getInstance().getDefaultButtonLoop().poll();
             LoggedTracer.logEpoch("CommandScheduler Periodic/Triggers");
-
-            Logger.recordOutput("DEBUG/LEFT CAM POSE", this.robotContainer.frontLeftCamera.mount.getFieldRelative());
-            Logger.recordOutput("DEBUG/RIGHT CAM POSE", this.robotContainer.frontRightCamera.mount.getFieldRelative());
         });
         CommandScheduler.getInstance().setActiveButtonLoop(activeButtonLoop);
     }
