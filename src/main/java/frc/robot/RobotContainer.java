@@ -140,13 +140,13 @@ public class RobotContainer {
                     new CameraIOPhoton("Front Right"),
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().frCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIOPhoton("Intake"),
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().intakeCamConnection.setStatus(isConnected);}
                 );
             }
             case SIM -> {
@@ -180,13 +180,13 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().frCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().intakeCamConnection.setStatus(isConnected);}
                 );
             }
             default -> {
@@ -221,13 +221,13 @@ public class RobotContainer {
                     new CameraIO() {},
                     "Front Right",
                     VisionConstants.frontRightMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().frCamConnection.setStatus(isConnected);}
                 );
                 this.intakeCamera = new Camera(
                     new CameraIO() {},
                     "Intake",
                     VisionConstants.intakeMount,
-                    (isConnected) -> {Leds.getInstance().flCamConnection.setStatus(isConnected);}
+                    (isConnected) -> {Leds.getInstance().intakeCamConnection.setStatus(isConnected);}
                 );
             }
         }
