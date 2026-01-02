@@ -1,11 +1,12 @@
 package frc.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.wpi.first.math.geometry.Translation2d;
 
 public class PolynomialRegressionBuilder {
-    private List<Translation2d> points;
+    private List<Translation2d> points = new ArrayList<>(0);
     private int degree = 0;
 
     public PolynomialRegressionBuilder(int degree) {
