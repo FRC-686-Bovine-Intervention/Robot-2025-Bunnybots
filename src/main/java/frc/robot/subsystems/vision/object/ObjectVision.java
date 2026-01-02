@@ -7,9 +7,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -25,16 +22,11 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.util.struct.Struct;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.RobotState;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
-import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.vision.cameras.CameraIO.CameraTarget;
-import frc.util.LazyOptional;
 import frc.util.LoggedTracer;
-import frc.util.loggerUtil.LoggerUtil;
 import frc.util.loggerUtil.tunables.LoggedTunable;
 import frc.util.loggerUtil.tunables.LoggedTunableNumber;
 import frc.util.robotStructure.CameraMount;
@@ -51,12 +43,8 @@ public class ObjectVision {
     private static final LoggedTunableNumber priorityPerDistance =         LoggedTunable.from("Vision/Object/Priority/Priority Per Distance", -2);
     private static final LoggedTunableNumber acquireConfidenceThreshold =  LoggedTunable.from("Vision/Object/Target Threshold/Acquire", 0.75);
     private static final LoggedTunableNumber detargetConfidenceThreshold = LoggedTunable.from("Vision/Object/Target Threshold/Detarget", -3);
-    
+    // private static final LoggedTunableNumber _intakeTargetLocked = LoggedTunable.from("Vision/Object/Testing/Intake Target Locked", 0);
     //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
-
-    private static final Translation3d planeNormal = new Translation3d(0, 0, 1);
-    private static final Translation3d planePoint = new Translation3d(0, 0, FieldConstants.luniteDimensions.getZ() / 2.0);
-    private static final double planeD = -planeNormal.toVector().dot(planePoint.toVector());
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
     private ChassisSpeeds desiredRobotRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(0.0, 0.0, 0.0, Rotation2d.kZero);
@@ -157,76 +145,81 @@ public class ObjectVision {
                 //Logger.recordOutput(loggingKey + "Object Priority", objectMemories.stream().mapToDouble(TrackedObject::getPriority).toArray());
                 Logger.recordOutput(loggingKey + "Targets", Iterator.of(frameTargets).map((target) -> target.toASPose()).collect_array(Pose3d[]::new));
                 Logger.recordOutput(loggingKey + "Locked Target", optIntakeTarget.map(TrackedObject::toASPose).orElse(null));
+                // intakeTargetLocked = _intakeTargetLocked.getAsDouble() == 1;
+                // var x = getIntakeYSpeedFromRobotSpeeds(ChassisSpeeds.fromRobotRelativeSpeeds(-1.0, 0.0, 0.0, Rotation2d.kZero));
+                // Logger.recordOutput(loggingKey + "TargetYSpeed", x);
             }
         }
     }
 
-    public DoubleSupplier applyDotProduct(Supplier<ChassisSpeeds> joystickFieldRelative) {
-        return () -> optIntakeTarget.map((target) -> {
-            var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
-            var targetRelRobot = target.fieldPos.minus(robotTrans);
-            var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
-            var joystickSpeed = joystickFieldRelative.get();
-            var joy = new Translation2d(joystickSpeed.vxMetersPerSecond, joystickSpeed.vyMetersPerSecond);
-            var throttle = targetRelRobotNormalized.toVector().dot(joy.toVector());
-            return throttle;
-        }).orElse(0.0);
+    // public DoubleSupplier applyDotProduct(Supplier<ChassisSpeeds> joystickFieldRelative) {
+    //     return () -> optIntakeTarget.map((target) -> {
+    //         var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
+    //         var targetRelRobot = target.fieldPos.minus(robotTrans);
+    //         var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
+    //         var joystickSpeed = joystickFieldRelative.get();
+    //         var joy = new Translation2d(joystickSpeed.vxMetersPerSecond, joystickSpeed.vyMetersPerSecond);
+    //         var throttle = targetRelRobotNormalized.toVector().dot(joy.toVector());
+    //         return throttle;
+    //     }).orElse(0.0);
+    // }
+
+    // public LazyOptional<ChassisSpeeds> getAutoIntakeTransSpeed(DoubleSupplier throttleSupplier) {
+    //     return () -> optIntakeTarget.map((target) -> {
+    //         var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
+    //         var targetRelRobot = target.fieldPos.minus(robotTrans);
+    //         var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
+    //         var finalTrans = targetRelRobotNormalized.times(throttleSupplier.getAsDouble());
+    //         return new ChassisSpeeds(finalTrans.getX(), finalTrans.getY(), 0);
+    //     });
+    // }
+
+    // public LazyOptional<Translation2d> autoIntakeTargetLocation() {
+    //     return () -> optIntakeTarget.map((target) -> target.fieldPos);
+    // }
+
+    // public boolean hasTarget() {
+    //     return optIntakeTarget.isPresent();
+    // }
+
+    // public boolean targetLocked() {
+    //     return intakeTargetLocked;
+    // }
+
+    // public void setTargetLocked(boolean targetLocked) {
+    //     this.intakeTargetLocked = targetLocked;
+    // }
+
+    // public void clearMemory() {
+    //     //objectMemories.clear();
+    //     optIntakeTarget = Optional.empty();
+    // }
+
+    // public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noObject, Drive drive) {
+    //     return 
+    //         Commands.runOnce(() -> intakeTargetLocked = true)
+    //         .alongWith(
+    //             drive.rotationalSubsystem.pointTo(() -> Optional.of(optIntakeTarget.get().fieldPos), () -> Rotation2d.k180deg)
+    //         )
+    //         .onlyWhile(() -> noObject.getAsBoolean() && optIntakeTarget.isPresent())
+    //         .finallyDo(() -> intakeTargetLocked = false)
+    //         .withName("Auto Intake")
+    //     ;
+    // }
+
+    public void updateTargetRobotRelativeSpeeds(ChassisSpeeds chassisSpeeds) {
+        desiredRobotRelativeSpeeds = chassisSpeeds;
     }
 
-    public LazyOptional<ChassisSpeeds> getAutoIntakeTransSpeed(DoubleSupplier throttleSupplier) {
-        return () -> optIntakeTarget.map((target) -> {
-            var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
-            var targetRelRobot = target.fieldPos.minus(robotTrans);
-            var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
-            var finalTrans = targetRelRobotNormalized.times(throttleSupplier.getAsDouble());
-            return new ChassisSpeeds(finalTrans.getX(), finalTrans.getY(), 0);
-        });
-    }
-
-    public LazyOptional<Translation2d> autoIntakeTargetLocation() {
-        return () -> optIntakeTarget.map((target) -> target.fieldPos);
-    }
-
-    public boolean hasTarget() {
-        return optIntakeTarget.isPresent();
-    }
-
-    public boolean targetLocked() {
-        return intakeTargetLocked;
-    }
-
-    public void setTargetLocked(boolean targetLocked) {
-        this.intakeTargetLocked = targetLocked;
-    }
-
-    public void clearMemory() {
-        //objectMemories.clear();
-        optIntakeTarget = Optional.empty();
-    }
-
-    public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noObject, Drive drive) {
-        return 
-            Commands.runOnce(() -> intakeTargetLocked = true)
-            .alongWith(
-                drive.rotationalSubsystem.pointTo(() -> Optional.of(optIntakeTarget.get().fieldPos), () -> Rotation2d.k180deg)
-            )
-            .onlyWhile(() -> noObject.getAsBoolean() && optIntakeTarget.isPresent())
-            .finallyDo(() -> intakeTargetLocked = false)
-            .withName("Auto Intake")
-        ;
-    }
-
-    public double getIntakeOffsetSpeedFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
+    public double getIntakeYSpeedFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
         if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
             return 0.0;
         }
+        updateTargetRobotRelativeSpeeds(inputSpeeds);
         var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
         var intakeTargetPos = optIntakeTarget.get().fieldPos;
         var objectRelativeToRobot = new Pose2d(intakeTargetPos, Rotation2d.kZero).relativeTo(robotPose).getTranslation();
-        return -inputSpeeds.vyMetersPerSecond + inputSpeeds.vxMetersPerSecond*Math.tan(
-            objectRelativeToRobot.getY() /
-            objectRelativeToRobot.getX()
-        );
+        return (objectRelativeToRobot.getY() / objectRelativeToRobot.getX()) * desiredRobotRelativeSpeeds.vxMetersPerSecond;
     }
 
     private static record TargetMemoryConnection(TrackedObject memory, TrackedObject cameraTarget) {

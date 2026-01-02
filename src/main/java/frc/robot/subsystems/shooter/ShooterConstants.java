@@ -6,6 +6,8 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Radians;
 
 import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+import frc.util.PolynomialRegression;
+import frc.util.PolynomialRegressionBuilder;
 
 public class ShooterConstants {
     public static final InterpolatingDoubleTreeMap highGoalTargetFlywheelVeloMPS = new InterpolatingDoubleTreeMap();
@@ -51,4 +53,11 @@ public class ShooterConstants {
     static {
         lowGoalTargetDrivetrainOffsetRads.put(Meters.of(1.1717).in(Meters), Degrees.of(0.0).in(Radians));
     }
+    // public static final PolynomialRegression lowGoalTargetPivotAltitudeRads = new PolynomialRegressionBuilder(3)
+    // .addPoint(Meters.of(1.415).in(Meters), Degrees.of(15.0).in(Radians))
+    // .addPoint(Meters.of(1.838).in(Meters), Degrees.of(4.0).in(Radians))
+    // .addPoint(Meters.of(2.572).in(Meters), Degrees.of(9.0).in(Radians))
+    // .addPoint(Meters.of(3.88).in(Meters), Degrees.of(7.0).in(Radians))
+    // .build();
+ 
 }
