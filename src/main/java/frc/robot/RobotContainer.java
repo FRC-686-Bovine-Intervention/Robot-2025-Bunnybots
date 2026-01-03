@@ -8,8 +8,12 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.Set;
 
+import choreo.Choreo;
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -30,6 +34,7 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.constants.RobotConstants;
 import frc.robot.subsystems.drive.Drive;
 import frc.robot.subsystems.drive.DriveConstants;
+import frc.robot.subsystems.drive.commands.FollowTrajectoryCommand;
 import frc.robot.subsystems.drive.commands.WheelRadiusCalibration;
 import frc.robot.subsystems.drive.gyro.GyroIO;
 import frc.robot.subsystems.drive.gyro.GyroIOPigeon2;
@@ -481,6 +486,9 @@ public class RobotContainer {
         
         this.driveController.x().whileTrue(this.rollers.kick());
         this.driveController.a().whileTrue(this.rollers.reverse());
+
+        Optional<Trajectory<SwerveSample>> traj = Choreo.loadTrajectory("New Path");
+        this.driveController.povUp().whileTrue(new FollowTrajectoryCommand(this.drive, traj.get(), false));
 
         var aimJoystick = this.driveController.rightStick; 
         
