@@ -282,7 +282,12 @@ public class Drive extends VirtualSubsystem {
         this.tiltLimits = tiltLimits;
     }
     public void runRobotSpeeds(ChassisSpeeds robotSpeeds) {
-        this.desiredRobotSpeeds = robotSpeeds;
+        this.runRobotSpeeds(robotSpeeds.vxMetersPerSecond, robotSpeeds.vyMetersPerSecond, robotSpeeds.omegaRadiansPerSecond);
+    }
+    public void runRobotSpeeds(double vxMetersPerSecond, double vyMetersPerSecond, double omegaRadsPerSecond) {
+        this.desiredRobotSpeeds.vxMetersPerSecond = vxMetersPerSecond;
+        this.desiredRobotSpeeds.vyMetersPerSecond = vyMetersPerSecond;
+        this.desiredRobotSpeeds.omegaRadiansPerSecond = omegaRadsPerSecond;
         Logger.recordOutput("Drive/Chassis Speeds/Desired Speed", this.desiredRobotSpeeds);
 
         var desiredDelta = this.desiredRobotSpeeds.minus(this.robotMeasuredSpeeds);
@@ -310,7 +315,7 @@ public class Drive extends VirtualSubsystem {
         var tiltAccelLimitingFactor = tiltAccelLimit / Math.max(desiredTiltAccel, tiltAccelLimit);
         Logger.recordOutput("Drive/Chassis Speeds/Tilt Limit/Desired Tilt Accel", desiredTiltAccel);
         Logger.recordOutput("Drive/Chassis Speeds/Tilt Limit/Desired Tilt Accel Heading", desiredTiltAccelHeading);
-        Logger.recordOutput("Drive/Chassis Speeds/Tilt Limit/Til tAccel Limit", tiltAccelLimit);
+        Logger.recordOutput("Drive/Chassis Speeds/Tilt Limit/Tilt Accel Limit", tiltAccelLimit);
         Logger.recordOutput("Drive/Chassis Speeds/Tilt Limit/Limiting Factor", tiltAccelLimitingFactor);
         limitedAccel = new ChassisSpeeds(
             limitedAccel.vxMetersPerSecond * tiltAccelLimitingFactor,

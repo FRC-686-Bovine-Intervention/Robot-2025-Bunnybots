@@ -2,6 +2,10 @@ package frc.util.flipping;
 
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.ArrayList;
+
+import choreo.trajectory.SwerveSample;
+import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -238,80 +242,80 @@ public class AllianceFlipUtil {
         };
     }
 
-    // public static SwerveSample apply(SwerveSample sample) {
-    //     return AllianceFlipUtil.apply(sample, AllianceFlipUtil.defaultFlipType);
-    // }
-    // public static SwerveSample apply(SwerveSample sample, FieldFlipType flipType) {
-    //     if (!AllianceFlipUtil.shouldFlip()) {return sample;}
-    //     return AllianceFlipUtil.flip(sample, flipType);
-    // }
-    // public static SwerveSample flip(SwerveSample sample) {
-    //     return AllianceFlipUtil.flip(sample, AllianceFlipUtil.defaultFlipType);
-    // }
-    // public static SwerveSample flip(SwerveSample sample, FieldFlipType flipType) {
-    //     var headingCos = Math.cos(sample.heading);
-    //     var headingSin = Math.sin(sample.heading);
-    //     return switch (flipType) {
-    //         case CenterPointRotation -> new SwerveSample(
-    //             sample.t,
-    //             AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
-    //             AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
-    //             Math.atan2(-headingSin, -headingCos),
-    //             -sample.vx,
-    //             -sample.vy,
-    //             +sample.omega,
-    //             -sample.ax,
-    //             -sample.ay,
-    //             +sample.alpha,
-    //             new double[] {-sample.moduleForcesX()[0], -sample.moduleForcesX()[1], -sample.moduleForcesX()[2], -sample.moduleForcesX()[3]},
-    //             new double[] {-sample.moduleForcesY()[0], -sample.moduleForcesY()[1], -sample.moduleForcesY()[2], -sample.moduleForcesY()[3]}
-    //         );
-    //         case CenterLineMirror -> new SwerveSample(
-    //             sample.t,
-    //             AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
-    //             AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
-    //             Math.atan2(+headingSin, -headingCos),
-    //             -sample.vx,
-    //             +sample.vy,
-    //             -sample.omega,
-    //             -sample.ax,
-    //             +sample.ay,
-    //             -sample.alpha,
-    //             new double[] {-sample.moduleForcesX()[0], -sample.moduleForcesX()[1], -sample.moduleForcesX()[2], -sample.moduleForcesX()[3]},
-    //             new double[] {+sample.moduleForcesY()[0], +sample.moduleForcesY()[1], +sample.moduleForcesY()[2], +sample.moduleForcesY()[3]}
-    //         );
-    //         case XenterLineMirror -> new SwerveSample(
-    //             sample.t,
-    //             AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
-    //             AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
-    //             Math.atan2(-headingSin, +headingCos),
-    //             +sample.vx,
-    //             -sample.vy,
-    //             -sample.omega,
-    //             +sample.ax,
-    //             -sample.ay,
-    //             -sample.alpha,
-    //             new double[] {+sample.moduleForcesX()[0], +sample.moduleForcesX()[1], +sample.moduleForcesX()[2], +sample.moduleForcesX()[3]},
-    //             new double[] {-sample.moduleForcesY()[0], -sample.moduleForcesY()[1], -sample.moduleForcesY()[2], -sample.moduleForcesY()[3]}
-    //         );
-    //     };
-    // }
+    public static SwerveSample apply(SwerveSample sample) {
+        return AllianceFlipUtil.apply(sample, AllianceFlipUtil.defaultFlipType);
+    }
+    public static SwerveSample apply(SwerveSample sample, FieldFlipType flipType) {
+        if (!AllianceFlipUtil.shouldFlip()) {return sample;}
+        return AllianceFlipUtil.flip(sample, flipType);
+    }
+    public static SwerveSample flip(SwerveSample sample) {
+        return AllianceFlipUtil.flip(sample, AllianceFlipUtil.defaultFlipType);
+    }
+    public static SwerveSample flip(SwerveSample sample, FieldFlipType flipType) {
+        var headingCos = Math.cos(sample.heading);
+        var headingSin = Math.sin(sample.heading);
+        return switch (flipType) {
+            case CenterPointRotation -> new SwerveSample(
+                sample.t,
+                AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
+                AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
+                Math.atan2(-headingSin, -headingCos),
+                -sample.vx,
+                -sample.vy,
+                +sample.omega,
+                -sample.ax,
+                -sample.ay,
+                +sample.alpha,
+                new double[] {-sample.moduleForcesX()[0], -sample.moduleForcesX()[1], -sample.moduleForcesX()[2], -sample.moduleForcesX()[3]},
+                new double[] {-sample.moduleForcesY()[0], -sample.moduleForcesY()[1], -sample.moduleForcesY()[2], -sample.moduleForcesY()[3]}
+            );
+            case CenterLineMirror -> new SwerveSample(
+                sample.t,
+                AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
+                AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
+                Math.atan2(+headingSin, -headingCos),
+                -sample.vx,
+                +sample.vy,
+                -sample.omega,
+                -sample.ax,
+                +sample.ay,
+                -sample.alpha,
+                new double[] {-sample.moduleForcesX()[0], -sample.moduleForcesX()[1], -sample.moduleForcesX()[2], -sample.moduleForcesX()[3]},
+                new double[] {+sample.moduleForcesY()[0], +sample.moduleForcesY()[1], +sample.moduleForcesY()[2], +sample.moduleForcesY()[3]}
+            );
+            case XenterLineMirror -> new SwerveSample(
+                sample.t,
+                AllianceFlipUtil.flipXPosMeters(sample.x, flipType),
+                AllianceFlipUtil.flipYPosMeters(sample.y, flipType),
+                Math.atan2(-headingSin, +headingCos),
+                +sample.vx,
+                -sample.vy,
+                -sample.omega,
+                +sample.ax,
+                -sample.ay,
+                -sample.alpha,
+                new double[] {+sample.moduleForcesX()[0], +sample.moduleForcesX()[1], +sample.moduleForcesX()[2], +sample.moduleForcesX()[3]},
+                new double[] {-sample.moduleForcesY()[0], -sample.moduleForcesY()[1], -sample.moduleForcesY()[2], -sample.moduleForcesY()[3]}
+            );
+        };
+    }
 
-    // public static Trajectory<SwerveSample> apply(Trajectory<SwerveSample> trajectory) {
-    //     return AllianceFlipUtil.apply(trajectory, AllianceFlipUtil.defaultFlipType);
-    // }
-    // public static Trajectory<SwerveSample> apply(Trajectory<SwerveSample> trajectory, FieldFlipType flipType) {
-    //     if (!AllianceFlipUtil.shouldFlip()) {return trajectory;}
-    //     return AllianceFlipUtil.flip(trajectory, flipType);
-    // }
-    // public static Trajectory<SwerveSample> flip(Trajectory<SwerveSample> trajectory) {
-    //     return AllianceFlipUtil.flip(trajectory, AllianceFlipUtil.defaultFlipType);
-    // }
-    // public static Trajectory<SwerveSample> flip(Trajectory<SwerveSample> trajectory, FieldFlipType flipType) {
-    //     var flippedSamples = new ArrayList<SwerveSample>(trajectory.samples().size());
-    //     for (var sample : trajectory.samples()) {
-    //         flippedSamples.add(AllianceFlipUtil.flip(sample, flipType));
-    //     }
-    //     return new Trajectory<>(trajectory.name(), flippedSamples, trajectory.splits(), trajectory.events());
-    // }
+    public static Trajectory<SwerveSample> apply(Trajectory<SwerveSample> trajectory) {
+        return AllianceFlipUtil.apply(trajectory, AllianceFlipUtil.defaultFlipType);
+    }
+    public static Trajectory<SwerveSample> apply(Trajectory<SwerveSample> trajectory, FieldFlipType flipType) {
+        if (!AllianceFlipUtil.shouldFlip()) {return trajectory;}
+        return AllianceFlipUtil.flip(trajectory, flipType);
+    }
+    public static Trajectory<SwerveSample> flip(Trajectory<SwerveSample> trajectory) {
+        return AllianceFlipUtil.flip(trajectory, AllianceFlipUtil.defaultFlipType);
+    }
+    public static Trajectory<SwerveSample> flip(Trajectory<SwerveSample> trajectory, FieldFlipType flipType) {
+        var flippedSamples = new ArrayList<SwerveSample>(trajectory.samples().size());
+        for (var sample : trajectory.samples()) {
+            flippedSamples.add(AllianceFlipUtil.flip(sample, flipType));
+        }
+        return new Trajectory<>(trajectory.name(), flippedSamples, trajectory.splits(), trajectory.events());
+    }
 }
