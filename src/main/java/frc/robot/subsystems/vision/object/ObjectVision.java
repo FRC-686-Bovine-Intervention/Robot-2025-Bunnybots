@@ -10,8 +10,6 @@ import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -35,16 +33,16 @@ import frc.util.rust.iter.Iterator;
 public class ObjectVision {
     private final ObjectPipeline[] pipelines;
 
-    private static final LoggedTunable<Distance> updateDistanceThreshold = LoggedTunable.from("Vision/Object/Updating/Update Distance Threshold", Meters::of, 5);
+    private static final LoggedTunable<Distance> updateDistanceThreshold = LoggedTunable.from("Vision/Object/Updating/Update Distance Threshold", Meters::of, 0.1);
     private static final LoggedTunableNumber posUpdatingFilteringFactor =  LoggedTunable.from("Vision/Object/Updating/Pos Updating Filtering Factor", 0.8);
-    private static final LoggedTunableNumber confUpdatingFilteringFactor = LoggedTunable.from("Vision/Object/Confidence/Updating Filtering Factor", 0.5);
+    //private static final LoggedTunableNumber confUpdatingFilteringFactor = LoggedTunable.from("Vision/Object/Confidence/Updating Filtering Factor", 0.5);
     private static final LoggedTunableNumber confidenceDecayPerSecond =    LoggedTunable.from("Vision/Object/Confidence/Decay Per Second", 3);
     private static final LoggedTunableNumber priorityPerConfidence =       LoggedTunable.from("Vision/Object/Priority/Priority Per Confidence", 4);
-    private static final LoggedTunableNumber priorityPerDistance =         LoggedTunable.from("Vision/Object/Priority/Priority Per Distance", -2);
+    private static final LoggedTunableNumber priorityPerDistance =         LoggedTunable.from("Vision/Object/Priority/Priority Per Distance", 2);
     private static final LoggedTunableNumber acquireConfidenceThreshold =  LoggedTunable.from("Vision/Object/Target Threshold/Acquire", 0.75);
-    private static final LoggedTunableNumber detargetConfidenceThreshold = LoggedTunable.from("Vision/Object/Target Threshold/Detarget", -3);
-    // private static final LoggedTunableNumber _intakeTargetLocked = LoggedTunable.from("Vision/Object/Testing/Intake Target Locked", 0);
-    //private final ArrayList<TrackedObject> objectMemories = new ArrayList<>(3);
+    private static final LoggedTunableNumber detargetConfidenceThreshold = LoggedTunable.from("Vision/Object/Target Threshold/Detarget", 0.5);
+    
+    private List<TrackedObject> trackedObjects = new ArrayList<>(0);
     private Optional<TrackedObject> optIntakeTarget = Optional.empty();
     private boolean intakeTargetLocked = false;
     private ChassisSpeeds desiredRobotRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(0.0, 0.0, 0.0, Rotation2d.kZero);
@@ -56,11 +54,9 @@ public class ObjectVision {
 
     public void periodic() {
         LoggedTracer.logEpoch("CommandScheduler Periodic/ObjectVision/Before");
-        List<TrackedObject> allTrackedObjects = new ArrayList<>(this.pipelines.length * 3);
         for (var pipeline : this.pipelines) {
             var frames = pipeline.getFrames();
             var loggingKey = "Vision/Objects/Results/" + pipeline.pipelineIndex + "/";
-            var tracingKey = "CommandScheduler Periodic/Objects/Process Results/" + pipeline.pipelineIndex + "/";
             for (var frame : frames) {
                 var frameTargets = Iterator.of(frame.targets)
                     .map((target) -> TrackedObject.from(pipeline.camera.mount, target))
@@ -68,147 +64,67 @@ public class ObjectVision {
                     .map(Optional::get)
                     .collect_arraylist()
                 ;
-                /*var connections = new ArrayList<TargetMemoryConnection>(objectMemories.size() * frameTargets.size());
-                objectMemories.forEach(
-                    (memory) -> frameTargets.forEach(
-                        (target) -> {
-                            if(memory.fieldPos.getDistance(target.fieldPos) < updateDistanceThreshold.get().in(Meters)){
-                                connections.add(new TargetMemoryConnection(memory, target));
-                            }
+
+                for (var trackedObject : trackedObjects) {
+                    trackedObject.resetUpdated();
+                }
+                // Update tracked objects
+                for (var frameTarget : frameTargets) {
+                    for (var trackedObject : trackedObjects) {
+                        trackedObject.decayConfidence(confidenceDecayPerSecond.getAsDouble());
+
+                        if (trackedObject.fieldPos.getDistance(frameTarget.fieldPos) < updateDistanceThreshold.get().in(Meters) && !trackedObject.updated) {
+                            trackedObject.updateWithFiltering(frameTarget);
+                        } else {
+                            trackedObjects.add(frameTarget);
                         }
-                    )
-                );
-                connections.sort((a, b) -> Double.compare(a.getDistance(), b.getDistance()));
-                var unusedMemories = new ArrayList<>(objectMemories);
-                var unusedTargets = new ArrayList<>(frameTargets);
-                while (!connections.isEmpty()) {
-                    var confirmedConnection = connections.get(0);
-                    confirmedConnection.memory.updatePosWithFiltering(confirmedConnection.cameraTarget);
-                    confirmedConnection.memory.updateConfidence();
-                    unusedMemories.remove(confirmedConnection.memory);
-                    unusedTargets.remove(confirmedConnection.cameraTarget);
-                    connections.removeIf((connection) -> 
-                        connection.memory == confirmedConnection.memory
-                        || connection.cameraTarget == confirmedConnection.cameraTarget
-                    );
-                }
-                unusedMemories.forEach((memory) -> {
-                    if (RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) > RobotConstants.robotLength.in(Meters) * 0.5) {
-                        memory.decayConfidence(1);
+
+                        if (trackedObject.confidence < detargetConfidenceThreshold.getAsDouble()) {
+                            trackedObjects.remove(trackedObject);
+                        }
                     }
-                });
-                unusedTargets.forEach(objectMemories::add);
-                objectMemories.removeIf((memory) -> memory.confidence <= 0);
-                objectMemories.removeIf((memory) -> Double.isNaN(memory.fieldPos.getX()) || Double.isNaN(memory.fieldPos.getY()));
-                objectMemories.removeIf((memory) -> RobotState.getInstance().getEstimatedGlobalPose().getTranslation().getDistance(memory.fieldPos) <= 0.07);
-                */
-                if (
-                    optIntakeTarget.isPresent()
-                    && (
-                        optIntakeTarget.get().confidence < detargetConfidenceThreshold.get()
-                        || !frameTargets.contains(optIntakeTarget.get())
-                    )
-                ) {
-                    optIntakeTarget = Optional.empty();
                 }
+
+                if (optIntakeTarget.isPresent()) {
+                    optIntakeTarget.get().resetUpdated();
+                    optIntakeTarget.get().decayConfidence(confidenceDecayPerSecond.getAsDouble());
+
+                    for (var trackedObject : trackedObjects) {
+                        if (trackedObject.fieldPos.getDistance(optIntakeTarget.get().fieldPos) < updateDistanceThreshold.get().in(Meters) && !optIntakeTarget.get().updated) {
+                            optIntakeTarget.get().updateWithFiltering(trackedObject);
+                        }
+                    }
+
+                    if (optIntakeTarget.get().confidence < detargetConfidenceThreshold.get() || !trackedObjects.contains(optIntakeTarget.get())) {
+                        optIntakeTarget = Optional.empty();
+                    }
+                }
+
                 if (optIntakeTarget.isEmpty() || !intakeTargetLocked) {
-                    var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
-                
-                    optIntakeTarget = frameTargets.stream()
+                    optIntakeTarget = trackedObjects.stream()
                         .filter(target -> target.confidence > acquireConfidenceThreshold.get())
                         .sorted((a, b) -> {
-                            var relA = new Pose2d(a.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
-                            var relB = new Pose2d(b.fieldPos, Rotation2d.kZero).relativeTo(robotPose);
-                
-                            double distA = Math.hypot(relA.getX(), 2 * relA.getY());
-                            double angleA = Math.atan2(relA.getY(), relA.getX());
-                            double distB = Math.hypot(relB.getX(), 2 * relB.getY());
-                            double angleB = Math.atan2(relB.getY(), relB.getX());
-
-                            double scoreA = 0;
-                            double scoreB = 0;
-
-                            var chassisSpeedsAngle = Math.atan2(desiredRobotRelativeSpeeds.vxMetersPerSecond, desiredRobotRelativeSpeeds.vyMetersPerSecond);
-                            if (Math.abs(angleA - chassisSpeedsAngle) < Math.PI / 2 && (angleA > Math.PI/2 || angleA < -Math.PI/2)) {
-                                scoreA = (1 / distA) * a.confidence;
-                            }
-                            if (Math.abs(angleB - chassisSpeedsAngle) < Math.PI / 2 && (angleB > Math.PI/2 || angleB < -Math.PI/2)) {
-                                scoreB = (1 / distB) * b.confidence;
-                            }
-                            return Double.compare(scoreA, scoreB);
+                            return Double.compare(a.getPriority(desiredRobotRelativeSpeeds), b.getPriority(desiredRobotRelativeSpeeds));
                         })
                         .findFirst();
                 }                
 
-                //Logger.recordOutput(loggingKey + "Object Memories", objectMemories.stream().map(TrackedObject::toASPose).toArray(Pose3d[]::new));
-                //Logger.recordOutput(loggingKey + "Object Confidence", objectMemories.stream().mapToDouble((object) -> object.confidence).toArray());
-                //Logger.recordOutput(loggingKey + "Object Priority", objectMemories.stream().mapToDouble(TrackedObject::getPriority).toArray());
-                Logger.recordOutput(loggingKey + "Targets", Iterator.of(frameTargets).map((target) -> target.toASPose()).collect_array(Pose3d[]::new));
+                Logger.recordOutput(loggingKey + "Targets", Iterator.of(trackedObjects).map((target) -> target.toASPose()).collect_array(Pose3d[]::new));
                 Logger.recordOutput(loggingKey + "Locked Target", optIntakeTarget.map(TrackedObject::toASPose).orElse(null));
-                // intakeTargetLocked = _intakeTargetLocked.getAsDouble() == 1;
-                // var x = getIntakeYSpeedFromRobotSpeeds(ChassisSpeeds.fromRobotRelativeSpeeds(-1.0, 0.0, 0.0, Rotation2d.kZero));
-                // Logger.recordOutput(loggingKey + "TargetYSpeed", x);
             }
         }
     }
-
-    // public DoubleSupplier applyDotProduct(Supplier<ChassisSpeeds> joystickFieldRelative) {
-    //     return () -> optIntakeTarget.map((target) -> {
-    //         var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
-    //         var targetRelRobot = target.fieldPos.minus(robotTrans);
-    //         var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
-    //         var joystickSpeed = joystickFieldRelative.get();
-    //         var joy = new Translation2d(joystickSpeed.vxMetersPerSecond, joystickSpeed.vyMetersPerSecond);
-    //         var throttle = targetRelRobotNormalized.toVector().dot(joy.toVector());
-    //         return throttle;
-    //     }).orElse(0.0);
-    // }
-
-    // public LazyOptional<ChassisSpeeds> getAutoIntakeTransSpeed(DoubleSupplier throttleSupplier) {
-    //     return () -> optIntakeTarget.map((target) -> {
-    //         var robotTrans = RobotState.getInstance().getEstimatedGlobalPose().getTranslation();
-    //         var targetRelRobot = target.fieldPos.minus(robotTrans);
-    //         var targetRelRobotNormalized = targetRelRobot.div(targetRelRobot.getNorm());
-    //         var finalTrans = targetRelRobotNormalized.times(throttleSupplier.getAsDouble());
-    //         return new ChassisSpeeds(finalTrans.getX(), finalTrans.getY(), 0);
-    //     });
-    // }
-
-    // public LazyOptional<Translation2d> autoIntakeTargetLocation() {
-    //     return () -> optIntakeTarget.map((target) -> target.fieldPos);
-    // }
-
-    // public boolean hasTarget() {
-    //     return optIntakeTarget.isPresent();
-    // }
-
-    // public boolean targetLocked() {
-    //     return intakeTargetLocked;
-    // }
-
-    // public void setTargetLocked(boolean targetLocked) {
-    //     this.intakeTargetLocked = targetLocked;
-    // }
-
-    // public void clearMemory() {
-    //     //objectMemories.clear();
-    //     optIntakeTarget = Optional.empty();
-    // }
-
-    // public Command autoIntake(DoubleSupplier throttle, BooleanSupplier noObject, Drive drive) {
-    //     return 
-    //         Commands.runOnce(() -> intakeTargetLocked = true)
-    //         .alongWith(
-    //             drive.rotationalSubsystem.pointTo(() -> Optional.of(optIntakeTarget.get().fieldPos), () -> Rotation2d.k180deg)
-    //         )
-    //         .onlyWhile(() -> noObject.getAsBoolean() && optIntakeTarget.isPresent())
-    //         .finallyDo(() -> intakeTargetLocked = false)
-    //         .withName("Auto Intake")
-    //     ;
-    // }
-
+    
     public void updateTargetRobotRelativeSpeeds(ChassisSpeeds chassisSpeeds) {
         desiredRobotRelativeSpeeds = chassisSpeeds;
+    }
+
+    public void unlockIntakeTarget() {
+        intakeTargetLocked = false;
+    }
+
+    public void lockIntakeTarget() {
+        intakeTargetLocked = true;
     }
 
     public double getIntakeYSpeedFromRobotSpeeds(ChassisSpeeds inputSpeeds) {
@@ -216,55 +132,32 @@ public class ObjectVision {
             return 0.0;
         }
         updateTargetRobotRelativeSpeeds(inputSpeeds);
-        var robotPose = RobotState.getInstance().getEstimatedGlobalPose();
+        var robotPose = RobotState.getInstance().getEstimatedGlobalPose(); //TODO: Replace with intaking position
         var intakeTargetPos = optIntakeTarget.get().fieldPos;
         var objectRelativeToRobot = new Pose2d(intakeTargetPos, Rotation2d.kZero).relativeTo(robotPose).getTranslation();
         return (objectRelativeToRobot.getY() / objectRelativeToRobot.getX()) * desiredRobotRelativeSpeeds.vxMetersPerSecond;
     }
 
-    private static record TargetMemoryConnection(TrackedObject memory, TrackedObject cameraTarget) {
-        public double getDistance() {
-            return memory.fieldPos.getDistance(cameraTarget.fieldPos);
-        }
-    }
+    // private static record TargetMemoryConnection(TrackedObject memory, TrackedObject cameraTarget) {
+    //     public double getDistance() {
+    //         return memory.fieldPos.getDistance(cameraTarget.fieldPos);
+    //     }
+    // }
 
     public static class TrackedObject {
         public int type;
         public Translation2d fieldPos;
         public double confidence;
+        public boolean updated;
 
         public TrackedObject(int type, Translation2d fieldPos, double confidence) {
             this.type = type;
             this.fieldPos = fieldPos;
             this.confidence = confidence;
+            this.updated = true;
         }
 
         public static Optional<TrackedObject> from(CameraMount mount, CameraTarget target) {
-            // var camPose = mount.getFieldRelative();
-
-            // var rayOrigin = camPose.getTranslation();
-            // var origin = new Pose3d(0.0,0.0,0.0, Rotation3d.kZero);
-            // var rayDir = origin.rotateBy(camPose.getRotation()).rotateBy(new Rotation3d(
-            //     Radians.zero(),
-            //     Radians.of(-target.pitchRads),
-            //     Radians.of(target.yawRads)
-            // )).transformBy(new Transform3d(
-            //     new Translation3d(1, 0, 0),
-            //     Rotation3d.kZero
-            // )).getTranslation();
-            
-            // var numerator = - (rayOrigin.toVector().dot(planeNormal.toVector()) + planeD);
-            // var denominator = rayDir.toVector().dot(planeNormal.toVector());
-            // var t = numerator / denominator;   
-
-            // var intersectionPoint = rayOrigin.toVector().plus(rayDir.toVector().times(t));
-
-            // var fieldPos = new Translation2d(
-            //     intersectionPoint.get(0),
-            //     intersectionPoint.get(1)
-            // );
-            // var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(fieldPos, Rotation2d.kZero));
-            // return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));/*var camPose = mount.getFieldRelative();
             var camRobotPose = mount.getRobotRelative();
             var camFieldPose = mount.getFieldRelative();
             
@@ -285,41 +178,49 @@ public class ObjectVision {
             ));
             
             return Optional.of(new TrackedObject(target.objectClassID, objectFieldPose.getTranslation(), target.objectConfidence));
-
-            /*var cameraToTargetVectorRobotRelative = cameraToTargetVector.rotateBy(camTransform.getRotation());
-            if (cameraToTargetVectorRobotRelative.getZ() >= 0) {
-                // Target above horizon, ignore
-                return Optional.empty();
-            }
-            var toFloorScalingFactor = camTransform.getTranslation().getZ() / -cameraToTargetVectorRobotRelative.getZ();
-            var robotToTarget = cameraToTargetVectorRobotRelative.times(toFloorScalingFactor).plus(camTransform.getTranslation());
-            var fieldPose = RobotState.getInstance().getEstimatedGlobalPose().transformBy(new Transform2d(robotToTarget.toTranslation2d(), Rotation2d.kZero));
-
-            return Optional.of(new TrackedObject(target.objectClassID, fieldPose.getTranslation(), target.objectConfidence));*/
         }
 
-        public void updateConfidence() {
-            confidence += confidence * MathUtil.clamp(1 - confUpdatingFilteringFactor.get(), 0, 1); 
-        }
+        // public void updateConfidence() {
+        //     confidence += confidence * MathUtil.clamp(1 - confUpdatingFilteringFactor.get(), 0, 1); 
+        // }
 
-        public void updatePosWithFiltering(TrackedObject newObject) {
+        public void updateWithFiltering(TrackedObject newObject) {
             this.fieldPos = fieldPos.interpolate(newObject.fieldPos, posUpdatingFilteringFactor.get());
             this.confidence = newObject.confidence;
+            this.updated = true;
+        }
+
+        public void resetUpdated() {
+            this.updated = false;
         }
 
         public void decayConfidence(double rate) {
             this.confidence -= confidenceDecayPerSecond.get() * rate * RobotConstants.rioUpdatePeriodSecs;
         }
 
-        public double getPriority() {
-            var pose = RobotState.getInstance().getEstimatedGlobalPose();
-            var FORR = fieldPos.minus(pose.getTranslation());
-            var rotation = pose.getRotation().minus(RobotConstants.intakeForward);
-            return 
-                confidence * priorityPerConfidence.get() *
-                VecBuilder.fill(rotation.getCos(), rotation.getSin()).dot(FORR.toVector().unit()) + 
-                FORR.getNorm() * priorityPerDistance.get()
-            ;
+        public double getPriority(ChassisSpeeds desiredRobotRelativeSpeeds) {
+            // var pose = RobotState.getInstance().getEstimatedGlobalPose();
+            // var FORR = fieldPos.minus(pose.getTranslation());
+            // var rotation = pose.getRotation().minus(RobotConstants.intakeForward);
+            // return 
+            //     confidence * priorityPerConfidence.get() *
+            //     VecBuilder.fill(rotation.getCos(), rotation.getSin()).dot(FORR.toVector().unit()) + 
+            //     FORR.getNorm() * priorityPerDistance.get()
+            // ;
+            var intakePose = RobotState.getInstance().getEstimatedGlobalPose(); //TODO: Replace with a mount where the intake would be
+            var rel = new Pose2d(this.fieldPos, Rotation2d.kZero).relativeTo(intakePose);
+
+            double dist = Math.hypot(rel.getX(), 2 * rel.getY());
+            double angle = Math.atan2(rel.getY(), rel.getX());
+
+            double score = 0;
+
+            var chassisSpeedsAngle = Math.atan2(desiredRobotRelativeSpeeds.vxMetersPerSecond, desiredRobotRelativeSpeeds.vyMetersPerSecond);
+            if (Math.abs(angle - chassisSpeedsAngle) < Math.PI / 2 && (angle > Math.PI/2 || angle < -Math.PI/2)) {
+                score = (1 / (dist * priorityPerDistance.getAsDouble())) * (this.confidence * priorityPerConfidence.getAsDouble());
+            }
+
+            return score;
         }
 
         public Pose3d toASPose() {
